@@ -48,6 +48,12 @@ interface TenantContextType {
   
   agregarCliente: (cliente: ClienteCorporativo) => void;
   actualizarCliente: (id: string, updates: Partial<ClienteCorporativo>) => void;
+
+  // Sesión y Autenticación WFM (Supabase Auth & Demo Fallback)
+  authUser: any | null;
+  authLoading: boolean;
+  logoutAuth: () => Promise<void>;
+  loginDemoBypass: (correo?: string) => void;
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -62,6 +68,10 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [rutasRecurentes] = useState<RutaRecurrente[]>(mockRutasRecurentes);
   const [currentRoleView, setCurrentRoleViewInternal] = useState<'superadmin' | 'tenant_admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor'>('tenant_admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+
+  // Estado de Autenticación Supabase Auth
+  const [authUser, setAuthUser] = useState<any | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
 
   // Sesión activa del cliente B2B — aislamiento estricto de datos
   const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>(null);
@@ -311,6 +321,48 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, []);
 
+  // --- CAPA DE AUTENTICACIÓN INSTITUCIONAL WFM (SUPABASE AUTH) ---
+  useEffect(() => {
+    let mounted = true;
+
+    // Obtener sesión actual de Supabase
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) {
+        setAuthUser(session?.user || null);
+        setAuthLoading(false);
+      }
+    });
+
+    // Suscribir a cambios de autenticación al instante
+    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setAuthUser(session?.user || null);
+        setAuthLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      authListener.unsubscribe();
+    };
+  }, []);
+
+  const logoutAuth = async () => {
+    setAuthLoading(true);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('⚠️ [WFM Auth] Cierre de sesión en caché:', err);
+    }
+    setAuthUser(null);
+    setAuthLoading(false);
+  };
+
+  const loginDemoBypass = (correo: string = 'carlos.munoz@andina.cl') => {
+    console.log('🚀 [WFM Auth Bypass] Activado acceso de demostración rápida para Netlify:', correo);
+    setAuthUser({ id: 'user-demo-wfm', email: correo, user_metadata: { name: 'Usuario WFM Demo' } });
+  };
+
   const toggleDarkMode = () => setIsDarkMode(prev => !prev);
   const selectTenant = (id: string) => setCurrentTenantId(id);
   const updateTenantBranding = (id: string, updates: Partial<EmpresaTenant>) => setTenants(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
@@ -481,7 +533,11 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         actualizarConductor,
         eliminarConductor,
         agregarCliente,
-        actualizarCliente
+        actualizarCliente,
+        authUser,
+        authLoading,
+        logoutAuth,
+        loginDemoBypass
       }}
     >
       {children}
