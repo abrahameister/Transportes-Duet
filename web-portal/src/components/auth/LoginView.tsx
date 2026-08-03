@@ -284,7 +284,7 @@ export const LoginView: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  required={mode !== 'forgot'}
+                  required
                   className="w-full bg-[#0B0F17] border border-[#2B374A] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#E8832A] focus:ring-1 focus:ring-[#E8832A] transition-colors"
                 />
                 <button
