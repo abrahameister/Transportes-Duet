@@ -96,19 +96,40 @@ export const Navbar: React.FC = () => {
             )}
           </nav>
 
-          {/* 3. Acción Principal & Selector Tenant */}
+          {/* 3. Acción Principal & Selector de Entidades según Rol */}
           <div className="flex items-center space-x-2.5">
-            <select
-              value={currentTenant.id}
-              onChange={(e) => selectTenant(e.target.value)}
-              className="bg-slate-100 dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] rounded-md px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-gray-300 focus:outline-none focus:border-blue-500 cursor-pointer"
-            >
-              {tenants.map((t) => (
-                <option key={t.id} value={t.id} className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">
-                  {t.nombre}
-                </option>
-              ))}
-            </select>
+            
+            {/* Selector de Empresas Transportistas sólo para Admin Duet Solutions (SuperAdmin) */}
+            {userRole === 'superadmin' && (
+              <select
+                value={currentTenant.id}
+                onChange={(e) => selectTenant(e.target.value)}
+                title="Seleccionar Empresa Transportista Administrada"
+                className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-md px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 focus:outline-none focus:border-blue-500 cursor-pointer shadow-2xs"
+              >
+                {tenants.map((t) => (
+                  <option key={t.id} value={t.id} className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">
+                    🏢 {t.nombre}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Selector de Clientes Corporativos B2B sólo para Empresa Transportista (Tenant Admin) */}
+            {userRole === 'tenant_admin' && (
+              <select
+                defaultValue="sanatorio"
+                title="Seleccionar Contrato y Nómina de Cliente B2B"
+                className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
+              >
+                <option value="sanatorio" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 Clínica Sanatorio Alemán</option>
+                <option value="huachipato" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 Siderúrgica Huachipato</option>
+                <option value="arauco" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 Forestal ARAUCO Biobío</option>
+                <option value="udec" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 Universidad de Concepción</option>
+                <option value="enap" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 ENAP Refinería Bío Bío</option>
+              </select>
+            )}
+            {/* Si es cliente_b2b o app_conductor, el selector no se muestra */}
 
             <button
               onClick={toggleDarkMode}

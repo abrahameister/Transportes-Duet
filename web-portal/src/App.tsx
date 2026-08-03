@@ -56,7 +56,7 @@ const MainRouter: React.FC = () => {
 
       <footer className="border-t border-slate-200 dark:border-[#212A38] bg-white dark:bg-[#090C10] py-4 text-center text-xs text-slate-500 dark:text-gray-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="flex items-center gap-1">Creado con <span className="text-rose-500">♥</span> por <strong className="text-slate-700 dark:text-slate-300">Duet Solutions</strong></span>
+          <span className="flex items-center gap-1">Creado con <span className="text-rose-500">♥</span> por <a href="https://www.duetsolutions.cl/" target="_blank" rel="noopener noreferrer" className="font-bold text-slate-700 dark:text-slate-300 hover:text-[#E8832A] dark:hover:text-[#E8832A] hover:underline transition-colors">Duet Solutions</a></span>
           <span>Plataforma de Transporte de Personal Chile ● v1.0.0</span>
         </div>
       </footer>

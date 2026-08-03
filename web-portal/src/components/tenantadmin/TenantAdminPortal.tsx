@@ -16,19 +16,24 @@ export const TenantAdminPortal: React.FC = () => {
   const vehiculosCount = vehiculos.filter(v => v.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001').length;
   const conductoresCount = stats.totalConductores;
 
+  // Cálculo dinámico de fecha actual para planificación
+  const currentDateStr = new Date().toLocaleDateString('es-CL', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+  const formattedDate = currentDateStr.charAt(0).toUpperCase() + currentDateStr.slice(1).replace(/\./g, '');
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
       {/* Top info badges and quick buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-[#212A38]">
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-[#161D27] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <Calendar className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-            Operación Hoy: Vie 31 Jul 2026
-          </span>
-          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-2xs">
+          <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs">
             <CheckCircle className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
-            Planificación Próx. Turno: Lun 03 Ago 2026
+            Planificación Próx. Turno: {formattedDate}
           </span>
         </div>
         <div className="flex items-center space-x-2.5 shrink-0">

@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useTenant } from '../../context/TenantContext';
-import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, KeyRound, Eye, EyeOff, Building2 } from 'lucide-react';
+import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, KeyRound, Eye, EyeOff, Building2, Sparkles, Terminal, Shield, Truck, Briefcase } from 'lucide-react';
 
 type AuthMode = 'signin' | 'forgot';
 
@@ -27,6 +27,7 @@ export const LoginView: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<ErrorBannerState | null>(null);
+  const [isHumanVerified, setIsHumanVerified] = useState<boolean>(false);
 
   // Validación de sintaxis de correo electrónico corporativo
   const isValidEmail = (correo: string): boolean => {
@@ -40,6 +41,15 @@ export const LoginView: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     handleClearFeedback();
+
+    if (mode === 'signin' && !isHumanVerified) {
+      setFeedback({
+        type: 'general',
+        title: '¡Epa! Falta confirmar que eres humano',
+        message: 'Por favor marca la casilla de verificación para asegurarnos de que eres una persona real (¡y no un robot al volante!).'
+      });
+      return;
+    }
 
     // 1. VALIDACIÓN: Correo incorrecto o formato inválido
     if (!email || !isValidEmail(email)) {
@@ -132,7 +142,6 @@ export const LoginView: React.FC = () => {
   const logoUrl = activeVisual?.logoUrl || null;
   const brandName = visualTenant ? activeVisual?.nombre : 'Transportes Duet';
   const headerText = visualTenant ? `Centro Operativo de Transporte • ${brandName}` : 'Plataforma de Movilidad Corporativa & Torre de Control Tráfico • Biobío';
-  const primaryColor = activeVisual?.primaryColor || '#E8832A';
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans text-slate-100">
@@ -275,18 +284,45 @@ export const LoginView: React.FC = () => {
             </div>
           )}
 
+          {/* Captcha Amigable & Casual WFM */}
+          {mode === 'signin' && (
+            <div 
+              onClick={() => setIsHumanVerified(!isHumanVerified)}
+              className={`mt-3 p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                isHumanVerified 
+                  ? 'bg-emerald-950/40 border-emerald-500/60 text-emerald-200 shadow-sm' 
+                  : 'bg-[#121824] hover:bg-[#182030] border-[#2B374A] text-slate-300 shadow-inner'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={isHumanVerified}
+                  onChange={(e) => { e.stopPropagation(); setIsHumanVerified(e.target.checked); }}
+                  className="w-5 h-5 rounded text-[#E8832A] bg-[#0B0F17] border-[#2B374A] focus:ring-0 cursor-pointer accent-[#E8832A]"
+                />
+                <span className="text-xs sm:text-sm font-medium select-none flex items-center gap-1.5">
+                  <Sparkles className={`w-4 h-4 ${isHumanVerified ? 'text-emerald-400' : 'text-amber-500'}`} />
+                  <span>Confirmo que soy humano <span className="text-slate-400 font-normal">(y no un bot al volante)</span></span>
+                </span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider bg-slate-800/90 text-slate-300 border border-slate-700/50">
+                {isHumanVerified ? '✓ LISTO' : 'VERIFICAR'}
+              </span>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
-            style={{ backgroundImage: `linear-gradient(to right, ${primaryColor}, #b45309)` }}
-            className="w-full py-3 text-slate-950 hover:brightness-110 font-bold text-sm rounded-xl shadow-lg hover:shadow-amber-900/20 transition-all flex items-center justify-center gap-2 mt-2"
+            className="w-full py-3 bg-[#E8832A] hover:bg-[#d6731a] text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-950/30 hover:shadow-amber-900/50 transition-all flex items-center justify-center gap-2 mt-4"
           >
             {loading ? (
               <span>Procesando...</span>
             ) : mode === 'signin' ? (
-              <><span>Ingresar a Torre WFM</span> <ArrowRight className="w-4 h-4" /></>
+              <><span>Ingresar</span> <ArrowRight className="w-4 h-4" /></>
             ) : (
-              <><span>Enviar Enlace de Rescate</span> <KeyRound className="w-4 h-4" /></>
+              <><span>Recuperar Acceso</span> <KeyRound className="w-4 h-4" /></>
             )}
           </button>
         </form>
@@ -301,30 +337,34 @@ export const LoginView: React.FC = () => {
         </div>
 
         <div className="bg-[#0f141e] border border-slate-700/50 p-4 rounded-xl mt-4">
-          <div className="text-center mb-3 text-xs text-slate-400 font-medium">
-            🛠️ Panel de Demostración & Eval (Entorno Local)
+          <div className="text-center mb-3 text-xs text-slate-300 font-medium flex items-center justify-center gap-1.5">
+            <Terminal className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>Panel de Demostración & Eval (Entorno Local)</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <button
               type="button"
               onClick={() => loginDemoBypass('admin@duet.cl', 'superadmin')}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
             >
-              👑 Simular Sesión: Admin Duet Solutions
+              <Shield className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>Simular Sesión: Admin Duet Solutions</span>
             </button>
             <button
               type="button"
               onClick={() => loginDemoBypass('operaciones@transportesandina.cl', 'tenant_admin', tenants.find(t => t.slug === 'andina')?.id)}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
             >
-              🏢 Simular Sesión: Tráfico Andina (Transportista)
+              <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Simular Sesión: Tráfico Andina (Transportista)</span>
             </button>
             <button
               type="button"
               onClick={() => loginDemoBypass('contratos@sanatorio.cl', 'cliente_b2b', tenants.find(t => t.slug === 'nexo')?.id)}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
             >
-              🤝 Simular Sesión: Clínica Sanatorio Alemán (Cliente B2B)
+              <Briefcase className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Simular Sesión: Clínica Sanatorio Alemán (Cliente B2B)</span>
             </button>
           </div>
         </div>
@@ -333,7 +373,7 @@ export const LoginView: React.FC = () => {
       {/* Pie Institucional */}
       <footer className="mt-8 text-center text-xs text-slate-500 z-10 flex flex-col items-center gap-1">
         <span className="flex items-center gap-1">
-          Creado con <span className="text-rose-500">♥</span> por <strong className="text-slate-300">Duet Solutions</strong>
+          Creado con <span className="text-rose-500">♥</span> por <a href="https://www.duetsolutions.cl/" target="_blank" rel="noopener noreferrer" className="font-bold text-slate-300 hover:text-[#E8832A] hover:underline transition-colors">Duet Solutions</a>
         </span>
         <span className="text-[11px] text-slate-600 flex items-center gap-1">
           <ShieldCheck className="w-3 h-3 text-emerald-500" /> Arquitectura Enterprise Tier-1 de Fuerza Laboral y Movilidad B2B
