@@ -1,0 +1,31 @@
+# ==============================================================================
+# CONFIGURACIÓN DE DESPLIEGUE EN NETLIFY — TRANSPORTES DUET
+# ==============================================================================
+# Arquitectura Monorepo con React 19 / Vite en la carpeta web-portal/
+# ==============================================================================
+
+[build]
+  base = "web-portal"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--no-audit --no-fund"
+
+# Regla de Redirección SPA (Single Page Application)
+# Evita errores 404 Not Found cuando un usuario recarga una pestaña o navega entre portales
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Encabezados de seguridad institucionales para protección WFM y PWA
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Cache-Control = "public, max-age=3600, must-revalidate"
