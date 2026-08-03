@@ -47,11 +47,11 @@ ON CONFLICT (id) DO NOTHING;
 -- 6. INSERTAR FUNCIONARIOS B2B (COLABORADORES)
 INSERT INTO funcionarios_b2b (id, cliente_corporativo_id, nombre_completo, rut, telefono, email, area, direccion_recogida, comuna, centro_costo, preferencia_turno, estado_geo)
 VALUES 
-('f_1', 'b2b_sanatorio', 'Dra. María Paz Solar', '15.678.901-2', '+56 9 9123 4567', 'Medicina General', 'Av. Chacabuco 1400', 'Concepción', 'CC-URG-01', 'Noche (20:00 - 08:00)', 'activo'),
-('f_2', 'b2b_sanatorio', 'Ing. Rodrigo Sepúlveda', '16.789.012-3', '+56 9 8234 5678', 'Sistemas y Redes', 'Av. Pedro de Valdivia 850', 'Concepción', 'CC-TIC-03', 'Mañana (08:00 - 17:00)', 'activo'),
-('f_3', 'b2b_sanatorio', 'Téc. Valentina Rojas', '17.890.123-4', '+56 9 7345 6789', 'Laboratorio', 'Los Peumo 450, Huertos Familiares', 'San Pedro de la Paz', 'CC-LAB-02', 'Noche (20:00 - 08:00)', 'activo'),
-('f_4', 'b2b_sanatorio', 'Téc. Gonzalo Morales', '18.901.234-5', '+56 9 6456 7890', 'Radiología', 'O’Higgins 310', 'Concepción', 'CC-RAD-04', 'Mañana (08:00 - 17:00)', 'activo'),
-('f_5', 'b2b_arauco', 'Matías Fernández Catalán', '13.450.981-1', '+56 9 5566 7788', 'Operaciones Planta', 'Calle Cóndor 1200', 'Talcahuano', 'CC-IND-88', 'Turno A (06:00 - 14:00)', 'activo')
+('f_1', 'b2b_sanatorio', 'Dra. María Paz Solar', '15.678.901-2', '+56 9 9123 4567', 'msolar@sanatorioaleman.cl', 'Medicina General', 'Av. Chacabuco 1400', 'Concepción', 'CC-URG-01', 'Noche (20:00 - 08:00)', 'activo'),
+('f_2', 'b2b_sanatorio', 'Ing. Rodrigo Sepúlveda', '16.789.012-3', '+56 9 8234 5678', 'rsepulveda@sanatorioaleman.cl', 'Sistemas y Redes', 'Av. Pedro de Valdivia 850', 'Concepción', 'CC-TIC-03', 'Mañana (08:00 - 17:00)', 'activo'),
+('f_3', 'b2b_sanatorio', 'Téc. Valentina Rojas', '17.890.123-4', '+56 9 7345 6789', 'vrojas@sanatorioaleman.cl', 'Laboratorio', 'Los Peumo 450, Huertos Familiares', 'San Pedro de la Paz', 'CC-LAB-02', 'Noche (20:00 - 08:00)', 'activo'),
+('f_4', 'b2b_sanatorio', 'Téc. Gonzalo Morales', '18.901.234-5', '+56 9 6456 7890', 'gmorales@sanatorioaleman.cl', 'Radiología', 'O’Higgins 310', 'Concepción', 'CC-RAD-04', 'Mañana (08:00 - 17:00)', 'activo'),
+('f_5', 'b2b_arauco', 'Matías Fernández Catalán', '13.450.981-1', '+56 9 5566 7788', 'm.fernandez@arauco.cl', 'Operaciones Planta', 'Calle Cóndor 1200', 'Talcahuano', 'CC-IND-88', 'Turno A (06:00 - 14:00)', 'activo')
 ON CONFLICT (id) DO NOTHING;
 
 -- 7. INSERTAR VIAJE OPERATIVO ACTIVO (DEMO EN CURSO)
