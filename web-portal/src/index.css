@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tenant-primary: #1E3A8A;
+  --tenant-secondary: #2B4C9E;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-[#F8FAFC] text-slate-900 dark:bg-[#0D1117] dark:text-gray-100 antialiased min-h-screen font-sans;
+}
+
+/* Scrollbar Corporativo Sobrio */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F8FAFC;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #0D1117;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #212A38;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #303B4E;
+}
+
+@layer utilities {
+  .enterprise-card {
+    @apply bg-white border border-slate-200 text-slate-900 dark:bg-[#161D27] dark:border-[#212A38] dark:text-gray-100 rounded-lg shadow-card;
+  }
+  .enterprise-header {
+    @apply bg-white/95 border-b border-slate-200 text-slate-900 dark:bg-[#0D1117]/95 backdrop-blur-md dark:border-[#212A38] dark:text-gray-100;
+  }
+  .enterprise-input {
+    @apply bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-[#0D1117] dark:border-[#212A38] dark:text-gray-100 focus:outline-none focus:border-blue-500 transition-colors;
+  }
+}

@@ -1,0 +1,137 @@
+import React from 'react';
+import { useTenant } from '../context/TenantContext';
+import { Shield, Building2, Briefcase, Smartphone, RefreshCw, Sun, Moon, Navigation } from 'lucide-react';
+
+export const Navbar: React.FC = () => {
+  const { currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode } = useTenant();
+
+  return (
+    <header className="sticky top-0 z-50 bg-white/95 dark:bg-[#0D1117]/95 backdrop-blur-sm border-b border-slate-200 dark:border-[#212A38]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14">
+          
+          {/* 1. Lo Esencial: Logo y Tenant Activo */}
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded bg-slate-100 dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] flex items-center justify-center overflow-hidden shrink-0">
+              {currentRoleView === 'superadmin' ? (
+                <Shield className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+              ) : (
+                <img 
+                  src={currentTenant.logoUrl} 
+                  alt="" 
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-bold text-slate-900 dark:text-gray-100 tracking-tight">
+              {currentRoleView === 'superadmin' ? 'Administración General' : currentRoleView === 'cliente_b2b' ? 'Portal Empresas Contratantes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : currentTenant.nombre}
+              </span>
+              {currentRoleView !== 'superadmin' && (
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-[#212A38] pl-2 font-medium">
+                  {currentTenant.slug}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* 2. Módulo Activo (Navegación de producto seria y estructurada) */}
+          <nav className="hidden md:flex items-center space-x-1">
+            <button
+              onClick={() => setCurrentRoleView('superadmin')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                currentRoleView === 'superadmin'
+                  ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+              <span>1. Administración</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentRoleView('tenant_admin')}
+              style={currentRoleView === 'tenant_admin' ? { backgroundColor: 'var(--tenant-primary)', color: '#FFFFFF' } : {}}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                currentRoleView === 'tenant_admin'
+                  ? 'text-white font-semibold shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>2. Centro Operativo</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentRoleView('cliente_b2b')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                currentRoleView === 'cliente_b2b'
+                  ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+              }`}
+            >
+              <Briefcase className="w-3.5 h-3.5" />
+              <span>3. Portal Empresas</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentRoleView('pwa_pasajero')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                currentRoleView === 'pwa_pasajero'
+                  ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>4. App Pasajero</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentRoleView('app_conductor')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                currentRoleView === 'app_conductor'
+                  ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+              }`}
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>5. App Conductor</span>
+            </button>
+          </nav>
+
+          {/* 3. Acción Principal & Selector Tenant */}
+          <div className="flex items-center space-x-2.5">
+            <select
+              value={currentTenant.id}
+              onChange={(e) => selectTenant(e.target.value)}
+              className="bg-slate-100 dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] rounded-md px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-gray-300 focus:outline-none focus:border-blue-500 cursor-pointer"
+            >
+              {tenants.map((t) => (
+                <option key={t.id} value={t.id} className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">
+                  {t.nombre}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={toggleDarkMode}
+              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 bg-slate-100 dark:bg-[#161D27] hover:bg-slate-200 dark:hover:bg-[#212A38] border border-slate-200 dark:border-[#212A38] rounded-md transition-colors"
+              title={isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            >
+              {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
+
+            <button
+              onClick={() => window.location.reload()}
+              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 bg-slate-100 dark:bg-[#161D27] hover:bg-slate-200 dark:hover:bg-[#212A38] border border-slate-200 dark:border-[#212A38] rounded-md transition-colors"
+              title="Recargar Datos"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </header>
+  );
+};
