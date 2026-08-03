@@ -25,16 +25,33 @@ const MainRouter: React.FC = () => {
     return <LoginView />;
   }
 
+  const userRole = authUser.user_metadata?.rol || 'tenant_admin';
+
+  let renderedView = null;
+  if (currentRoleView === 'superadmin' && userRole === 'superadmin') {
+    renderedView = <SuperAdminPortal />;
+  } else if (currentRoleView === 'tenant_admin' && (userRole === 'superadmin' || userRole === 'tenant_admin')) {
+    renderedView = <TenantAdminPortal />;
+  } else if (currentRoleView === 'cliente_b2b' && userRole === 'cliente_b2b') {
+    renderedView = <ClientPortalB2B />;
+  } else if (currentRoleView === 'app_conductor' && (userRole === 'superadmin' || userRole === 'tenant_admin' || userRole === 'app_conductor')) {
+    renderedView = <ConductorApp />;
+  } else if (currentRoleView === 'pwa_pasajero') {
+    renderedView = <PasajeroPWA />;
+  } else {
+    // Fallback de seguridad en caso de que intenten forzar una vista prohibida
+    if (userRole === 'superadmin') renderedView = <SuperAdminPortal />;
+    else if (userRole === 'cliente_b2b') renderedView = <ClientPortalB2B />;
+    else if (userRole === 'app_conductor') renderedView = <ConductorApp />;
+    else renderedView = <TenantAdminPortal />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 dark:bg-[#0D1117] dark:text-gray-200">
       <Navbar />
       
       <main className="flex-1 pb-12">
-        {currentRoleView === 'superadmin' && <SuperAdminPortal />}
-        {currentRoleView === 'tenant_admin' && <TenantAdminPortal />}
-        {currentRoleView === 'cliente_b2b' && <ClientPortalB2B />}
-        {currentRoleView === 'pwa_pasajero' && <PasajeroPWA />}
-        {currentRoleView === 'app_conductor' && <ConductorApp />}
+        {renderedView}
       </main>
 
       <footer className="border-t border-slate-200 dark:border-[#212A38] bg-white dark:bg-[#090C10] py-4 text-center text-xs text-slate-500 dark:text-gray-500">

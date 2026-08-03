@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTenant } from '../context/TenantContext';
-import { Shield, Building2, Briefcase, Smartphone, RefreshCw, Sun, Moon, Navigation, LogOut } from 'lucide-react';
+import { Shield, Building2, Briefcase, RefreshCw, Sun, Moon, Navigation, LogOut } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode, authUser, logoutAuth } = useTenant();
+  const userRole = authUser?.user_metadata?.rol || 'tenant_admin';
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-[#0D1117]/95 backdrop-blur-sm border-b border-slate-200 dark:border-[#212A38]">
@@ -37,66 +38,62 @@ export const Navbar: React.FC = () => {
 
           {/* 2. Módulo Activo (Navegación de producto seria y estructurada) */}
           <nav className="hidden md:flex items-center space-x-1">
-            <button
-              onClick={() => setCurrentRoleView('superadmin')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                currentRoleView === 'superadmin'
-                  ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
-              <span>1. Administración</span>
-            </button>
+            {userRole === 'superadmin' && (
+              <button
+                onClick={() => setCurrentRoleView('superadmin')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  currentRoleView === 'superadmin'
+                    ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+                <span>1. Administración General</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setCurrentRoleView('tenant_admin')}
-              style={currentRoleView === 'tenant_admin' ? { backgroundColor: 'var(--tenant-primary)', color: '#FFFFFF' } : {}}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                currentRoleView === 'tenant_admin'
-                  ? 'text-white font-semibold shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>2. Centro Operativo</span>
-            </button>
+            {(userRole === 'superadmin' || userRole === 'tenant_admin') && (
+              <button
+                onClick={() => setCurrentRoleView('tenant_admin')}
+                style={currentRoleView === 'tenant_admin' ? { backgroundColor: 'var(--tenant-primary)', color: '#FFFFFF' } : {}}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  currentRoleView === 'tenant_admin'
+                    ? 'text-white font-semibold shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Centro Operativo</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setCurrentRoleView('cliente_b2b')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                currentRoleView === 'cliente_b2b'
-                  ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5" />
-              <span>3. Portal Empresas</span>
-            </button>
+            {userRole === 'cliente_b2b' && (
+              <button
+                onClick={() => setCurrentRoleView('cliente_b2b')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  currentRoleView === 'cliente_b2b'
+                    ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+                }`}
+              >
+                <Briefcase className="w-3.5 h-3.5" />
+                <span>Portal Empresas</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setCurrentRoleView('pwa_pasajero')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                currentRoleView === 'pwa_pasajero'
-                  ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>4. App Pasajero</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentRoleView('app_conductor')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                currentRoleView === 'app_conductor'
-                  ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
-              }`}
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>5. App Conductor</span>
-            </button>
+            {(userRole === 'superadmin' || userRole === 'tenant_admin' || userRole === 'app_conductor') && (
+              <button
+                onClick={() => setCurrentRoleView('app_conductor')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  currentRoleView === 'app_conductor'
+                    ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
+                }`}
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                <span>App Conductor</span>
+              </button>
+            )}
           </nav>
 
           {/* 3. Acción Principal & Selector Tenant */}

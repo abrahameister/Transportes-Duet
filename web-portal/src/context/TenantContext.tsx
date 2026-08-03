@@ -53,7 +53,7 @@ interface TenantContextType {
   authUser: any | null;
   authLoading: boolean;
   logoutAuth: () => Promise<void>;
-  loginDemoBypass: (correo?: string) => void;
+  loginDemoBypass: (correo?: string, rol?: 'superadmin' | 'tenant_admin' | 'cliente_b2b', tenantId?: string) => void;
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -358,9 +358,13 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAuthLoading(false);
   };
 
-  const loginDemoBypass = (correo: string = 'carlos.munoz@andina.cl') => {
-    console.log('🚀 [WFM Auth Bypass] Activado acceso de demostración rápida para Netlify:', correo);
-    setAuthUser({ id: 'user-demo-wfm', email: correo, user_metadata: { name: 'Usuario WFM Demo' } });
+  const loginDemoBypass = (correo: string = 'carlos.munoz@andina.cl', rol: 'superadmin' | 'tenant_admin' | 'cliente_b2b' = 'tenant_admin', tenantId?: string) => {
+    console.log('🚀 [WFM Auth Bypass] Activado acceso de demostración rápida para Netlify:', correo, rol);
+    setAuthUser({ id: 'user-demo-wfm', email: correo, user_metadata: { name: 'Usuario WFM Demo', rol: rol, tenantId: tenantId } });
+    setCurrentRoleView(rol);
+    if (tenantId) {
+      setCurrentTenantId(tenantId);
+    }
   };
 
   const toggleDarkMode = () => setIsDarkMode(prev => !prev);

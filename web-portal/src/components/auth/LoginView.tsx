@@ -5,12 +5,12 @@
 // con manejo visual y granular de errores UX en español chilenizado.
 // ==============================================================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useTenant } from '../../context/TenantContext';
-import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Sparkles, UserPlus, KeyRound, Eye, EyeOff, Building2 } from 'lucide-react';
+import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, KeyRound, Eye, EyeOff, Building2 } from 'lucide-react';
 
-type AuthMode = 'signin' | 'signup' | 'forgot';
+type AuthMode = 'signin' | 'forgot';
 
 interface ErrorBannerState {
   type: 'no_account' | 'invalid_email' | 'wrong_password' | 'general' | 'success';
@@ -19,7 +19,7 @@ interface ErrorBannerState {
 }
 
 export const LoginView: React.FC = () => {
-  const { loginDemoBypass } = useTenant();
+  const { loginDemoBypass, tenants, currentTenant } = useTenant();
   
   const [mode, setMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState<string>('');
@@ -83,41 +83,6 @@ export const LoginView: React.FC = () => {
           // Sesión iniciada y sincronizada de forma automática con TenantContext
           console.log('✅ [WFM Auth] Autenticado exitosamente como:', data.session.user.email);
         }
-      } else if (mode === 'signup') {
-        // REGISTRO DE NUEVA CUENTA
-        if (password.length < 6) {
-          setFeedback({
-            type: 'general',
-            title: 'Contraseña Muy Corta',
-            message: 'La clave corporativa debe contener un mínimo de 6 caracteres por normas de seguridad WFM.'
-          });
-          setLoading(false);
-          return;
-        }
-
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password: password.trim(),
-          options: {
-            data: { rol: 'operador_wfm', region: 'Biobío' },
-            emailRedirectTo: window.location.origin
-          }
-        });
-
-        if (error) {
-          setFeedback({
-            type: 'general',
-            title: 'Aviso del Registro',
-            message: error.message || 'No fue posible completar la inscripción en Supabase.'
-          });
-        } else {
-          setFeedback({
-            type: 'success',
-            title: '¡Registro Enviado con Éxito!',
-            message: 'Hemos registrado tus datos. Si el sistema requiere confirmación, revisa tu correo electrónico para activar la cuenta, o intenta iniciar sesión ahora.'
-          });
-          setMode('signin');
-        }
       } else if (mode === 'forgot') {
         // 4. FLUJO PARA RECUPERACIÓN DE CONTRASEÑA
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -149,6 +114,26 @@ export const LoginView: React.FC = () => {
     }
   };
 
+  // Efecto de marca blanca
+  const [visualTenant, setVisualTenant] = useState<any>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tenantParam = params.get('tenant');
+    if (tenantParam) {
+      const found = tenants.find(t => t.slug === tenantParam || t.id === tenantParam);
+      if (found) {
+        setVisualTenant(found);
+      }
+    }
+  }, [tenants]);
+
+  const activeVisual = visualTenant || currentTenant || null;
+  const logoUrl = activeVisual?.logoUrl || null;
+  const brandName = visualTenant ? activeVisual?.nombre : 'Transportes Duet';
+  const headerText = visualTenant ? `Centro Operativo de Transporte • ${brandName}` : 'Plataforma de Movilidad Corporativa & Torre de Control Tráfico • Biobío';
+  const primaryColor = activeVisual?.primaryColor || '#E8832A';
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans text-slate-100">
       {/* Fondo Arquitectura WFM (Gradients y Patrones) */}
@@ -159,15 +144,19 @@ export const LoginView: React.FC = () => {
       <div className="w-full max-w-md bg-[#111827]/90 border border-[#212A38] rounded-2xl shadow-2xl p-6 sm:p-8 z-10 backdrop-blur-sm">
         {/* Cabecera Institucional */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-tr from-[#0F172A] via-[#1E293B] to-[#334155] rounded-2xl mx-auto flex items-center justify-center border border-[#334155] shadow-lg mb-3">
-            <Building2 className="w-8 h-8 text-[#E8832A]" />
+          <div className="w-16 h-16 bg-gradient-to-tr from-[#0F172A] via-[#1E293B] to-[#334155] rounded-2xl mx-auto flex items-center justify-center border border-[#334155] shadow-lg mb-3 overflow-hidden">
+            {logoUrl ? (
+              <img src={logoUrl} alt={brandName} className="w-full h-full object-cover" />
+            ) : (
+              <Building2 className="w-8 h-8 text-[#E8832A]" />
+            )}
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
-            Transportes Duet
-            <span className="text-[10px] bg-[#E8832A] text-slate-950 font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">WFM PRO</span>
+            {brandName}
+            {!visualTenant && <span className="text-[10px] bg-[#E8832A] text-slate-950 font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">WFM PRO</span>}
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Plataforma de Movilidad Corporativo & Torre de Control Tráfico • Biobío
+            {headerText}
           </p>
         </div>
 
@@ -199,20 +188,16 @@ export const LoginView: React.FC = () => {
                 </button>
               )}
               {feedback.type === 'no_account' && mode === 'signin' && (
-                <button
-                  type="button"
-                  onClick={() => { setMode('signup'); setFeedback(null); }}
-                  className="mt-2 text-emerald-400 hover:underline font-bold flex items-center gap-1 text-xs"
-                >
-                  <UserPlus className="w-3.5 h-3.5" /> Crear una cuenta corporativa ahora ➔
-                </button>
+                <div className="mt-2 text-slate-300 text-xs italic">
+                  ¿Es tu primera vez por aquí o necesitas acceso? Recuerda que las cuentas son exclusivas y administradas de forma centralizada por el área operativa. Habla directamente con el Oficial de Tráfico o Administrador WFM de tu empresa para solicitar tus credenciales.
+                </div>
               )}
             </div>
           </div>
         )}
 
         {/* Pestañas de Navegación de Formulario */}
-        <div className="grid grid-cols-3 gap-1 bg-[#090D14] p-1 rounded-xl mb-6 border border-[#1E293B]">
+        <div className="grid grid-cols-2 gap-1 bg-[#090D14] p-1 rounded-xl mb-6 border border-[#1E293B]">
           <button
             type="button"
             onClick={() => { setMode('signin'); handleClearFeedback(); }}
@@ -224,21 +209,12 @@ export const LoginView: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => { setMode('signup'); handleClearFeedback(); }}
-            className={`py-2 text-xs font-bold rounded-lg transition-all ${
-              mode === 'signup' ? 'bg-[#1E293B] text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Registro
-          </button>
-          <button
-            type="button"
             onClick={() => { setMode('forgot'); handleClearFeedback(); }}
             className={`py-2 text-xs font-bold rounded-lg transition-all ${
               mode === 'forgot' ? 'bg-[#1E293B] text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Recuperar
+            Recuperar Clave
           </button>
         </div>
 
@@ -302,14 +278,13 @@ export const LoginView: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-[#E8832A] to-amber-600 text-slate-950 hover:brightness-110 font-bold text-sm rounded-xl shadow-lg hover:shadow-amber-900/20 transition-all flex items-center justify-center gap-2 mt-2"
+            style={{ backgroundImage: `linear-gradient(to right, ${primaryColor}, #b45309)` }}
+            className="w-full py-3 text-slate-950 hover:brightness-110 font-bold text-sm rounded-xl shadow-lg hover:shadow-amber-900/20 transition-all flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
-              <span>Procesando en Supabase...</span>
+              <span>Procesando...</span>
             ) : mode === 'signin' ? (
               <><span>Ingresar a Torre WFM</span> <ArrowRight className="w-4 h-4" /></>
-            ) : mode === 'signup' ? (
-              <><span>Registrar Nueva Cuenta</span> <UserPlus className="w-4 h-4" /></>
             ) : (
               <><span>Enviar Enlace de Rescate</span> <KeyRound className="w-4 h-4" /></>
             )}
@@ -320,20 +295,39 @@ export const LoginView: React.FC = () => {
         <div className="my-6 flex items-center">
           <div className="flex-1 border-t border-slate-800" />
           <span className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            o para pruebas en vivo
+            o utiliza el bypass local
           </span>
           <div className="flex-1 border-t border-slate-800" />
         </div>
 
-        {/* Botón de Acceso Rápido de Prueba (Demo Bypass para Netlify) */}
-        <button
-          type="button"
-          onClick={() => loginDemoBypass('carlos.munoz@andina.cl')}
-          className="w-full py-3 bg-[#162234] border border-blue-500/30 text-blue-300 hover:bg-[#1C2C42] hover:border-blue-400 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-2 group"
-        >
-          <Sparkles className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-          <span>🚀 Acceso de Prueba Rápido (Demo Biobío & WFM)</span>
-        </button>
+        <div className="bg-[#0f141e] border border-slate-700/50 p-4 rounded-xl mt-4">
+          <div className="text-center mb-3 text-xs text-slate-400 font-medium">
+            🛠️ Panel de Demostración & Eval (Entorno Local)
+          </div>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => loginDemoBypass('admin@duet.cl', 'superadmin')}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+            >
+              👑 Simular Sesión: Admin Duet Solutions
+            </button>
+            <button
+              type="button"
+              onClick={() => loginDemoBypass('operaciones@transportesandina.cl', 'tenant_admin', tenants.find(t => t.slug === 'andina')?.id)}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+            >
+              🏢 Simular Sesión: Tráfico Andina (Transportista)
+            </button>
+            <button
+              type="button"
+              onClick={() => loginDemoBypass('contratos@sanatorio.cl', 'cliente_b2b', tenants.find(t => t.slug === 'nexo')?.id)}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+            >
+              🤝 Simular Sesión: Clínica Sanatorio Alemán (Cliente B2B)
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Pie Institucional */}
