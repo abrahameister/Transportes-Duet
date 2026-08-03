@@ -5,9 +5,25 @@ import { TenantAdminPortal } from './components/tenantadmin/TenantAdminPortal';
 import { ClientPortalB2B } from './components/b2b/ClientPortalB2B';
 import { PasajeroPWA } from './components/pasajero/PasajeroPWA';
 import { ConductorApp } from './components/conductor/ConductorApp';
+import { LoginView } from './components/auth/LoginView';
 
 const MainRouter: React.FC = () => {
-  const { currentRoleView } = useTenant();
+  const { currentRoleView, authUser, authLoading } = useTenant();
+
+  // Pantalla de carga al verificar sesión activa
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white p-4 font-sans">
+        <div className="w-10 h-10 border-4 border-[#E8832A] border-t-transparent rounded-full animate-spin mb-4 shadow-lg" />
+        <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Verificando Credenciales WFM...</p>
+      </div>
+    );
+  }
+
+  // COMPUERTA DE SEGURIDAD WFM (Auth Guard): Sin sesión activa se exhibe únicamente el Login
+  if (!authUser) {
+    return <LoginView />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 dark:bg-[#0D1117] dark:text-gray-200">

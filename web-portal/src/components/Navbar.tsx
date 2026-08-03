@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTenant } from '../context/TenantContext';
-import { Shield, Building2, Briefcase, Smartphone, RefreshCw, Sun, Moon, Navigation } from 'lucide-react';
+import { Shield, Building2, Briefcase, Smartphone, RefreshCw, Sun, Moon, Navigation, LogOut } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode } = useTenant();
+  const { currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode, authUser, logoutAuth } = useTenant();
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-[#0D1117]/95 backdrop-blur-sm border-b border-slate-200 dark:border-[#212A38]">
@@ -128,6 +128,17 @@ export const Navbar: React.FC = () => {
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
+
+            {authUser && (
+              <button
+                onClick={logoutAuth}
+                className="flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/60 rounded-md transition-colors ml-1"
+                title={`Conectado como: ${authUser.email || 'Operador WFM'}. Presiona para cerrar sesión WFM.`}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Cerrar Sesión</span>
+              </button>
+            )}
           </div>
 
         </div>
