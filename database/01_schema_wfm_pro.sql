@@ -242,16 +242,27 @@ ALTER TABLE manifiestos_abordaje_check ENABLE ROW LEVEL SECURITY;
 -- Nota: En producción las políticas filtran por token de sesión auth.uid() u claims del Tenant.
 -- En este MVP habilitamos lectura y escritura autenticada y anónima para permitir las simulaciones y seeding.
 
+DROP POLICY IF EXISTS "Acceso total a tenants" ON empresas_tenants;
 CREATE POLICY "Acceso total a tenants" ON empresas_tenants FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a flota" ON vehiculos_flota;
 CREATE POLICY "Acceso total a flota" ON vehiculos_flota FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a conductores" ON conductores_wfm;
 CREATE POLICY "Acceso total a conductores" ON conductores_wfm FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a clientes b2b" ON clientes_corporativos_b2b;
 CREATE POLICY "Acceso total a clientes b2b" ON clientes_corporativos_b2b FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a rutas fijas" ON rutas_fijas_tarifario;
 CREATE POLICY "Acceso total a rutas fijas" ON rutas_fijas_tarifario FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a funcionarios" ON funcionarios_b2b;
 CREATE POLICY "Acceso total a funcionarios" ON funcionarios_b2b FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a viajes" ON viajes_operativa;
 CREATE POLICY "Acceso total a viajes" ON viajes_operativa FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a incidencias" ON incidencias_operativas;
 CREATE POLICY "Acceso total a incidencias" ON incidencias_operativas FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a rutas recurrentes" ON rutas_recurrentes_b2b;
 CREATE POLICY "Acceso total a rutas recurrentes" ON rutas_recurrentes_b2b FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a avisos" ON avisos_operativos;
 CREATE POLICY "Acceso total a avisos" ON avisos_operativos FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Acceso total a manifiestos" ON manifiestos_abordaje_check;
 CREATE POLICY "Acceso total a manifiestos" ON manifiestos_abordaje_check FOR ALL USING (true) WITH CHECK (true);
 
 -- ==============================================================================
