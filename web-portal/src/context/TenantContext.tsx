@@ -321,22 +321,56 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, []);
 
-  // --- CAPA DE AUTENTICACIÓN INSTITUCIONAL WFM (SUPABASE AUTH) ---
+  // --- CAPA DE AUTENTICACIÓN INSTITUCIONAL WFM (SUPABASE AUTH & RESOLUCION DE ROLES) ---
   useEffect(() => {
     let mounted = true;
 
-    // Obtener sesión actual de Supabase
+    const resolveRoleAndTenant = (user: any) => {
+      if (!user) return;
+      const email = user.email ? user.email.toLowerCase() : '';
+      console.log('🔍 [WFM Auth Security] Resolviendo autoridad por sesión verídica de correo:', email);
+
+      // Regla SOBERANA: Cuentas @duetsolutions.cl adquieren nivel Superadmin (Creador y Gestor del Ecosistema)
+      if (email.endsWith('@duetsolutions.cl') || email.includes('duetsolutions')) {
+        console.log('👑 [WFM Master Control] Administrador de Duet Solutions verificado -> Vista Superadmin');
+        setCurrentRoleViewInternal('superadmin');
+      } else if (user.user_metadata?.rol === 'cliente_b2b' || email.includes('@sanatorioaleman.cl') || email.includes('@arauco.cl') || email.includes('@cap.cl')) {
+        console.log('🏢 [WFM Portal B2B] Cuenta de Cliente Contratante verificada -> Vista Cliente B2B');
+        setCurrentRoleViewInternal('cliente_b2b');
+      } else if (user.user_metadata?.rol === 'pwa_pasajero' || user.user_metadata?.rol === 'app_conductor') {
+        setCurrentRoleViewInternal(user.user_metadata.rol);
+      } else {
+        console.log('🚛 [WFM Portal Transportista] Cuenta de Empresa de Transporte verificada -> Vista Tenant Admin');
+        setCurrentRoleViewInternal('tenant_admin');
+        // Si el correo coincide con una empresa transportadora, vincular su marca blanca y tenantId
+        if (user.user_metadata?.tenantId) {
+          setCurrentTenantId(user.user_metadata.tenantId);
+        } else if (email.includes('andina')) {
+          setCurrentTenantId('t_andina');
+        } else if (email.includes('nexo')) {
+          setCurrentTenantId('t_nexo');
+        }
+      }
+    };
+
+    // Obtener sesión actual de Supabase al cargar la aplicación
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted) {
         setAuthUser(session?.user || null);
+        if (session?.user) {
+          resolveRoleAndTenant(session.user);
+        }
         setAuthLoading(false);
       }
     });
 
-    // Suscribir a cambios de autenticación al instante
+    // Suscribir a cambios de autenticación en tiempo real
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
         setAuthUser(session?.user || null);
+        if (session?.user) {
+          resolveRoleAndTenant(session.user);
+        }
         setAuthLoading(false);
       }
     });
@@ -370,7 +404,32 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const toggleDarkMode = () => setIsDarkMode(prev => !prev);
   const selectTenant = (id: string) => setCurrentTenantId(id);
   const updateTenantBranding = (id: string, updates: Partial<EmpresaTenant>) => setTenants(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-  const addNewTenant = (newTenant: EmpresaTenant) => { setTenants(prev => [...prev, newTenant]); setCurrentTenantId(newTenant.id); };
+  const addNewTenant = async (newTenant: EmpresaTenant) => {
+    setTenants(prev => [...prev, newTenant]);
+    setCurrentTenantId(newTenant.id);
+    // Sincronizar en vivo con la base de datos de producción Supabase
+    const { error } = await supabase.from('empresas_tenants').insert([{
+      id: newTenant.id,
+      nombre: newTenant.nombre,
+      slug: newTenant.slug,
+      logo_url: newTenant.logoUrl || '',
+      primary_color: newTenant.primaryColor || '#0F172A',
+      secondary_color: newTenant.secondaryColor || '#1E293B',
+      accent_color: newTenant.accentColor || '#E8832A',
+      estado_pago: (newTenant.estadoPago as any) || 'al_dia',
+      plan_suscripto: newTenant.planSuscripto || 'Plan Pro Exclusivo',
+      razon_social: newTenant.razonSocial,
+      rut: newTenant.rut,
+      contacto_principal: newTenant.contactoPrincipal,
+      contacto_email: newTenant.contactoEmail,
+      contacto_telefono: newTenant.contactoTelefono
+    }]);
+    if (error) {
+      console.warn('⚠️ [WFM Cloud] Aviso al registrar nueva empresa transportista en Nube:', error.message);
+    } else {
+      console.log('✅ [WFM Cloud] Nueva empresa transportista creada y persistida con éxito en Supabase.');
+    }
+  };
 
   // --- MÉTODOS DE CONTROL WFM & DISPATCHING ---
   const toggleConductorEstado = (conductorId: string) => {
