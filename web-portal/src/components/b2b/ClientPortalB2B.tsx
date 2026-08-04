@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useTenant } from '../../context/TenantContext';
 import type { ViajeOperativa, ConductorWFM, FuncionarioB2B, DemandaTurnoB2B } from '../../types';
-import { MapPin, Download, UploadCloud, Search, Eye, X, Plus, Home, Users, Calendar, BarChart3, FileSpreadsheet, Headphones, Phone, Mail, ShieldCheck, Truck, User } from 'lucide-react';
+import { MapPin, Download, UploadCloud, Search, Eye, X, Plus, Home, Users, Calendar, BarChart3, FileSpreadsheet, Headphones, Phone, Mail, ShieldCheck, Truck, User, Building2 } from 'lucide-react';
 
 const SUGGERENCIAS_MAPS_BIOBIO = [
   'Aeropuerto Carriel Sur, Talcahuano',
@@ -424,8 +424,9 @@ export const ClientPortalB2B: React.FC = () => {
           </div>
 
           <div className="bg-slate-50 dark:bg-[#0D1117] p-3 rounded-lg border border-slate-200 dark:border-[#212A38] shrink-0 md:min-w-[280px]">
-            <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 block mb-1">
-              🏢 Cuenta Contratante Simulada (B2B):
+            <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 flex items-center gap-1.5 mb-1">
+              <Building2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              <span>Empresa Contratante B2B:</span>
             </label>
             <select
               value={selectedClientId}
@@ -717,13 +718,79 @@ export const ClientPortalB2B: React.FC = () => {
                   Al subir sus horarios semanales/mensuales, el sistema cruza las entradas y salidas para notificar de inmediato a {currentTenant.nombre}.
                 </p>
               </div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tableHtml = `
+                      <html xmlns:x="urn:schemas-microsoft-com:office:excel">
+                      <head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
+                      <body>
+                        <table border="1">
+                          <thead>
+                            <tr style="background-color: #0F172A; color: #FFFFFF; font-weight: bold;">
+                              <th>Turno Operacional</th>
+                              <th>Horario Ingreso</th>
+                              <th>Horario Salida</th>
+                              <th>Personal Entrando (Recojo)</th>
+                              <th>Personal Saliendo (Domicilios)</th>
+                              <th>Comunas de Concentración</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>Turno Diurno (Apertura Planta)</td>
+                              <td>07:00 AM</td>
+                              <td>15:30 PM</td>
+                              <td>42</td>
+                              <td>12</td>
+                              <td>Concepción / Talcahuano</td>
+                            </tr>
+                            <tr>
+                              <td>Cambio Turno Tarde (Relevo Operativo)</td>
+                              <td>15:30 PM</td>
+                              <td>23:30 PM</td>
+                              <td>38</td>
+                              <td>40</td>
+                              <td>San Pedro de la Paz / Hualpén</td>
+                            </tr>
+                            <tr>
+                              <td>Turno Noche (Mina & Calderas)</td>
+                              <td>23:30 PM</td>
+                              <td>07:00 AM</td>
+                              <td>22</td>
+                              <td>38</td>
+                              <td>Coronel / Arauco</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </body>
+                      </html>
+                    `.trim();
+                    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.setAttribute("download", `plantilla_turnos_${activeClient ? activeClient.nombreCorporativo.split(' ')[0].toLowerCase() : 'b2b'}.xls`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    setActionMsg('✓ Plantilla de turnos descargada con éxito. Completar en Excel y subirla para realizar el cruce automático.');
+                    setTimeout(() => setActionMsg(null), 6500);
+                  }}
+                  className="px-3.5 py-2 rounded-lg border border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs cursor-pointer"
+                >
+                  <Download className="w-4 h-4 shrink-0" />
+                  <span>Descargar Plantilla Excel (.XLS)</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => fileTurnosInputRef.current?.click()}
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center space-x-2 cursor-pointer"
                 >
-                  <UploadCloud className="w-4 h-4" />
+                  <UploadCloud className="w-4 h-4 shrink-0" />
                   <span>Subir Planilla de Turnos (.XLSX)</span>
                 </button>
                 <input type="file" ref={fileTurnosInputRef} accept=".xls,.xlsx,.csv" onChange={(e) => {
@@ -739,8 +806,9 @@ export const ClientPortalB2B: React.FC = () => {
 
             {/* Cruce de Horarios (Ingreso / Salida) */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-800 dark:text-gray-200 uppercase tracking-wider">
-                📊 Matriz de Demanda Cruzada (Entradas vs Salidas) — Semana Actual
+              <h4 className="text-xs font-bold text-slate-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Matriz de Demanda Cruzada (Entradas vs Salidas) — Semana Actual</span>
               </h4>
               <div className="overflow-x-auto border border-slate-200 dark:border-[#212A38] rounded-lg">
                 <table className="w-full text-left text-xs">
