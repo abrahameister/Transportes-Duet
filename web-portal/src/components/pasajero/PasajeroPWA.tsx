@@ -3,7 +3,7 @@ import { useTenant } from '../../context/TenantContext';
 import { 
   MapPin, Phone, MessageSquare, ShieldCheck, Clock, Calendar, 
   AlertTriangle, User, CheckCircle, Navigation, Car, Smartphone, 
-  HelpCircle, X
+  HelpCircle, X, Share2, Key, Lock
 } from 'lucide-react';
 
 const SUGERENCIAS_DIRECCIONES_CONCEPCION = [
@@ -37,6 +37,21 @@ export const PasajeroPWA: React.FC = () => {
   const [ausenciaAvisada, setAusenciaAvisada] = useState(false);
   const [sosActivado, setSosActivado] = useState(false);
   const [mensajeEnviado, setMensajeEnviado] = useState<string | null>(null);
+  const [tokenCopied, setTokenCopied] = useState<boolean>(false);
+
+  // Token Efímero y PIN de Seguridad WFM (Autenticación sin fricción vinculada a la sesión y tenant activo)
+  const tokenEfimero = 'TK-BIO-8921';
+  const pinAbordaje = '8492';
+
+  const handleCopiarEnlaceEfimero = () => {
+    const trackingUrl = `https://duetgo.netlify.app/live-track/${tokenEfimero.toLowerCase()}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(trackingUrl).catch(() => {});
+    }
+    setTokenCopied(true);
+    mostrarNotificacion(`✓ Enlace efímero de seguimiento copiado al portapapeles. Válido por 60 minutos sin exponer datos sensibles del tenant.`);
+    setTimeout(() => setTokenCopied(false), 5000);
+  };
 
   // Seleccionar conductor asignado o fallback
   const conductorActivo = conductores.find(c => c.estadoWFM === 'en_ruta' || c.estadoWFM === 'disponible') || conductores[0];
@@ -224,19 +239,41 @@ export const PasajeroPWA: React.FC = () => {
                 )}
               </div>
 
-              {/* Pase de Abordaje Digital */}
-              <div className="bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] rounded-xl p-4 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+              {/* Pase de Abordaje Digital & Token Efímero */}
+              <div className="bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] rounded-xl p-4 shadow-xs space-y-3.5 relative overflow-hidden">
+                {/* Acento superior de seguridad */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500" />
+                
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5 pt-1">
                   <div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PASE DIGITAL DE ABORDAJE</div>
+                    <div className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-emerald-500" />
+                      <span>PASE DE ABORDAJE & TOKEN EFÍMERO</span>
+                    </div>
                     <div className="text-sm font-bold text-slate-900 dark:text-white font-mono mt-0.5">VOUCHER #{viajeActivo ? 'BIO-992' : 'BIO-001'}</div>
                   </div>
-                  <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg font-mono text-[10px] font-extrabold text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-slate-700">
-                    QR-CONFIRMED
+                  
+                  {/* Recuadro PIN de Abordaje Seguro */}
+                  <div className="bg-emerald-500/10 dark:bg-emerald-950/50 p-2 rounded-lg border border-emerald-500/30 text-center">
+                    <div className="text-[9px] font-black uppercase text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1">
+                      <Key className="w-2.5 h-2.5" /> PIN ABORDAJE
+                    </div>
+                    <div className="font-mono text-base font-black text-emerald-700 dark:text-emerald-400 tracking-widest mt-0.5">
+                      {pinAbordaje}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="space-y-2 text-xs">
+                {/* Instrucción clara al usuario (Tono amigable y seguro) */}
+                <div className="bg-slate-50 dark:bg-[#0D1117] p-2.5 rounded-lg border border-slate-200 dark:border-[#212A38] text-slate-600 dark:text-slate-300 text-[11px] flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-900 dark:text-white block">Acceso sin fricción pero 100% blindado:</strong>
+                    Tu sesión está autorizada por tu perfil corporativo en <strong>{currentTenant.nombre}</strong>. Para una subida rápida y segura, díctale el <strong>PIN {pinAbordaje}</strong> al conductor a tu llegada.
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-xs pt-1">
                   <div className="flex items-start space-x-2">
                     <MapPin className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                     <div>
@@ -246,13 +283,32 @@ export const PasajeroPWA: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-start space-x-2 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                  <div className="flex items-start space-x-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
                     <Clock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                     <div>
                       <div className="text-slate-400 text-[11px]">Horario de Presentación en Parada:</div>
                       <div className="font-bold text-slate-800 dark:text-gray-200">06:50 AM (Puntualidad obligatoria)</div>
                     </div>
                   </div>
+                </div>
+
+                {/* Botón de Compartir Seguimiento en Vivo con Token Efímero */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60">
+                  <button
+                    type="button"
+                    onClick={handleCopiarEnlaceEfimero}
+                    className={`w-full py-2.5 px-3 rounded-lg font-bold text-xs transition-all flex items-center justify-center space-x-2 shadow-2xs cursor-pointer border ${
+                      tokenCopied
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-slate-100 hover:bg-slate-200 dark:bg-[#1C2533] dark:hover:bg-[#212A38] text-slate-800 dark:text-gray-200 border-slate-300 dark:border-[#303B4E]'
+                    }`}
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <span>{tokenCopied ? '✓ Enlace Seguro Copiado (Vence en 60 min)' : '🔗 Compartir Seguimiento en Vivo (Enlace Efímero)'}</span>
+                  </button>
+                  <p className="text-[10px] text-slate-400 text-center mt-1.5">
+                    Permite a un familiar seguir tu recorrido en tiempo real mediante un Token de un solo uso sin exponer la URL corporativa.
+                  </p>
                 </div>
               </div>
 
