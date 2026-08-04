@@ -74,7 +74,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
   // Sesión activa del cliente B2B — aislamiento estricto de datos
-  const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>(null);
+  const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>('cl-b2b-04');
 
   // Cola de Avisos Operativos (Comunicación en vivo)
   const [avisosOperativos, setAvisosOperativos] = useState<AvisoOperativo[]>([

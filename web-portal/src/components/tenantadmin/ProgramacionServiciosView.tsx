@@ -22,8 +22,10 @@ const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
 ];
 
 export const ProgramacionServiciosView: React.FC = () => {
-  const { clientes, crearViaje, importarViajesCSV, rutasRecurentes } = useTenant();
+  const { clientes, crearViaje, importarViajesCSV, rutasRecurentes, activeClienteB2BId } = useTenant();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const activeClientObj = clientes.find(c => c.id === activeClienteB2BId) || clientes[0];
+  const currentDateTime = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' hrs';
   const [subMode, setSubMode] = useState<'manual' | 'masiva' | 'recurrente' | 'turnos_b2b'>('manual');
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [showOrigenSuggestions, setShowOrigenSuggestions] = useState(false);
@@ -415,6 +417,21 @@ export const ProgramacionServiciosView: React.FC = () => {
               />
             </div>
 
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  importarViajesCSV(4);
+                  setSaveSuccess(`✓ ¡Simulación de Nómina Masiva exitosa! 12 funcionarios del contrato ${activeClientObj ? activeClientObj.nombreCorporativo : 'B2B'} han sido programados en 4 vanes exclusivas.`);
+                  setTimeout(() => setSaveSuccess(null), 7000);
+                }}
+                className="w-full sm:w-auto px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition-all shadow-sm inline-flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>⚡ Simular Carga Masiva en Vivo (Nómina {activeClientObj?.nombreCorporativo.split(' ')[0] || 'Corporativo'})</span>
+              </button>
+            </div>
+
             <div
               onClick={() => fileInputRef.current?.click()}
               className="border-2 border-dashed border-slate-300 dark:border-[#212A38] hover:border-emerald-500 rounded-xl p-6 transition-all bg-slate-50/50 dark:bg-[#0D1117] cursor-pointer mt-4"
@@ -476,13 +493,13 @@ export const ProgramacionServiciosView: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-[#212A38] pb-4">
             <div>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-sm bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 uppercase tracking-wide">
-                Espejo — Portal B2B Clientes
+                Espejo — Portal B2B Clientes • {activeClientObj?.nombreCorporativo || 'General'}
               </span>
               <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1.5">
-                Demanda de Horarios y Turnos — Solicitudes Corporativas Recibidas
+                Demanda de Horarios y Turnos — {activeClientObj?.nombreCorporativo || 'Solicitudes Corporativas'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Vista de la Central WFM con la demanda de transporte cruzada desde los portales B2B de sus clientes corporativos.
+                Vista de la Central WFM con la demanda de transporte cruzada desde los portales B2B del cliente seleccionado.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -559,7 +576,7 @@ export const ProgramacionServiciosView: React.FC = () => {
 
           <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3.5 rounded-lg text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between">
             <span>
-              Esta información es sincronizada automáticamente desde el <strong>Portal B2B de sus Clientes Corporativos</strong>. Actualizado al: <strong className="font-mono">02 Ago 2026, 22:00 hrs</strong>
+              Esta información es sincronizada automáticamente desde el <strong>Portal B2B de {activeClientObj?.nombreCorporativo || 'sus Clientes'}</strong>. Actualizado en tiempo real al: <strong className="font-mono">{currentDateTime}</strong>
             </span>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0 ml-3">✓ Datos en Vivo</span>
           </div>

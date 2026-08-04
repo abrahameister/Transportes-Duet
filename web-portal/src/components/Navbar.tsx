@@ -3,7 +3,7 @@ import { useTenant } from '../context/TenantContext';
 import { Shield, Building2, Briefcase, RefreshCw, Sun, Moon, Navigation, LogOut } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode, authUser, logoutAuth } = useTenant();
+  const { currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode, authUser, logoutAuth, clientes, activeClienteB2BId, setActiveClienteB2BId } = useTenant();
   const userRole = authUser?.user_metadata?.rol || 'tenant_admin';
 
   return (
@@ -118,15 +118,16 @@ export const Navbar: React.FC = () => {
             {/* Selector de Clientes Corporativos B2B sólo para Empresa Transportista (Tenant Admin) */}
             {userRole === 'tenant_admin' && (
               <select
-                defaultValue="sanatorio"
+                value={activeClienteB2BId || 'cl-b2b-04'}
+                onChange={(e) => setActiveClienteB2BId(e.target.value)}
                 title="Seleccionar Contrato y Nómina de Cliente B2B"
                 className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
               >
-                <option value="sanatorio" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 Clínica Sanatorio Alemán</option>
-                <option value="huachipato" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 Siderúrgica Huachipato</option>
-                <option value="arauco" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 Forestal ARAUCO Biobío</option>
-                <option value="udec" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 Universidad de Concepción</option>
-                <option value="enap" className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">🤝 ENAP Refinería Bío Bío</option>
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id} className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">
+                    🤝 {c.nombreCorporativo.split(' ')[0]} {c.nombreCorporativo.split(' ')[1] || ''}
+                  </option>
+                ))}
               </select>
             )}
             {/* Si es cliente_b2b o app_conductor, el selector no se muestra */}

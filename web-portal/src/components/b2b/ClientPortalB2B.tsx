@@ -107,6 +107,8 @@ export const ClientPortalB2B: React.FC = () => {
   const clientesTenant = clientes.filter(c => c.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001');
   const [selectedClientId, setSelectedClientId] = useState<string>(clientesTenant[0]?.id || 'client-gen');
   const activeClient = clientesTenant.find(c => c.id === selectedClientId) || clientesTenant[0];
+  const totalCostoB2B = viajesB2B.reduce((acc, v) => acc + (v.montoEstimado || 18500), 2840000);
+  const formattedCosto = totalCostoB2B.toLocaleString('es-CL');
 
   // Sincronizar sesión activa al montar o cambiar empresa seleccionada
   React.useEffect(() => {
@@ -502,7 +504,7 @@ export const ClientPortalB2B: React.FC = () => {
             <div className="enterprise-card p-5 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] flex flex-col justify-between">
               <div>
                 <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Costo Estimado Acumulado</div>
-                <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-1.5">$ 2.840.000</div>
+                <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-1.5">$ {formattedCosto}</div>
               </div>
               <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
                 <span>● Pesos Chilenos ($ CLP)</span>
@@ -557,7 +559,7 @@ export const ClientPortalB2B: React.FC = () => {
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400">RUT Contratante:</span>
-                  <span className="font-mono font-bold text-slate-800 dark:text-gray-200">96.536.000-5</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-gray-200">{activeClient?.rutIdentificador || '96.536.000-5'}</span>
                 </div>
                 <div className="flex justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400">Ejecutivo Asignado:</span>

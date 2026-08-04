@@ -300,6 +300,24 @@ export const initialClientes: ClienteCorporativo[] = [
         { id: 'rf-04', nombre: 'Aeropuerto Carriel Sur ➔ Campus UdeC Concepción', origen: 'Aeropuerto Carriel Sur, Talcahuano', destino: 'Arco UdeC, Concepción', precioClp: 16000 }
       ]
     }
+  },
+  {
+    id: 'cl-b2b-04',
+    empresaId: '10000000-0000-0000-0000-000000000001',
+    nombreCorporativo: 'Clínica Sanatorio Alemán / Urgencias',
+    rutIdentificador: '70.211.900-3',
+    direccionFiscal: 'Pedro de Valdivia 801, Concepción',
+    contactoNombre: 'Dra. María Paz Solar (Jefe de Turnos Urgencia)',
+    contactoEmail: 'msolar@sanatorio.cl',
+    contactoTelefono: '+56 41 279 6000',
+    tarifario: {
+      tarifaPorKm: 1900,
+      tarifaMinima: 14000,
+      tiempoEsperaPorHora: 16000,
+      rutasFijas: [
+        { id: 'rf-05', nombre: 'Chacabuco 1400 ➔ Clínica Sanatorio Alemán', origen: 'Chacabuco 1400, Concepción', destino: 'Pedro de Valdivia 801, Concepción', precioClp: 18500 }
+      ]
+    }
   }
 ];
 
