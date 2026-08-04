@@ -254,4 +254,11 @@ CREATE POLICY "Acceso total a rutas recurrentes" ON rutas_recurrentes_b2b FOR AL
 CREATE POLICY "Acceso total a avisos" ON avisos_operativos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total a manifiestos" ON manifiestos_abordaje_check FOR ALL USING (true) WITH CHECK (true);
 
+-- ==============================================================================
+-- PRIVILEGIOS Y CONCESIÓN DE PERMISOS (POSTGREST EXCH / SUPABASE ROLES)
+-- ==============================================================================
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role, postgres;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role, postgres, anon, authenticated;
+
 -- FIN DEL SCRIPT DE ESTRUCTURA DDL (01_schema_wfm_pro.sql)
