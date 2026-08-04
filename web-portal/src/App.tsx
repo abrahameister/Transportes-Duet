@@ -8,7 +8,7 @@ import { ConductorApp } from './components/conductor/ConductorApp';
 import { LoginView } from './components/auth/LoginView';
 
 const MainRouter: React.FC = () => {
-  const { currentRoleView, authUser, authLoading } = useTenant();
+  const { currentRoleView, userRole, authUser, authLoading } = useTenant();
 
   // Pantalla de carga al verificar sesión activa
   if (authLoading) {
@@ -24,8 +24,6 @@ const MainRouter: React.FC = () => {
   if (!authUser) {
     return <LoginView />;
   }
-
-  const userRole = authUser.user_metadata?.rol || 'tenant_admin';
 
   let renderedView = null;
   if (currentRoleView === 'superadmin' && userRole === 'superadmin') {

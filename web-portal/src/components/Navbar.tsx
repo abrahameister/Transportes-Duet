@@ -3,8 +3,7 @@ import { useTenant } from '../context/TenantContext';
 import { Shield, Building2, Briefcase, RefreshCw, Sun, Moon, Navigation, LogOut } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode, authUser, logoutAuth, clientes, activeClienteB2BId, setActiveClienteB2BId } = useTenant();
-  const userRole = authUser?.user_metadata?.rol || 'tenant_admin';
+  const { userRole, currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode, authUser, logoutAuth, clientes, activeClienteB2BId, setActiveClienteB2BId } = useTenant();
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-[#0D1117]/95 backdrop-blur-sm border-b border-slate-200 dark:border-[#212A38]">

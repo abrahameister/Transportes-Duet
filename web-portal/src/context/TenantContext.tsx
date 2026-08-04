@@ -50,6 +50,7 @@ interface TenantContextType {
   actualizarCliente: (id: string, updates: Partial<ClienteCorporativo>) => void;
 
   // Sesión y Autenticación WFM (Supabase Auth & Demo Fallback)
+  userRole: string;
   authUser: any | null;
   authLoading: boolean;
   logoutAuth: () => Promise<void>;
@@ -72,6 +73,8 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Estado de Autenticación Supabase Auth
   const [authUser, setAuthUser] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
+
+  const userRole = useMemo(() => authUser?.user_metadata?.rol || 'tenant_admin', [authUser]);
 
   // Sesión activa del cliente B2B — aislamiento estricto de datos
   const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>('cl-b2b-04');
@@ -325,40 +328,54 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     let mounted = true;
 
-    const resolveRoleAndTenant = (user: any) => {
-      if (!user) return;
-      const email = user.email ? user.email.toLowerCase() : '';
-      console.log('🔍 [WFM Auth Security] Resolviendo autoridad por sesión verídica de correo:', email);
+    const enrichAndResolveUser = (rawUser: any) => {
+      if (!rawUser) {
+        setAuthUser(null);
+        return;
+      }
+      const email = (rawUser.email || '').toLowerCase();
+      let authoritativeRole = rawUser.user_metadata?.rol;
 
-      // Regla SOBERANA: Cuentas @duetsolutions.cl adquieren nivel Superadmin (Creador y Gestor del Ecosistema)
+      // Regla SOBERANA INEXPUGNABLE: Cuentas @duetsolutions.cl adquieren nivel Superadmin (Master Control)
       if (email.endsWith('@duetsolutions.cl') || email.includes('duetsolutions')) {
-        console.log('👑 [WFM Master Control] Administrador de Duet Solutions verificado -> Vista Superadmin');
+        authoritativeRole = 'superadmin';
         setCurrentRoleViewInternal('superadmin');
-      } else if (user.user_metadata?.rol === 'cliente_b2b' || email.includes('@sanatorioaleman.cl') || email.includes('@arauco.cl') || email.includes('@cap.cl')) {
-        console.log('🏢 [WFM Portal B2B] Cuenta de Cliente Contratante verificada -> Vista Cliente B2B');
+        console.log('👑 [WFM Master Control] Administrador de Duet Solutions verificado -> Asignando rol superadmin y vista Master.');
+      } else if (rawUser.user_metadata?.rol === 'cliente_b2b' || email.includes('@sanatorioaleman.cl') || email.includes('@arauco.cl') || email.includes('@cap.cl')) {
+        authoritativeRole = 'cliente_b2b';
         setCurrentRoleViewInternal('cliente_b2b');
-      } else if (user.user_metadata?.rol === 'pwa_pasajero' || user.user_metadata?.rol === 'app_conductor') {
-        setCurrentRoleViewInternal(user.user_metadata.rol);
+      } else if (rawUser.user_metadata?.rol === 'pwa_pasajero' || rawUser.user_metadata?.rol === 'app_conductor') {
+        authoritativeRole = rawUser.user_metadata.rol;
+        setCurrentRoleViewInternal(rawUser.user_metadata.rol);
       } else {
-        console.log('🚛 [WFM Portal Transportista] Cuenta de Empresa de Transporte verificada -> Vista Tenant Admin');
+        authoritativeRole = 'tenant_admin';
         setCurrentRoleViewInternal('tenant_admin');
-        // Si el correo coincide con una empresa transportadora, vincular su marca blanca y tenantId
-        if (user.user_metadata?.tenantId) {
-          setCurrentTenantId(user.user_metadata.tenantId);
+        if (rawUser.user_metadata?.tenantId) {
+          setCurrentTenantId(rawUser.user_metadata.tenantId);
         } else if (email.includes('andina')) {
           setCurrentTenantId('t_andina');
         } else if (email.includes('nexo')) {
           setCurrentTenantId('t_nexo');
         }
       }
+
+      const enrichedUser = {
+        ...rawUser,
+        user_metadata: {
+          ...(rawUser.user_metadata || {}),
+          rol: authoritativeRole
+        }
+      };
+      setAuthUser(enrichedUser);
     };
 
     // Obtener sesión actual de Supabase al cargar la aplicación
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted) {
-        setAuthUser(session?.user || null);
         if (session?.user) {
-          resolveRoleAndTenant(session.user);
+          enrichAndResolveUser(session.user);
+        } else {
+          setAuthUser(null);
         }
         setAuthLoading(false);
       }
@@ -367,9 +384,10 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Suscribir a cambios de autenticación en tiempo real
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
-        setAuthUser(session?.user || null);
         if (session?.user) {
-          resolveRoleAndTenant(session.user);
+          enrichAndResolveUser(session.user);
+        } else {
+          setAuthUser(null);
         }
         setAuthLoading(false);
       }
@@ -563,6 +581,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   return (
     <TenantContext.Provider
       value={{
+        userRole,
         tenants,
         currentTenant,
         conductores,
