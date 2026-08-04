@@ -597,8 +597,8 @@ export const SuperAdminPortal: React.FC = () => {
                   <Building2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg sm:text-xl font-bold tracking-tight">Crear Nueva Empresa Transportista (White-Label)</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Asistente de configuración de tenant White-Label (Nexo Mobility Platform)</p>
+                  <h3 className="text-lg sm:text-xl font-bold tracking-tight">Agregar un nuevo socio transportista</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Te ayudamos a configurar el entorno de tu nuevo cliente paso a paso.</p>
                 </div>
               </div>
               <button
@@ -706,7 +706,7 @@ export const SuperAdminPortal: React.FC = () => {
                         onChange={(e) => setNewPais(e.target.value)}
                         className="enterprise-input w-full text-xs py-2.5 bg-white dark:bg-[#0D1117] font-semibold"
                       >
-                        <option value="Chile">Chile (Mercado Exclusivo MVP)</option>
+                        <option value="Chile">Chile</option>
                       </select>
                     </div>
                   </div>
@@ -873,7 +873,7 @@ export const SuperAdminPortal: React.FC = () => {
                 </div>
 
                 <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 text-slate-700 dark:text-slate-300 text-xs flex items-center justify-between">
-                  <span>ℹ️ La empresa se aprovisionará con el esquema visual corporativo estándar de Nexo Mobility, editable en cualquier momento.</span>
+                  <span>ℹ️ La empresa se aprovisionará con el esquema visual corporativo estándar de la plataforma, editable en cualquier momento.</span>
                 </div>
 
                 {/* Footer Paso 2 */}
@@ -893,7 +893,7 @@ export const SuperAdminPortal: React.FC = () => {
                     className="px-7 py-3 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-lg inline-flex items-center space-x-2 cursor-pointer"
                   >
                     <Check className="w-4 h-4 mr-1" />
-                    <span>Confirmar y Crear Empresa Tenant ✓</span>
+                    <span>¡Listo! Crear empresa</span>
                   </button>
                 </div>
               </div>
