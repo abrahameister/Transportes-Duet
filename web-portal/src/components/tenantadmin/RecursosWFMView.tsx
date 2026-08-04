@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useTenant } from '../../context/TenantContext';
 import type { VehiculoFlota, ConductorWFM } from '../../types';
 import { Car, User, Plus, Edit3, Trash2, ShieldCheck, Wrench, X, Search, Image as ImageIcon } from 'lucide-react';
+import { ConfirmModal } from '../common/ConfirmModal';
 
 interface RecursosWFMViewProps {
   initialTab?: 'conductores' | 'flota';
 }
 
 export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) => {
-  const { vehiculos, conductores, currentTenant, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor } = useTenant();
+  const { vehiculos, conductores, currentTenant, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor } = useTenant();
   const [subTab, setSubTab] = useState<'conductores' | 'flota'>(initialTab || 'conductores');
   const [searchQuery, setSearchQuery] = useState('');
+  const [vehiculoToDelete, setVehiculoToDelete] = useState<VehiculoFlota | null>(null);
+  const [conductorToDelete, setConductorToDelete] = useState<ConductorWFM | null>(null);
 
   useEffect(() => {
     if (initialTab) {
@@ -340,6 +343,14 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                           >
                             Control Turno
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => setConductorToDelete(c)}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
+                            title="Eliminar conductor de la nómina"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -414,9 +425,9 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                             </button>
                             <button
                               type="button"
-                              onClick={() => { if (confirm(`¿Eliminar la unidad ${vh.placa}?`)) eliminarVehiculo(vh.id); }}
+                              onClick={() => setVehiculoToDelete(vh)}
                               className="p-1.5 rounded-md text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-800"
-                              title="Eliminar unidad"
+                              title="Eliminar unidad de la flota"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -590,6 +601,47 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
           </div>
         </div>
       )}
+
+      {/* MODALES CORPORATIVOS DE CONFIRMACIÓN DE BAJA WFM */}
+      <ConfirmModal
+        isOpen={!!vehiculoToDelete}
+        title={`¿Dar de baja la unidad de flota ${vehiculoToDelete?.placa}?`}
+        message={
+          <span>
+            Estás a punto de eliminar de la central operativa el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>). Esta acción removerá el móvil de las asignaciones de turno vigentes en {currentTenant.nombre}.
+          </span>
+        }
+        confirmText="Confirmar Baja de Unidad"
+        cancelText="Conservar en Flota"
+        variant="danger"
+        onConfirm={() => {
+          if (vehiculoToDelete) {
+            eliminarVehiculo(vehiculoToDelete.id);
+            setVehiculoToDelete(null);
+          }
+        }}
+        onCancel={() => setVehiculoToDelete(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!conductorToDelete}
+        title={`¿Desvincular a ${conductorToDelete?.nombreCompleto} de la Nómina?`}
+        message={
+          <span>
+            Estás a punto de dar de baja al conductor con RUT <strong>{conductorToDelete?.rut}</strong> y licencia clase <strong>{conductorToDelete?.tipoLicencia || 'A3'}</strong>. Quedará inhabilitado para recibir despachos o iniciar sesión en el Terminal Móvil de Conductor.
+          </span>
+        }
+        confirmText="Desvincular de Nómina"
+        cancelText="Mantener en Nómina"
+        variant="danger"
+        onConfirm={() => {
+          if (conductorToDelete) {
+            eliminarConductor(conductorToDelete.id);
+            setConductorToDelete(null);
+          }
+        }}
+        onCancel={() => setConductorToDelete(null)}
+      />
     </div>
   );
 };
