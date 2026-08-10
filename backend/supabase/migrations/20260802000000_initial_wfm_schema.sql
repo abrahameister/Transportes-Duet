@@ -12,8 +12,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ============================================================================
 
 CREATE TYPE rol_usuario AS ENUM (
-    'superadmin',         -- Equipo SaaS Master
-    'tenant_admin',       -- Administrador de la Empresa de Transporte (WFM Controller)
+    'admin',              -- Administrador del Sistema
     'cliente_corporativo',-- Administrador de Cuenta B2B Contratante
     'conductor'           -- Chofer con acceso a App Universal Expo
 );
@@ -34,37 +33,17 @@ CREATE TYPE estado_viaje AS ENUM (
     'cancelado'           -- Servicio cancelado
 );
 
-CREATE TYPE estado_pago_tenant AS ENUM (
-    'al_dia',
-    'periodo_gracia',
-    'suspendido'
-);
+-- (removed estado_pago_tenant)
 
 -- ============================================================================
 -- 2. TABLAS MAESTRAS: TENANTS (EMPRESAS) & PERFILES DE USUARIO
 -- ============================================================================
 
--- Tabla Módulo 1 & 2: Tenants del SaaS (Empresas de Transporte) + Marca Blanca
-CREATE TABLE public.empresas (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nombre VARCHAR(255) NOT NULL,
-    slug VARCHAR(100) UNIQUE NOT NULL,
-    -- Variables para Motor de Marca Blanca (White Labeling)
-    logo_url TEXT,
-    primary_color VARCHAR(20) DEFAULT '#1E3A8A' NOT NULL,   -- Azul Corporativo
-    secondary_color VARCHAR(20) DEFAULT '#3B82F6' NOT NULL, -- Azul Claro
-    accent_color VARCHAR(20) DEFAULT '#E8832A' NOT NULL,    -- Naranja Vibrante (Fijo para botones de acción)
-    -- Control Administrativo SaaS
-    estado_pago estado_pago_tenant DEFAULT 'al_dia' NOT NULL,
-    plan_suscripto VARCHAR(50) DEFAULT 'Plan Pro Exclusivo' NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-);
+-- (removed empresas table)
 
 -- Perfiles de usuario vinculados a Supabase Auth
 CREATE TABLE public.perfiles (
     id UUID PRIMARY KEY, -- Referenciará a auth.users(id) en producción
-    empresa_id UUID REFERENCES public.empresas(id) ON DELETE CASCADE, -- NULL para Superadmins globable
     rol rol_usuario NOT NULL,
     nombre_completo VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -79,10 +58,9 @@ CREATE TABLE public.perfiles (
 -- 3. TABLAS OPERACIONALES WFM & FLOTA
 -- ============================================================================
 
--- Flota de Vehículos por Empresa
+-- Flota de Vehículos
 CREATE TABLE public.vehiculos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    empresa_id UUID REFERENCES public.empresas(id) ON DELETE CASCADE NOT NULL,
     marca VARCHAR(100) NOT NULL,
     modelo VARCHAR(100) NOT NULL,
     anio INTEGER NOT NULL,
@@ -96,7 +74,6 @@ CREATE TABLE public.vehiculos (
 -- Conductores y Control de Fuerza Laboral (Workforce Management - WFM)
 CREATE TABLE public.conductores_wfm (
     id UUID PRIMARY KEY REFERENCES public.perfiles(id) ON DELETE CASCADE,
-    empresa_id UUID REFERENCES public.empresas(id) ON DELETE CASCADE NOT NULL,
     vehiculo_asignado_id UUID REFERENCES public.vehiculos(id) ON DELETE SET NULL,
     -- Estados Operativos WFM en Tiempo Real
     estado_wfm estado_wfm_conductor DEFAULT 'offline' NOT NULL,
@@ -113,7 +90,6 @@ CREATE TABLE public.conductores_wfm (
 -- Registro de Auditoría WFM (Trazabilidad de Turnos y Estados)
 CREATE TABLE public.auditoria_wfm_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    empresa_id UUID REFERENCES public.empresas(id) ON DELETE CASCADE NOT NULL,
     conductor_id UUID REFERENCES public.conductores_wfm(id) ON DELETE CASCADE NOT NULL,
     evento VARCHAR(100) NOT NULL,
     estado_anterior estado_wfm_conductor,
@@ -126,10 +102,9 @@ CREATE TABLE public.auditoria_wfm_logs (
 -- 4. CLIENTES CORPORATIVOS & VIAJES (TRANSACCIONAL)
 -- ============================================================================
 
--- Clientes B2B Contratantes por Tenant
+-- Clientes B2B Contratantes
 CREATE TABLE public.clientes_corporativos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    empresa_id UUID REFERENCES public.empresas(id) ON DELETE CASCADE NOT NULL,
     nombre_corporativo VARCHAR(255) NOT NULL,
     rut_identificador VARCHAR(100) NOT NULL,
     direccion_fiscal TEXT,
@@ -137,13 +112,12 @@ CREATE TABLE public.clientes_corporativos (
     contacto_email VARCHAR(255),
     contacto_telefono VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    UNIQUE(empresa_id, rut_identificador)
+    UNIQUE(rut_identificador)
 );
 
 -- Tabla Maestro transaccional de Viajes
 CREATE TABLE public.viajes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    empresa_id UUID REFERENCES public.empresas(id) ON DELETE CASCADE NOT NULL,
     cliente_corporativo_id UUID REFERENCES public.clientes_corporativos(id) ON DELETE RESTRICT NOT NULL,
     conductor_id UUID REFERENCES public.conductores_wfm(id) ON DELETE SET NULL,
     vehiculo_id UUID REFERENCES public.vehiculos(id) ON DELETE SET NULL,
@@ -181,16 +155,15 @@ CREATE TABLE public.viajes (
 -- 5. ÍNDICES DE ALTO RENDIMIENTO PARA DESPACHO Y REALTIME
 -- ============================================================================
 
-CREATE INDEX idx_viajes_empresa_estado ON public.viajes(empresa_id, estado);
+CREATE INDEX idx_viajes_estado ON public.viajes(estado);
 CREATE INDEX idx_viajes_token_pwa ON public.viajes(secure_tracking_token);
-CREATE INDEX idx_conductores_wfm_disponibles ON public.conductores_wfm(empresa_id, estado_wfm) WHERE estado_wfm = 'disponible';
-CREATE INDEX idx_perfiles_empresa ON public.perfiles(empresa_id, rol);
+CREATE INDEX idx_conductores_wfm_disponibles ON public.conductores_wfm(estado_wfm) WHERE estado_wfm = 'disponible';
+CREATE INDEX idx_perfiles_rol ON public.perfiles(rol);
 
 -- ============================================================================
 -- 6. POLÍTICAS ROW LEVEL SECURITY (RLS) - AISLAMIENTO MULTI-TENANT
 -- ============================================================================
 
-ALTER TABLE public.empresas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.perfiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vehiculos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.conductores_wfm ENABLE ROW LEVEL SECURITY;
@@ -199,64 +172,51 @@ ALTER TABLE public.clientes_corporativos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.viajes ENABLE ROW LEVEL SECURITY;
 
 -- Funciones Auxiliares para Políticas RLS
-CREATE OR REPLACE FUNCTION public.current_user_tenant_id()
-RETURNS UUID AS $$
-    SELECT empresa_id FROM public.perfiles WHERE id = auth.uid() LIMIT 1;
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
-
 CREATE OR REPLACE FUNCTION public.current_user_role()
 RETURNS rol_usuario AS $$
     SELECT rol FROM public.perfiles WHERE id = auth.uid() LIMIT 1;
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
--- --- Políticas para Tabla: EMPRESAS ---
--- Superadmin puede ver y crear todos los tenants
-CREATE POLICY "Superadmin Todo Empresas" ON public.empresas
-    FOR ALL USING (public.current_user_role() = 'superadmin');
-
--- Tenant Admin, Conductor y Clientes ven solo la empresa a la que pertenecen (Para Marca Blanca)
-CREATE POLICY "Tenants ver propia Empresa" ON public.empresas
-    FOR SELECT USING (id = public.current_user_tenant_id());
 
 -- --- Políticas para Tabla: PERFILES ---
-CREATE POLICY "Superadmin Todo Perfiles" ON public.perfiles
-    FOR ALL USING (public.current_user_role() = 'superadmin');
+CREATE POLICY "Admin Todo Perfiles" ON public.perfiles
+    FOR ALL USING (public.current_user_role() = 'admin');
 
-CREATE POLICY "Usuarios ven perfiles del mismo tenant" ON public.perfiles
-    FOR SELECT USING (empresa_id = public.current_user_tenant_id());
+CREATE POLICY "Usuarios ven su propio perfil" ON public.perfiles
+    FOR SELECT USING (id = auth.uid());
 
 CREATE POLICY "Usuario modifica su propio perfil" ON public.perfiles
     FOR UPDATE USING (id = auth.uid());
 
 -- --- Políticas para Tablas de WFM & Operaciones (Vehiculos, Conductores, Clientes, Viajes) ---
--- Patrón Global para Admins del Tenant
-CREATE POLICY "Admin Tenant Gestiona Vehiculos" ON public.vehiculos
-    FOR ALL USING (empresa_id = public.current_user_tenant_id() AND public.current_user_role() IN ('superadmin', 'tenant_admin'));
+-- Patrón Global para Admins
+CREATE POLICY "Admin Gestiona Vehiculos" ON public.vehiculos
+    FOR ALL USING (public.current_user_role() = 'admin');
 
-CREATE POLICY "Admin Tenant Gestiona Conductores WFM" ON public.conductores_wfm
-    FOR ALL USING (empresa_id = public.current_user_tenant_id() AND public.current_user_role() IN ('superadmin', 'tenant_admin'));
+CREATE POLICY "Admin Gestiona Conductores WFM" ON public.conductores_wfm
+    FOR ALL USING (public.current_user_role() = 'admin');
 
 CREATE POLICY "Conductor actualiza su propio estado WFM y GPS" ON public.conductores_wfm
     FOR UPDATE USING (id = auth.uid() AND public.current_user_role() = 'conductor');
 
 CREATE POLICY "Conductor ve su propio registro WFM" ON public.conductores_wfm
-    FOR SELECT USING (empresa_id = public.current_user_tenant_id());
+    FOR SELECT USING (id = auth.uid());
 
-CREATE POLICY "Admin Tenant Gestiona Clientes Corporativos" ON public.clientes_corporativos
-    FOR ALL USING (empresa_id = public.current_user_tenant_id() AND public.current_user_role() IN ('superadmin', 'tenant_admin', 'cliente_corporativo'));
+CREATE POLICY "Admin y Cliente Corporativo Gestiona Clientes Corporativos" ON public.clientes_corporativos
+    FOR ALL USING (public.current_user_role() IN ('admin', 'cliente_corporativo'));
 
 -- --- Políticas para VIAJES ---
-CREATE POLICY "Admin Tenant Todo Viajes" ON public.viajes
-    FOR ALL USING (empresa_id = public.current_user_tenant_id() AND public.current_user_role() IN ('superadmin', 'tenant_admin'));
+CREATE POLICY "Admin Todo Viajes" ON public.viajes
+    FOR ALL USING (public.current_user_role() = 'admin');
 
 CREATE POLICY "Conductor ve viajes asignados a él" ON public.viajes
-    FOR SELECT USING (empresa_id = public.current_user_tenant_id() AND (conductor_id = auth.uid() OR estado = 'pendiente'));
+    FOR SELECT USING (conductor_id = auth.uid() OR estado = 'pendiente');
 
 CREATE POLICY "Conductor actualiza estado de su viaje asignado" ON public.viajes
     FOR UPDATE USING (conductor_id = auth.uid() AND public.current_user_role() = 'conductor');
 
 CREATE POLICY "Cliente Corporativo crea y ve sus viajes" ON public.viajes
-    FOR ALL USING (empresa_id = public.current_user_tenant_id() AND public.current_user_role() = 'cliente_corporativo');
+    FOR ALL USING (public.current_user_role() = 'cliente_corporativo');
 
 -- ============================================================================
 -- 7. FUNCIÓN RPC SEGURA PARA PWA DEL PASAJERO (SIN DESCARGAS)
@@ -302,12 +262,11 @@ BEGIN
         veh.modelo as vehiculo_modelo,
         veh.placa as vehiculo_placa,
         veh.color as vehiculo_color,
-        emp.nombre as empresa_nombre,
-        emp.logo_url as empresa_logo,
-        emp.primary_color as empresa_color_primary,
-        emp.secondary_color as empresa_color_secondary
+        'Transportes Biobío'::VARCHAR as empresa_nombre,
+        'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=150&q=80'::TEXT as empresa_logo,
+        '#1E293B'::VARCHAR as empresa_color_primary,
+        '#0F172A'::VARCHAR as empresa_color_secondary
     FROM public.viajes v
-    JOIN public.empresas emp ON v.empresa_id = emp.id
     LEFT JOIN public.conductores_wfm c_wfm ON v.conductor_id = c_wfm.id
     LEFT JOIN public.perfiles p_cond ON c_wfm.id = p_cond.id
     LEFT JOIN public.vehiculos veh ON v.vehiculo_id = veh.id

@@ -10,36 +10,10 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ==============================================================================
--- 1. TABLA RAÍZ: EMPRESAS TRANSPORTISTAS (TENANTS / WHITE-LABEL)
--- ==============================================================================
-CREATE TABLE IF NOT EXISTS empresas_tenants (
-    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    nombre TEXT NOT NULL,
-    slug TEXT UNIQUE NOT NULL,
-    logo_url TEXT NOT NULL DEFAULT '',
-    primary_color TEXT NOT NULL DEFAULT '#1E293B',
-    secondary_color TEXT NOT NULL DEFAULT '#0F172A',
-    accent_color TEXT NOT NULL DEFAULT '#E8832A', -- Color obligatorio en UI/Mobile
-    estado_pago TEXT NOT NULL DEFAULT 'al_dia' CHECK (estado_pago IN ('al_dia', 'pendiente', 'suspendido')),
-    plan_suscripto TEXT NOT NULL DEFAULT 'Pro Tier-1',
-    razon_social TEXT,
-    rut TEXT,
-    pais_operacion TEXT DEFAULT 'Chile',
-    zona_horaria TEXT DEFAULT 'America/Santiago',
-    moneda TEXT DEFAULT 'CLP$',
-    contacto_principal TEXT,
-    contacto_email TEXT,
-    contacto_telefono TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- ==============================================================================
 -- 2. TABLA: FLOTA DE VEHÍCULOS (VANS, BUSES, FURGONES)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS vehiculos_flota (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    empresa_id TEXT NOT NULL REFERENCES empresas_tenants(id) ON DELETE CASCADE,
     marca TEXT NOT NULL,
     modelo TEXT NOT NULL,
     anio INTEGER NOT NULL,
@@ -51,14 +25,13 @@ CREATE TABLE IF NOT EXISTS vehiculos_flota (
     activo BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_vehiculos_empresa ON vehiculos_flota(empresa_id);
+-- (removed index on empresa_id)
 
 -- ==============================================================================
 -- 3. TABLA: CONDUCTORES PROFESIONALES WFM (TELEMETRÍA Y TURNOS)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS conductores_wfm (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    empresa_id TEXT NOT NULL REFERENCES empresas_tenants(id) ON DELETE CASCADE,
     nombre_completo TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     telefono TEXT NOT NULL,
@@ -79,14 +52,13 @@ CREATE TABLE IF NOT EXISTS conductores_wfm (
     motivo_bloqueo TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_conductores_empresa_estado ON conductores_wfm(empresa_id, estado_wfm);
+CREATE INDEX IF NOT EXISTS idx_conductores_estado ON conductores_wfm(estado_wfm);
 
 -- ==============================================================================
 -- 4. TABLA: CLIENTES CORPORATIVOS B2B (CONTRATANTES / CLÍNICAS / PLANTAS)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS clientes_corporativos_b2b (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    empresa_id TEXT NOT NULL REFERENCES empresas_tenants(id) ON DELETE CASCADE,
     nombre_corporativo TEXT NOT NULL,
     rut_identificador TEXT UNIQUE NOT NULL,
     direccion_fiscal TEXT NOT NULL,
@@ -98,7 +70,7 @@ CREATE TABLE IF NOT EXISTS clientes_corporativos_b2b (
     tiempo_espera_por_hora NUMERIC(10,2) NOT NULL DEFAULT 8000.00,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_clientes_b2b_empresa ON clientes_corporativos_b2b(empresa_id);
+-- (removed index on empresa_id)
 
 -- ==============================================================================
 -- 5. TABLA: RUTAS FIJAS DE TARIFARIO B2B
@@ -139,7 +111,6 @@ CREATE INDEX IF NOT EXISTS idx_funcionarios_cliente ON funcionarios_b2b(cliente_
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS viajes_operativa (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    empresa_id TEXT NOT NULL REFERENCES empresas_tenants(id) ON DELETE CASCADE,
     cliente_corporativo_id TEXT NOT NULL REFERENCES clientes_corporativos_b2b(id) ON DELETE CASCADE,
     conductor_id TEXT REFERENCES conductores_wfm(id) ON DELETE SET NULL,
     vehiculo_id TEXT REFERENCES vehiculos_flota(id) ON DELETE SET NULL,
@@ -158,7 +129,7 @@ CREATE TABLE IF NOT EXISTS viajes_operativa (
     timestamp_despacho TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_viajes_empresa_estado ON viajes_operativa(empresa_id, estado);
+CREATE INDEX IF NOT EXISTS idx_viajes_estado ON viajes_operativa(estado);
 CREATE INDEX IF NOT EXISTS idx_viajes_conductor ON viajes_operativa(conductor_id);
 CREATE INDEX IF NOT EXISTS idx_viajes_token ON viajes_operativa(secure_tracking_token);
 
@@ -180,7 +151,6 @@ CREATE TABLE IF NOT EXISTS incidencias_operativas (
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS rutas_recurrentes_b2b (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    empresa_id TEXT NOT NULL REFERENCES empresas_tenants(id) ON DELETE CASCADE,
     cliente_corporativo_id TEXT NOT NULL REFERENCES clientes_corporativos_b2b(id) ON DELETE CASCADE,
     nombre_ruta TEXT NOT NULL,
     dias_semana TEXT NOT NULL DEFAULT 'Lunes a Viernes',
@@ -226,7 +196,7 @@ CREATE INDEX IF NOT EXISTS idx_manifiesto_viaje_estado ON manifiestos_abordaje_c
 -- CONFIGURACIÓN DE POLÍTICAS DE SEGURIDAD POR FILA (ROW LEVEL SECURITY - RLS)
 -- ==============================================================================
 
-ALTER TABLE empresas_tenants ENABLE ROW LEVEL SECURITY;
+-- (removed empresa RLS)
 ALTER TABLE vehiculos_flota ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conductores_wfm ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clientes_corporativos_b2b ENABLE ROW LEVEL SECURITY;
@@ -242,8 +212,7 @@ ALTER TABLE manifiestos_abordaje_check ENABLE ROW LEVEL SECURITY;
 -- Nota: En producción las políticas filtran por token de sesión auth.uid() u claims del Tenant.
 -- En este MVP habilitamos lectura y escritura autenticada y anónima para permitir las simulaciones y seeding.
 
-DROP POLICY IF EXISTS "Acceso total a tenants" ON empresas_tenants;
-CREATE POLICY "Acceso total a tenants" ON empresas_tenants FOR ALL USING (true) WITH CHECK (true);
+-- (removed tenant RLS)
 DROP POLICY IF EXISTS "Acceso total a flota" ON vehiculos_flota;
 CREATE POLICY "Acceso total a flota" ON vehiculos_flota FOR ALL USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS "Acceso total a conductores" ON conductores_wfm;

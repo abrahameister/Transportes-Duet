@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import type { ViajeOperativa } from '../../types';
 import { MapPin, Navigation, Clock, CheckCircle, AlertTriangle, ShieldAlert, X } from 'lucide-react';
 
 export const TorreControlView: React.FC = () => {
-  const { viajes, conductores, despacharViajeSimulado, currentTenant } = useTenant();
+  const { viajes, conductores, despacharViajeSimulado, } = useApp();
   const [activeSubView, setActiveSubView] = useState<'tablero' | 'radar'>('tablero');
   const [selectedViajeForDispatch, setSelectedViajeForDispatch] = useState<ViajeOperativa | null>(null);
   const [filterEstado, setFilterEstado] = useState<string>('todos');
 
-  const viajesTenant = viajes.filter(v => v.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001');
-  const conductoresTenant = conductores.filter(c => c.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001');
+  const viajesTenant = viajes;
+  const conductoresTenant = conductores;
 
   const filteredViajes = viajesTenant.filter(v => {
     if (filterEstado === 'todos') return true;

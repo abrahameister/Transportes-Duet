@@ -6,34 +6,30 @@
 -- ==============================================================================
 
 -- 1. INSERTAR EMPRESAS TRANSPORTISTAS (TENANTS)
-INSERT INTO empresas_tenants (id, nombre, slug, logo_url, primary_color, secondary_color, accent_color, estado_pago, plan_suscripto, razon_social, rut)
-VALUES 
-('t_andina', 'Transportes Andina', 'andina', 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=150&q=80', '#1E293B', '#0F172A', '#E8832A', 'al_dia', 'Pro Tier-1', 'Transportes Andina del Biobío SpA', '76.842.190-2'),
-('t_nexo', 'Nexo Mobility Platform', 'nexo', 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=150&q=80', '#064E3B', '#022C22', '#E8832A', 'al_dia', 'Enterprise Master', 'Nexo Chile Logística Corporativos S.A.', '96.540.210-9')
-ON CONFLICT (id) DO NOTHING;
+-- (removed)
 
 -- 2. INSERTAR FLOTA DE VEHÍCULOS
-INSERT INTO vehiculos_flota (id, empresa_id, marca, modelo, anio, placa, color, capacidad_pasajeros, kilometraje, estado_operativo)
+INSERT INTO vehiculos_flota (id, marca, modelo, anio, placa, color, capacidad_pasajeros, kilometraje, estado_operativo)
 VALUES 
-('v_1', 't_andina', 'Mercedes-Benz', 'Sprinter 516 CDI', 2024, 'VIP-100', 'Gris Plata', 19, 14200, 'operativo'),
-('v_2', 't_andina', 'Hyundai', 'Solati H350', 2023, 'ECO-200', 'Blanco', 17, 32150, 'operativo'),
-('v_3', 't_nexo', 'Mercedes-Benz', 'Sprinter Turismo Pro', 2025, 'EXE-300', 'Azul Noche', 22, 5400, 'operativo')
+('v_1', 'Mercedes-Benz', 'Sprinter 516 CDI', 2024, 'VIP-100', 'Gris Plata', 19, 14200, 'operativo'),
+('v_2', 'Hyundai', 'Solati H350', 2023, 'ECO-200', 'Blanco', 17, 32150, 'operativo'),
+('v_3', 'Mercedes-Benz', 'Sprinter Turismo Pro', 2025, 'EXE-300', 'Azul Noche', 22, 5400, 'operativo')
 ON CONFLICT (id) DO NOTHING;
 
 -- 3. INSERTAR CONDUCTORES PROFESIONALES WFM
-INSERT INTO conductores_wfm (id, empresa_id, nombre_completo, email, telefono, rut, tipo_licencia, puntualidad, servicios_mes, vehiculo_asignado_id, estado_wfm, ultima_latitud, ultima_longitud, horas_conducidas_hoy)
+INSERT INTO conductores_wfm (id, nombre_completo, email, telefono, rut, tipo_licencia, puntualidad, servicios_mes, vehiculo_asignado_id, estado_wfm, ultima_latitud, ultima_longitud, horas_conducidas_hoy)
 VALUES 
-('c_1', 't_andina', 'Carlos Muñoz Valenzuela', 'carlos.munoz@andina.cl', '+56 9 8234 5110', '12.489.102-K', 'A3', '4.9 / 5.0', 42, 'v_1', 'en_ruta', -36.8201, -73.0445, 3.50),
-('c_2', 't_andina', 'Roberto Gómez Alarcón', 'roberto.gomez@andina.cl', '+56 9 7543 2198', '14.201.883-4', 'A2', '4.8 / 5.0', 38, 'v_2', 'disponible', -36.8285, -73.0512, 1.20),
-('c_3', 't_nexo', 'Marcelo Peña Soto', 'marcelo.pena@nexomobility.cl', '+56 9 6112 3344', '10.984.321-7', 'A3', '5.0 / 5.0', 51, 'v_3', 'en_ruta', -36.8150, -73.0400, 4.00)
+('c_1', 'Carlos Muñoz Valenzuela', 'carlos.munoz@andina.cl', '+56 9 8234 5110', '12.489.102-K', 'A3', '4.9 / 5.0', 42, 'v_1', 'en_ruta', -36.8201, -73.0445, 3.50),
+('c_2', 'Roberto Gómez Alarcón', 'roberto.gomez@andina.cl', '+56 9 7543 2198', '14.201.883-4', 'A2', '4.8 / 5.0', 38, 'v_2', 'disponible', -36.8285, -73.0512, 1.20),
+('c_3', 'Marcelo Peña Soto', 'marcelo.pena@nexomobility.cl', '+56 9 6112 3344', '10.984.321-7', 'A3', '5.0 / 5.0', 51, 'v_3', 'en_ruta', -36.8150, -73.0400, 4.00)
 ON CONFLICT (id) DO NOTHING;
 
 -- 4. INSERTAR CLIENTES CORPORATIVOS B2B
-INSERT INTO clientes_corporativos_b2b (id, empresa_id, nombre_corporativo, rut_identificador, direccion_fiscal, contacto_nombre, contacto_email, contacto_telefono, tarifa_por_km, tarifa_minima, tiempo_espera_por_hora)
+INSERT INTO clientes_corporativos_b2b (id, nombre_corporativo, rut_identificador, direccion_fiscal, contacto_nombre, contacto_email, contacto_telefono, tarifa_por_km, tarifa_minima, tiempo_espera_por_hora)
 VALUES 
-('b2b_sanatorio', 't_andina', 'Clínica Sanatorio Alemán / Urgencias', '70.210.400-5', 'Av. Pedro de Valdivia 800, Concepción', 'Dr. Ignacio Barros', 'ibarros@sanatorioaleman.cl', '+56 41 270 0000', 1350.00, 7000.00, 8500.00),
-('b2b_arauco', 't_andina', 'Planta Industrial ARAUCO - Biobío', '90.100.200-1', 'Camino Forestal Km 18, Horcones / Arauco', 'Ing. Constanza Undurraga', 'c.undurraga@arauco.cl', '+56 41 280 5500', 1500.00, 12000.00, 9500.00),
-('b2b_huachipato', 't_nexo', 'Siderúrgica Huachipato - Planta CAP', '88.300.100-3', 'Av. Gran Bretaña 2910, Talcahuano', 'Esteban Paredes Rojas', 'eparedes@cap.cl', '+56 41 250 3000', 1400.00, 8500.00, 8000.00)
+('b2b_sanatorio', 'Clínica Sanatorio Alemán / Urgencias', '70.210.400-5', 'Av. Pedro de Valdivia 800, Concepción', 'Dr. Ignacio Barros', 'ibarros@sanatorioaleman.cl', '+56 41 270 0000', 1350.00, 7000.00, 8500.00),
+('b2b_arauco', 'Planta Industrial ARAUCO - Biobío', '90.100.200-1', 'Camino Forestal Km 18, Horcones / Arauco', 'Ing. Constanza Undurraga', 'c.undurraga@arauco.cl', '+56 41 280 5500', 1500.00, 12000.00, 9500.00),
+('b2b_huachipato', 'Siderúrgica Huachipato - Planta CAP', '88.300.100-3', 'Av. Gran Bretaña 2910, Talcahuano', 'Esteban Paredes Rojas', 'eparedes@cap.cl', '+56 41 250 3000', 1400.00, 8500.00, 8000.00)
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. INSERTAR RUTAS FIJAS TARIFARIAS
@@ -55,9 +51,9 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- 7. INSERTAR VIAJE OPERATIVO ACTIVO (DEMO EN CURSO)
-INSERT INTO viajes_operativa (id, empresa_id, cliente_corporativo_id, conductor_id, vehiculo_id, pasajero_nombre, pasajero_telefono, origen_direccion, origen_lat, origen_lng, destino_direccion, destino_lat, destino_lng, fecha_programada, estado, secure_tracking_token, monto_estimado, timestamp_despacho)
+INSERT INTO viajes_operativa (id, cliente_corporativo_id, conductor_id, vehiculo_id, pasajero_nombre, pasajero_telefono, origen_direccion, origen_lat, origen_lng, destino_direccion, destino_lat, destino_lng, fecha_programada, estado, secure_tracking_token, monto_estimado, timestamp_despacho)
 VALUES 
-('viaje_demo_1', 't_andina', 'b2b_sanatorio', 'c_1', 'v_1', 'Nómina Sanatorio (4 funcionarios)', '+56 9 9123 4567', 'Centro de Concepción / San Pedro', -36.8200, -73.0440, 'Clínica Sanatorio Alemán', -36.8290, -73.0480, timezone('utc'::text, now()), 'en_transito', 'token_seguro_andina_2026', 18500.00, timezone('utc'::text, now()))
+('viaje_demo_1', 'b2b_sanatorio', 'c_1', 'v_1', 'Nómina Sanatorio (4 funcionarios)', '+56 9 9123 4567', 'Centro de Concepción / San Pedro', -36.8200, -73.0440, 'Clínica Sanatorio Alemán', -36.8290, -73.0480, timezone('utc'::text, now()), 'en_transito', 'token_seguro_andina_2026', 18500.00, timezone('utc'::text, now()))
 ON CONFLICT (id) DO NOTHING;
 
 -- 8. INSERTAR CHECKLIST DE MANIFIESTO DE ABORDAJE (PARA APP CONDUCTOR)

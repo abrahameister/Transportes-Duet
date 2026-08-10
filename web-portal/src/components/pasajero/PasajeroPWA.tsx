@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import { 
   MapPin, Phone, MessageSquare, ShieldCheck, Clock, Calendar, 
   AlertTriangle, User, CheckCircle, Navigation, Car, Smartphone, 
@@ -17,7 +17,7 @@ const SUGERENCIAS_DIRECCIONES_CONCEPCION = [
 ];
 
 export const PasajeroPWA: React.FC = () => {
-  const { currentTenant, conductores, viajesB2B, enviarAvisoOperativo } = useTenant();
+  const {  conductores, viajesB2B, enviarAvisoOperativo } = useApp();
 
   // Estado de navegación PWA
   const [activeTab, setActiveTab] = useState<'viaje_actual' | 'programacion' | 'asistencia' | 'perfil'>('viaje_actual');
@@ -87,7 +87,7 @@ export const PasajeroPWA: React.FC = () => {
       tipo: 'sos_pasajero',
       viajeId: viajeActivo.id
     });
-    mostrarNotificacion(`🚨 ALERTA S.O.S ENVIADA: Coordenadas GPS y datos de móvil remitidos en tiempo real a la Central 24/7 de ${currentTenant.nombre}. Un operador de emergencias se contactará en breves segundos.`);
+    mostrarNotificacion(`🚨 ALERTA S.O.S ENVIADA: Coordenadas GPS y datos de móvil remitidos en tiempo real a la Central 24/7 de ${'Transportes Biobío'}. Un operador de emergencias se contactará en breves segundos.`);
   };
 
   return (
@@ -100,7 +100,7 @@ export const PasajeroPWA: React.FC = () => {
             Módulo 4 • Seguimiento Web para Pasajeros (Sin Descargas)
           </span>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mt-0.5">
-            <span>App de Traslado Profesional — {currentTenant.nombre}</span>
+            <span>App de Traslado Profesional — {'Transportes Biobío'}</span>
           </h1>
         </div>
 
@@ -140,9 +140,9 @@ export const PasajeroPWA: React.FC = () => {
         <div>
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#212A38] pb-3.5 mb-4">
             <div className="flex items-center space-x-3">
-              <img src={currentTenant.logoUrl} alt="Logo" className="w-9 h-9 rounded-lg object-cover border border-slate-200 dark:border-slate-700 bg-white" />
+              <img src={""} alt="Logo" className="w-9 h-9 rounded-lg object-cover border border-slate-200 dark:border-slate-700 bg-white" />
               <div>
-                <div className="text-sm font-extrabold text-slate-900 dark:text-white leading-tight">{currentTenant.nombre}</div>
+                <div className="text-sm font-extrabold text-slate-900 dark:text-white leading-tight">{'Transportes Biobío'}</div>
                 <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{colaboradorEmpresa}</div>
               </div>
             </div>
@@ -269,7 +269,7 @@ export const PasajeroPWA: React.FC = () => {
                   <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-slate-900 dark:text-white block">Acceso sin fricción pero 100% blindado:</strong>
-                    Tu sesión está autorizada por tu perfil corporativo en <strong>{currentTenant.nombre}</strong>. Para una subida rápida y segura, díctale el <strong>PIN {pinAbordaje}</strong> al conductor a tu llegada.
+                    Tu sesión está autorizada por tu perfil corporativo en <strong>{'Transportes Biobío'}</strong>. Para una subida rápida y segura, díctale el <strong>PIN {pinAbordaje}</strong> al conductor a tu llegada.
                   </div>
                 </div>
 
@@ -380,7 +380,7 @@ export const PasajeroPWA: React.FC = () => {
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm">Central de Asistencia & Emergencias en Ruta</h3>
                   <p className="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">
-                    Canal directo y confidencial con el área de operaciones de <strong>{currentTenant.nombre}</strong> ante cualquier contratiempo en la Región del Biobío.
+                    Canal directo y confidencial con el área de operaciones de <strong>{'Transportes Biobío'}</strong> ante cualquier contratiempo en la Región del Biobío.
                   </p>
                 </div>
 

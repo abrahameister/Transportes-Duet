@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import type { PasajeroRutaCheck } from '../../types';
 import { 
   Navigation, CheckCircle, XCircle, Clock, ShieldCheck, 
@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 export const ConductorApp: React.FC = () => {
-  const { currentTenant, conductores, avisosOperativos, marcarAvisoLeido, actualizarConductor, enviarAvisoOperativo } = useTenant();
+  const {  conductores, avisosOperativos, marcarAvisoLeido, actualizarConductor, enviarAvisoOperativo } = useApp();
 
   // Conductor activo para demostración (Carlos Muñoz o primero disponible)
   const conductor = conductores.find(c => c.id === 'C-BIO-001') || conductores[0] || {
@@ -47,7 +47,7 @@ export const ConductorApp: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `App_Conductor_${currentTenant.nombre.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`);
+    link.setAttribute("download", `App_Conductor_${'Transportes Biobío'.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -140,7 +140,7 @@ export const ConductorApp: React.FC = () => {
       mensaje: `🚨 ALERTA CONDUCTOR: ${tipo} en Gran Concepción. Solicito gestión o asistencia desde Central.`,
       tipo: 'alerta_central'
     });
-    mostrarNotificacion(`🚨 Reporte de "${tipo}" despachado en tiempo real a la Central de ${currentTenant.nombre}.`);
+    mostrarNotificacion(`🚨 Reporte de "${tipo}" despachado en tiempo real a la Central de ${'Transportes Biobío'}.`);
   };
 
   const totalAbordo = pasajerosRuta.filter(p => p.estado === 'abordo').length;
@@ -164,7 +164,7 @@ export const ConductorApp: React.FC = () => {
               Módulo 5 • Terminal Operativo de Abordo
             </span>
             <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              App Conductor — {currentTenant.nombre}
+              App Conductor — {'Transportes Biobío'}
             </h1>
           </div>
         </div>
@@ -339,7 +339,7 @@ export const ConductorApp: React.FC = () => {
                     Manifiesto Transmitido a la Central
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                    La bitácora de telemetría GPS y el reporte digital de asistencia de funcionarios fueron sincronizados exitosamente en el Centro Operativo de <strong className="text-slate-900 dark:text-gray-200">{currentTenant.nombre}</strong>.
+                    La bitácora de telemetría GPS y el reporte digital de asistencia de funcionarios fueron sincronizados exitosamente en el Centro Operativo de <strong className="text-slate-900 dark:text-gray-200">{'Transportes Biobío'}</strong>.
                   </p>
                 </div>
 
@@ -585,7 +585,7 @@ export const ConductorApp: React.FC = () => {
                       if (totalPendientes > 0) return;
                       setRutaCompletada(true);
                       actualizarConductor(conductor.id, { estadoWFM: 'disponible', serviciosMes: (conductor.serviciosMes || 0) + 1 });
-                      mostrarNotificacion(`🏁 ¡Recorrido finalizado! Manifiesto de asistencia y kilometraje transmitidos al Centro Operativo de ${currentTenant.nombre}.`);
+                      mostrarNotificacion(`🏁 ¡Recorrido finalizado! Manifiesto de asistencia y kilometraje transmitidos al Centro Operativo de ${'Transportes Biobío'}.`);
                     }}
                     className={`w-full mt-2.5 py-3.5 rounded-xl font-black text-sm shadow-md transition-all flex items-center justify-center space-x-2 ${
                       totalPendientes > 0
@@ -618,7 +618,7 @@ export const ConductorApp: React.FC = () => {
                     Bitácora de Asignaciones del Día (Biobío)
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Servicios regulares e incidencias despachadas desde la Central Operativa de {currentTenant.nombre}.
+                    Servicios regulares e incidencias despachadas desde la Central Operativa de {'Transportes Biobío'}.
                   </p>
                 </div>
 
@@ -705,7 +705,7 @@ export const ConductorApp: React.FC = () => {
                     Inspección Técnica Pre-Viaje (Checklist WFM)
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Verificación obligatoria conforme a protocolo de seguridad laboral de {currentTenant.nombre} antes de iniciar traslados en el Gran Concepción.
+                    Verificación obligatoria conforme a protocolo de seguridad laboral de {'Transportes Biobío'} antes de iniciar traslados en el Gran Concepción.
                   </p>
                 </div>
 
@@ -816,7 +816,7 @@ export const ConductorApp: React.FC = () => {
                     Reportar Incidencia o Retraso a Central (1-Click)
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Selecciona una incidencia operativa para alertar en tiempo real a los operadores de {currentTenant.nombre} y reprogramar los tiempos ETA:
+                    Selecciona una incidencia operativa para alertar en tiempo real a los operadores de {'Transportes Biobío'} y reprogramar los tiempos ETA:
                   </p>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
@@ -950,7 +950,7 @@ export const ConductorApp: React.FC = () => {
             <div className="bg-slate-50 dark:bg-[#0D1117] p-3.5 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-2 text-xs">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Marca Blanca Configurada: {currentTenant.nombre}</span>
+                <span>Marca Blanca Configurada: {'Transportes Biobío'}</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                 ¡Hola! Esta APK es el terminal nativo de terreno optimizado con <strong>Expo</strong>. La autorización del conductor proviene estrictamente de su sesión criptográfica y el tenant activo; <strong>nunca se usan query params en la URL como fuente de permisos</strong>, asegurando que nadie burle el sistema ni suplante identidades en el Gran Concepción.

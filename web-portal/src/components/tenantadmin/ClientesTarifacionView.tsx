@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import type { ClienteCorporativo } from '../../types';
 import { Building2, DollarSign, Plus, X, CheckCircle2 } from 'lucide-react';
 
 export const ClientesTarifacionView: React.FC = () => {
-  const { clientes, tenants, currentTenant, agregarCliente, actualizarCliente } = useTenant();
+  const { clientes,   agregarCliente, actualizarCliente } = useApp();
   const [selectedClienteForTariffs, setSelectedClienteForTariffs] = useState<ClienteCorporativo | null>(null);
   const [showClienteModal, setShowClienteModal] = useState<boolean>(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
@@ -22,12 +22,12 @@ export const ClientesTarifacionView: React.FC = () => {
   const [contactoNombre, setContactoNombre] = useState('');
   const [contactoEmail, setContactoEmail] = useState('');
 
-  const clientesTenant = clientes.filter(cl => cl.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001');
+  const clientesTenant = clientes;
 
   const handleSelectTemplate = (val: string) => {
     setSelectedTemplate(val);
     if (!val) return;
-    const tenantMatch = tenants.find(t => t.id === val);
+    const tenantMatch = ([].find)(t => t.id === val);
     if (tenantMatch) {
       setNombreCorporativo(tenantMatch.nombre);
       setRut((tenantMatch as any).rut || '77.491.330-1');
@@ -105,7 +105,7 @@ export const ClientesTarifacionView: React.FC = () => {
     e.preventDefault();
     const nuevo: ClienteCorporativo = {
       id: `cl-${Date.now()}`,
-      empresaId: currentTenant.id,
+      
       nombreCorporativo,
       rutIdentificador: rut,
       direccionFiscal: direccion,
@@ -326,7 +326,7 @@ export const ClientesTarifacionView: React.FC = () => {
                 >
                   <option value="">-- Ingreso Manual Libre --</option>
                   <optgroup label="🏢 Empresas Tenants de Nexo Mobility">
-                    {tenants.map(t => (
+                    {[].map(t => (
                       <option key={t.id} value={t.id}>{t.nombre} ({(t as any).rut || 'RUT Registrado'})</option>
                     ))}
                   </optgroup>

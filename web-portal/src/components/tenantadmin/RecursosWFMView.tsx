@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import type { VehiculoFlota, ConductorWFM } from '../../types';
 import { Car, User, Plus, Edit3, Trash2, ShieldCheck, Wrench, X, Search, Image as ImageIcon, Download } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal';
@@ -9,7 +9,7 @@ interface RecursosWFMViewProps {
 }
 
 export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) => {
-  const { vehiculos, conductores, currentTenant, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor } = useTenant();
+  const { vehiculos, conductores,  agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor } = useApp();
   const [subTab, setSubTab] = useState<'conductores' | 'flota'>(initialTab || 'conductores');
   const [searchQuery, setSearchQuery] = useState('');
   const [vehiculoToDelete, setVehiculoToDelete] = useState<VehiculoFlota | null>(null);
@@ -84,7 +84,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     } else {
       const nuevo: ConductorWFM = {
         id: `cond-${Date.now()}`,
-        empresaId: currentTenant.id,
+        
         nombreCompleto: condNombre,
         rut: condRut,
         email: condEmail,
@@ -108,8 +108,8 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     setTimeout(() => setActionMsg(null), 4500);
   };
 
-  const vehiculosTenant = vehiculos.filter(v => v.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001');
-  const conductoresTenant = conductores.filter(c => c.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001');
+  const vehiculosTenant = vehiculos;
+  const conductoresTenant = conductores;
 
   const filteredConductores = conductoresTenant.filter(c =>
     !searchQuery ||
@@ -148,7 +148,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     } else {
       const nuevo: VehiculoFlota = {
         id: `veh-${Date.now()}`,
-        empresaId: currentTenant.id,
+        
         placa, marca, modelo, anio: 2024, color, kilometraje: Number(km), capacidadPasajeros: Number(pasajeros), estadoOperativo: estado, activo: true
       };
       agregarVehiculo(nuevo);
@@ -227,7 +227,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `App_Conductor_${currentTenant.nombre.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`;
+                    a.download = `App_Conductor_${'Transportes Biobío'.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -632,7 +632,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         title={`¿Dar de baja la unidad de flota ${vehiculoToDelete?.placa}?`}
         message={
           <span>
-            Estás a punto de eliminar de la central operativa el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>). Esta acción removerá el móvil de las asignaciones de turno vigentes en {currentTenant.nombre}.
+            Estás a punto de eliminar de la central operativa el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>). Esta acción removerá el móvil de las asignaciones de turno vigentes en {'Transportes Biobío'}.
           </span>
         }
         confirmText="Confirmar Baja de Unidad"

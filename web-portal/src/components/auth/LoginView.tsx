@@ -5,9 +5,9 @@
 // con manejo visual y granular de errores UX en español chilenizado.
 // ==============================================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, KeyRound, Eye, EyeOff, Building2, Sparkles, Terminal, Shield, Truck, Briefcase } from 'lucide-react';
 
 type AuthMode = 'signin' | 'forgot';
@@ -19,7 +19,7 @@ interface ErrorBannerState {
 }
 
 export const LoginView: React.FC = () => {
-  const { loginDemoBypass, tenants, currentTenant } = useTenant();
+  const { loginDemoBypass } = useApp();
   
   const [mode, setMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState<string>('');
@@ -90,7 +90,7 @@ export const LoginView: React.FC = () => {
             });
           }
         } else if (data.session) {
-          // Sesión iniciada y sincronizada de forma automática con TenantContext
+          // Sesión iniciada y sincronizada de forma automática con AppContext
           console.log('✅ [WFM Auth] Autenticado exitosamente como:', data.session.user.email);
         }
       } else if (mode === 'forgot') {
@@ -124,24 +124,9 @@ export const LoginView: React.FC = () => {
     }
   };
 
-  // Efecto de marca blanca
-  const [visualTenant, setVisualTenant] = useState<any>(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tenantParam = params.get('tenant');
-    if (tenantParam) {
-      const found = tenants.find(t => t.slug === tenantParam || t.id === tenantParam);
-      if (found) {
-        setVisualTenant(found);
-      }
-    }
-  }, [tenants]);
-
-  const activeVisual = visualTenant || currentTenant || null;
-  const logoUrl = activeVisual?.logoUrl || null;
-  const brandName = visualTenant ? activeVisual?.nombre : 'Transportes Duet';
-  const headerText = visualTenant ? `Centro Operativo de Transporte • ${brandName}` : 'Plataforma de Movilidad Corporativa & Torre de Control Tráfico • Biobío';
+  const logoUrl = null;
+  const brandName = 'Transportes Biobío';
+  const headerText = 'Centro Operativo de Transporte • Transportes Biobío';
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans text-slate-100">
@@ -162,7 +147,7 @@ export const LoginView: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
             {brandName}
-            {!visualTenant && <span className="text-[10px] bg-[#E8832A] text-slate-950 font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">WFM PRO</span>}
+            <span className="text-[10px] bg-[#E8832A] text-slate-950 font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">WFM PRO</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             {headerText}
@@ -344,23 +329,23 @@ export const LoginView: React.FC = () => {
           <div className="space-y-2.5">
             <button
               type="button"
-              onClick={() => loginDemoBypass('admin@duet.cl', 'superadmin')}
+              onClick={() => loginDemoBypass('admin@transportesbiobio.cl', 'admin')}
               className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
             >
               <Shield className="w-4 h-4 text-blue-400 shrink-0" />
-              <span>Simular Sesión: Admin Duet Solutions</span>
+              <span>Simular Sesión: Admin Transportes</span>
             </button>
             <button
               type="button"
-              onClick={() => loginDemoBypass('operaciones@transportesandina.cl', 'tenant_admin', tenants.find(t => t.slug === 'andina')?.id)}
+              onClick={() => loginDemoBypass('operaciones@transportesbiobio.cl', 'admin')}
               className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
             >
               <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Simular Sesión: Tráfico Andina (Transportista)</span>
+              <span>Simular Sesión: Tráfico Biobío (Transportista)</span>
             </button>
             <button
               type="button"
-              onClick={() => loginDemoBypass('contratos@sanatorio.cl', 'cliente_b2b', tenants.find(t => t.slug === 'nexo')?.id)}
+              onClick={() => loginDemoBypass('contratos@cliente.cl', 'cliente_b2b')}
               className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
             >
               <Briefcase className="w-4 h-4 text-amber-400 shrink-0" />

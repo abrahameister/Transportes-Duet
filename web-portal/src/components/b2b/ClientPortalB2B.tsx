@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import type { ViajeOperativa, ConductorWFM, FuncionarioB2B, DemandaTurnoB2B } from '../../types';
 import { MapPin, Download, UploadCloud, Search, Eye, X, Plus, Home, Users, Calendar, BarChart3, FileSpreadsheet, Headphones, Phone, Mail, ShieldCheck, Truck, User, Building2 } from 'lucide-react';
 
@@ -99,12 +99,12 @@ const TURNOS_MOCK: DemandaTurnoB2B[] = [
 ];
 
 export const ClientPortalB2B: React.FC = () => {
-  const { currentTenant, clientes, viajesB2B, crearViaje, conductores, setActiveClienteB2BId } = useTenant();
+  const {  clientes, viajesB2B, crearViaje, conductores, setActiveClienteB2BId } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileTurnosInputRef = useRef<HTMLInputElement>(null);
 
   // Selector de Empresa Contratante (con aislamiento de datos por ID)
-  const clientesTenant = clientes.filter(c => c.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001');
+  const clientesTenant = clientes;
   const [selectedClientId, setSelectedClientId] = useState<string>(clientesTenant[0]?.id || 'client-gen');
   const activeClient = clientesTenant.find(c => c.id === selectedClientId) || clientesTenant[0];
   const totalCostoB2B = viajesB2B.reduce((acc, v) => acc + (v.montoEstimado || 18500), 2840000);
@@ -197,7 +197,7 @@ export const ClientPortalB2B: React.FC = () => {
 
     setFuncionarios([created, ...funcionarios]);
     setShowFuncionarioModal(false);
-    setActionMsg(`✓ ¡Funcionario "${newNombre}" registrado! ${currentTenant.nombre} verificará la viabilidad y cobertura de su dirección en un máximo de 2 horas hábiles.`);
+    setActionMsg(`✓ ¡Funcionario "${newNombre}" registrado! ${'Transportes Biobío'} verificará la viabilidad y cobertura de su dirección en un máximo de 2 horas hábiles.`);
     // Limpieza
     setNewNombre(''); setNewRut(''); setNewDireccion(''); setNewTelefono('+56 9 ');
     setTimeout(() => setActionMsg(null), 6000);
@@ -256,7 +256,7 @@ export const ClientPortalB2B: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Plantilla_Nomina_Funcionarios_${currentTenant.slug}.xls`);
+    link.setAttribute("download", `Plantilla_Nomina_Funcionarios_${''}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -298,7 +298,7 @@ export const ClientPortalB2B: React.FC = () => {
     }
 
     const newViaje: Partial<ViajeOperativa> = {
-      empresaId: currentTenant.id,
+      
       clienteCorporativoId: activeClient?.id || 'client-gen',
       clienteNombre: activeClient?.nombreCorporativo || 'Corporativo B2B Chile',
       pasajeroNombre: `${reservaPasajero} [${reservaTipo}]`,
@@ -318,7 +318,7 @@ export const ClientPortalB2B: React.FC = () => {
     };
 
     crearViaje(newViaje);
-    setActionMsg(`🚀 ¡CONFIRMACIÓN INSTANTÁNEA DE ASIGNACIÓN! Requerimiento transmitido en línea a la central de ${currentTenant.nombre}. Móvil asignado al servicio excepcional.`);
+    setActionMsg(`🚀 ¡CONFIRMACIÓN INSTANTÁNEA DE ASIGNACIÓN! Requerimiento transmitido en línea a la central de ${'Transportes Biobío'}. Móvil asignado al servicio excepcional.`);
     setReservaPasajero('');
     setReservaOrigen('');
     setReservaDestino('');
@@ -332,7 +332,7 @@ export const ClientPortalB2B: React.FC = () => {
       <head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
       <body>
         <h2>Reporte Oficial B2B — ${title}</h2>
-        <p><strong>Empresa Transportista / Central WFM:</strong> ${currentTenant.nombre}</p>
+        <p><strong>Empresa Transportista / Central WFM:</strong> ${'Transportes Biobío'}</p>
         <p><strong>Cuenta Corporativa:</strong> ${activeClient?.nombreCorporativo}</p>
         <table border="1">
           <thead>
@@ -397,11 +397,11 @@ export const ClientPortalB2B: React.FC = () => {
       <div className="enterprise-card bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
-            {currentTenant.logoUrl ? (
-              <img src={currentTenant.logoUrl} alt={currentTenant.nombre} className="w-14 h-14 object-cover rounded-lg border border-slate-200 dark:border-[#212A38] shadow-2xs shrink-0" />
+            {false ? (
+              <img src={""} alt={'Transportes Biobío'} className="w-14 h-14 object-cover rounded-lg border border-slate-200 dark:border-[#212A38] shadow-2xs shrink-0" />
             ) : (
               <div className="w-14 h-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-lg text-slate-700 dark:text-gray-200 shrink-0">
-                {currentTenant.nombre.substring(0, 2).toUpperCase()}
+                {'Transportes Biobío'.substring(0, 2).toUpperCase()}
               </div>
             )}
             <div>
@@ -415,7 +415,7 @@ export const ClientPortalB2B: React.FC = () => {
                 </span>
               </div>
               <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1">
-                Portal Corporativo — {currentTenant.nombre}
+                Portal Corporativo — {'Transportes Biobío'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                 Supervisión de traslados, nómina de colaboradores, turnos y conciliación financiera en el Gran Concepción.
@@ -527,7 +527,7 @@ export const ClientPortalB2B: React.FC = () => {
                   <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold font-mono">14 Móviles en Ruta</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
-                  La central operativa de <strong>{currentTenant.nombre}</strong> monitorea en tiempo real vía GPS todos los móviles asignados al turno diurno y nocturno. Las rutas hacia Huachipato, Aeropuerto Carriel Sur y Planta Horcones operan con tráfico normal por Ruta 160.
+                  La central operativa de <strong>{'Transportes Biobío'}</strong> monitorea en tiempo real vía GPS todos los móviles asignados al turno diurno y nocturno. Las rutas hacia Huachipato, Aeropuerto Carriel Sur y Planta Horcones operan con tráfico normal por Ruta 160.
                 </p>
               </div>
 
@@ -715,7 +715,7 @@ export const ClientPortalB2B: React.FC = () => {
                   Planificación de Horarios & Cruce de Demanda (Turnos)
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Al subir sus horarios semanales/mensuales, el sistema cruza las entradas y salidas para notificar de inmediato a {currentTenant.nombre}.
+                  Al subir sus horarios semanales/mensuales, el sistema cruza las entradas y salidas para notificar de inmediato a {'Transportes Biobío'}.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -860,7 +860,7 @@ export const ClientPortalB2B: React.FC = () => {
               <span>Reserva Manual Excepcional (Sobretiempos / Urgencias)</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Para traslados fuera de la programación habitual. Obtenga confirmación instantánea de asignación desde la central de {currentTenant.nombre}.
+              Para traslados fuera de la programación habitual. Obtenga confirmación instantánea de asignación desde la central de {'Transportes Biobío'}.
             </p>
           </div>
 
@@ -1249,7 +1249,7 @@ export const ClientPortalB2B: React.FC = () => {
                 Asistencia Directa Transportes
               </span>
               <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
-                Central Operativa {currentTenant.nombre}
+                Central Operativa {'Transportes Biobío'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">Canal formal de contacto y emergencias operativas 24/7 en la Región del Biobío y Chile.</p>
             </div>
@@ -1270,7 +1270,7 @@ export const ClientPortalB2B: React.FC = () => {
                   <span className="text-slate-400 block font-bold">EJECUTIVO DE CUENTA ASIGNADO:</span>
                   <strong className="text-slate-900 dark:text-white block text-sm mt-0.5">Matías Vergara Lazo</strong>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Ejecutivo Grandes Cuentas Biobío</span>
-                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 block mt-0.5">mvergara@{currentTenant.slug || 'andina'}.cl</span>
+                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 block mt-0.5">mvergara@{'' || 'andina'}.cl</span>
                 </div>
               </div>
             </div>
@@ -1463,7 +1463,7 @@ export const ClientPortalB2B: React.FC = () => {
               <div className="bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-3.5 flex items-start space-x-3 text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed mt-4">
                 <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <span>
-                  Al registrar, <strong>{currentTenant.nombre || 'Transportes'}</strong> verificará la viabilidad y cobertura de la dirección en un máximo de 2 horas hábiles.
+                  Al registrar, <strong>{'Transportes Biobío' || 'Transportes'}</strong> verificará la viabilidad y cobertura de la dirección en un máximo de 2 horas hábiles.
                 </span>
               </div>
 
@@ -1509,7 +1509,7 @@ export const ClientPortalB2B: React.FC = () => {
                       <div className="font-bold text-slate-900 dark:text-white text-sm">{cond?.nombreCompleto || 'Chofer Profesional'}</div>
                       <div className="text-slate-500 dark:text-slate-400 font-mono mt-0.5">Patente: <strong className="text-slate-800 dark:text-gray-200">{selectedViajeGps.vehiculoPlaca || 'LSD-802'}</strong> • Mercedes Sprinter</div>
                       <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] mt-1">
-                        ● Conductor verificado por {currentTenant.nombre}
+                        ● Conductor verificado por {'Transportes Biobío'}
                       </div>
                     </div>
                   </div>

@@ -56,21 +56,20 @@ export const initialTenants: EmpresaTenant[] = [
 ];
 
 export const initialVehicles: VehiculoFlota[] = [
-  { id: 'veh-101', empresaId: '10000000-0000-0000-0000-000000000001', marca: 'Mercedes-Benz', modelo: 'Sprinter Executive', anio: 2024, placa: 'HBCV-12', color: 'Plata Metálico', capacidadPasajeros: 15, kilometraje: 14200, estadoOperativo: 'operativo', activo: true },
-  { id: 'veh-102', empresaId: '10000000-0000-0000-0000-000000000001', marca: 'Toyota', modelo: 'Hiace Commuter', anio: 2025, placa: 'KLPW-44', color: 'Blanco Perla', capacidadPasajeros: 12, kilometraje: 8900, estadoOperativo: 'operativo', activo: true },
-  { id: 'veh-103', empresaId: '10000000-0000-0000-0000-000000000001', marca: 'Kia', modelo: 'Carnival VIP Limousin', anio: 2024, placa: 'JYZM-90', color: 'Negro Profundo', capacidadPasajeros: 7, kilometraje: 21500, estadoOperativo: 'operativo', activo: true },
-  { id: 'veh-104', empresaId: '10000000-0000-0000-0000-000000000001', marca: 'Peugeot', modelo: 'Traveller Business', anio: 2023, placa: 'LXTG-23', color: 'Gris Ónice', capacidadPasajeros: 9, kilometraje: 45000, estadoOperativo: 'operativo', activo: true },
-  { id: 'veh-105', empresaId: '10000000-0000-0000-0000-000000000001', marca: 'Hyundai', modelo: 'Staria Calligraphy', anio: 2024, placa: 'GHWW-77', color: 'Negro Místico', capacidadPasajeros: 7, kilometraje: 11200, estadoOperativo: 'operativo', activo: true },
-  { id: 'veh-106', empresaId: '10000000-0000-0000-0000-000000000001', marca: 'Ford', modelo: 'Transit Custom Pasajeros', anio: 2023, placa: 'KDDM-51', color: 'Blanco Oxford', capacidadPasajeros: 14, kilometraje: 32000, estadoOperativo: 'operativo', activo: true },
-  { id: 'veh-107', empresaId: '10000000-0000-0000-0000-000000000001', marca: 'Maxus', modelo: 'G10 Executive', anio: 2024, placa: 'HHYY-88', color: 'Plata Eclipse', capacidadPasajeros: 9, kilometraje: 19400, estadoOperativo: 'operativo', activo: true },
-  { id: 'veh-108', empresaId: '10000000-0000-0000-0000-000000000001', marca: 'Toyota', modelo: 'Granvia Luxury', anio: 2025, placa: 'KKWX-33', color: 'Negro Metálico', capacidadPasajeros: 8, kilometraje: 5100, estadoOperativo: 'operativo', activo: true }
+  { id: 'veh-101',  marca: 'Mercedes-Benz', modelo: 'Sprinter Executive', anio: 2024, placa: 'HBCV-12', color: 'Plata Metálico', capacidadPasajeros: 15, kilometraje: 14200, estadoOperativo: 'operativo', activo: true },
+  { id: 'veh-102',  marca: 'Toyota', modelo: 'Hiace Commuter', anio: 2025, placa: 'KLPW-44', color: 'Blanco Perla', capacidadPasajeros: 12, kilometraje: 8900, estadoOperativo: 'operativo', activo: true },
+  { id: 'veh-103',  marca: 'Kia', modelo: 'Carnival VIP Limousin', anio: 2024, placa: 'JYZM-90', color: 'Negro Profundo', capacidadPasajeros: 7, kilometraje: 21500, estadoOperativo: 'operativo', activo: true },
+  { id: 'veh-104',  marca: 'Peugeot', modelo: 'Traveller Business', anio: 2023, placa: 'LXTG-23', color: 'Gris Ónice', capacidadPasajeros: 9, kilometraje: 45000, estadoOperativo: 'operativo', activo: true },
+  { id: 'veh-105',  marca: 'Hyundai', modelo: 'Staria Calligraphy', anio: 2024, placa: 'GHWW-77', color: 'Negro Místico', capacidadPasajeros: 7, kilometraje: 11200, estadoOperativo: 'operativo', activo: true },
+  { id: 'veh-106',  marca: 'Ford', modelo: 'Transit Custom Pasajeros', anio: 2023, placa: 'KDDM-51', color: 'Blanco Oxford', capacidadPasajeros: 14, kilometraje: 32000, estadoOperativo: 'operativo', activo: true },
+  { id: 'veh-107',  marca: 'Maxus', modelo: 'G10 Executive', anio: 2024, placa: 'HHYY-88', color: 'Plata Eclipse', capacidadPasajeros: 9, kilometraje: 19400, estadoOperativo: 'operativo', activo: true },
+  { id: 'veh-108',  marca: 'Toyota', modelo: 'Granvia Luxury', anio: 2025, placa: 'KKWX-33', color: 'Negro Metálico', capacidadPasajeros: 8, kilometraje: 5100, estadoOperativo: 'operativo', activo: true }
 ];
 
 export const initialConductores: ConductorWFM[] = [
   {
     id: 'c-101',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCompleto: 'Marco Antonio Solar',
+      nombreCompleto: 'Marco Antonio Solar',
     rut: '12.489.102-K',
     tipoLicencia: 'A3',
     puntualidad: '4.9 / 5.0',
@@ -91,8 +90,7 @@ export const initialConductores: ConductorWFM[] = [
   },
   {
     id: 'c-102',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCompleto: 'Cristian Becerra Tapia',
+      nombreCompleto: 'Cristian Becerra Tapia',
     rut: '14.810.293-1',
     tipoLicencia: 'A3',
     puntualidad: '4.8 / 5.0',
@@ -113,8 +111,7 @@ export const initialConductores: ConductorWFM[] = [
   },
   {
     id: 'c-103',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCompleto: 'Héctor Saavedra Cruz',
+      nombreCompleto: 'Héctor Saavedra Cruz',
     rut: '13.910.482-4',
     tipoLicencia: 'A3',
     puntualidad: '4.95 / 5.0',
@@ -135,8 +132,7 @@ export const initialConductores: ConductorWFM[] = [
   },
   {
     id: 'c-104',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCompleto: 'Víctor Hugo Paredes',
+      nombreCompleto: 'Víctor Hugo Paredes',
     rut: '15.293.810-7',
     tipoLicencia: 'A2',
     puntualidad: '4.75 / 5.0',
@@ -157,8 +153,7 @@ export const initialConductores: ConductorWFM[] = [
   },
   {
     id: 'c-105',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCompleto: 'Armando Loyola Castro',
+      nombreCompleto: 'Armando Loyola Castro',
     rut: '11.890.342-9',
     tipoLicencia: 'A3',
     puntualidad: '5.0 / 5.0',
@@ -179,8 +174,7 @@ export const initialConductores: ConductorWFM[] = [
   },
   {
     id: 'c-106',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCompleto: 'Gabriel Montero Soto',
+      nombreCompleto: 'Gabriel Montero Soto',
     rut: '16.819.302-K',
     tipoLicencia: 'A3',
     puntualidad: '4.9 / 5.0',
@@ -201,8 +195,7 @@ export const initialConductores: ConductorWFM[] = [
   },
   {
     id: 'c-107',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCompleto: 'Esteban Miranda Quezada',
+      nombreCompleto: 'Esteban Miranda Quezada',
     rut: '14.019.283-5',
     tipoLicencia: 'A3',
     puntualidad: '4.85 / 5.0',
@@ -223,8 +216,7 @@ export const initialConductores: ConductorWFM[] = [
   },
   {
     id: 'c-108',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCompleto: 'Rodolfo Alarcón Peña',
+      nombreCompleto: 'Rodolfo Alarcón Peña',
     rut: '13.402.910-2',
     tipoLicencia: 'A2',
     puntualidad: '4.9 / 5.0',
@@ -248,8 +240,7 @@ export const initialConductores: ConductorWFM[] = [
 export const initialClientes: ClienteCorporativo[] = [
   {
     id: 'cl-b2b-01',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCorporativo: 'Forestal Arauco Biobío S.A.',
+      nombreCorporativo: 'Forestal Arauco Biobío S.A.',
     rutIdentificador: '76.012.345-0',
     direccionFiscal: 'Parque Industrial Escuadrón Oeste, Coronel, Biobío',
     contactoNombre: 'Ing. Rodrigo Fernández (Jefe de Logística y Personal)',
@@ -267,8 +258,7 @@ export const initialClientes: ClienteCorporativo[] = [
   },
   {
     id: 'cl-b2b-02',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCorporativo: 'Compañía Siderúrgica Huachipato S.A.',
+      nombreCorporativo: 'Compañía Siderúrgica Huachipato S.A.',
     rutIdentificador: '76.332.110-8',
     direccionFiscal: 'Av. Gran Bretaña 2910, Talcahuano, Región del Biobío',
     contactoNombre: 'Lic. Marcela Alarcón (Subgerente de RRHH)',
@@ -285,8 +275,7 @@ export const initialClientes: ClienteCorporativo[] = [
   },
   {
     id: 'cl-b2b-03',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCorporativo: 'Universidad de Concepción (Dirección de Finanzas)',
+      nombreCorporativo: 'Universidad de Concepción (Dirección de Finanzas)',
     rutIdentificador: '70.003.500-4',
     direccionFiscal: 'Víctor Lamas 1290, Barrio Universitario, Concepción',
     contactoNombre: 'Dr. Hernán Solar Valdés',
@@ -303,8 +292,7 @@ export const initialClientes: ClienteCorporativo[] = [
   },
   {
     id: 'cl-b2b-04',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    nombreCorporativo: 'Clínica Sanatorio Alemán / Urgencias',
+      nombreCorporativo: 'Clínica Sanatorio Alemán / Urgencias',
     rutIdentificador: '70.211.900-3',
     direccionFiscal: 'Pedro de Valdivia 801, Concepción',
     contactoNombre: 'Dra. María Paz Solar (Jefe de Turnos Urgencia)',
@@ -324,8 +312,7 @@ export const initialClientes: ClienteCorporativo[] = [
 export const initialViajes: ViajeOperativa[] = [
   {
     id: 'viaje-001',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    clienteCorporativoId: 'cl-b2b-01',
+      clienteCorporativoId: 'cl-b2b-01',
     clienteNombre: 'Forestal Arauco Biobío S.A.',
     conductorId: 'c-101',
     conductorNombre: 'Marco Antonio Solar',
@@ -346,8 +333,7 @@ export const initialViajes: ViajeOperativa[] = [
   },
   {
     id: 'viaje-002',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    clienteCorporativoId: 'cl-b2b-02',
+      clienteCorporativoId: 'cl-b2b-02',
     clienteNombre: 'Siderúrgica Huachipato S.A.',
     conductorId: 'c-102',
     conductorNombre: 'Cristian Becerra Tapia',
@@ -368,8 +354,7 @@ export const initialViajes: ViajeOperativa[] = [
   },
   {
     id: 'viaje-003',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    clienteCorporativoId: 'cl-b2b-03',
+      clienteCorporativoId: 'cl-b2b-03',
     clienteNombre: 'Universidad de Concepción (Finanzas)',
     conductorId: 'c-103',
     conductorNombre: 'Héctor Saavedra Cruz',
@@ -390,8 +375,7 @@ export const initialViajes: ViajeOperativa[] = [
   },
   {
     id: 'viaje-004',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    clienteCorporativoId: 'cl-b2b-01',
+      clienteCorporativoId: 'cl-b2b-01',
     clienteNombre: 'Forestal Arauco Biobío S.A.',
     conductorId: 'c-104',
     conductorNombre: 'Víctor Hugo Paredes',
@@ -421,8 +405,7 @@ export const initialViajes: ViajeOperativa[] = [
   },
   {
     id: 'viaje-005',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    clienteCorporativoId: 'cl-b2b-02',
+      clienteCorporativoId: 'cl-b2b-02',
     clienteNombre: 'Siderúrgica Huachipato S.A.',
     pasajeroNombre: 'Ing. Claudio Arriagada',
     pasajeroTelefono: '+56 9 5567 8901',
@@ -442,8 +425,7 @@ export const initialViajes: ViajeOperativa[] = [
 export const initialRutasRecurrentes: RutaRecurrente[] = [
   {
     id: 'rr-concep-01',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    clienteCorporativoId: 'cl-b2b-01',
+      clienteCorporativoId: 'cl-b2b-01',
     clienteNombre: 'Forestal Arauco Biobío S.A.',
     nombreRuta: 'Turno Matinal Jefaturas (Concepción ➔ Coronel)',
     diasSemana: 'Lunes a Viernes',
@@ -455,8 +437,7 @@ export const initialRutasRecurrentes: RutaRecurrente[] = [
   },
   {
     id: 'rr-concep-02',
-    empresaId: '10000000-0000-0000-0000-000000000001',
-    clienteCorporativoId: 'cl-b2b-02',
+      clienteCorporativoId: 'cl-b2b-02',
     clienteNombre: 'Siderúrgica Huachipato S.A.',
     nombreRuta: 'Conexión Aeropuerto ➔ Gerencia Huachipato',
     diasSemana: 'Lunes, Miércoles y Viernes',
@@ -468,9 +449,9 @@ export const initialRutasRecurrentes: RutaRecurrente[] = [
   }
 ];
 
-export function getWFMStats(empresaId: string, conductores: ConductorWFM[], viajes: ViajeOperativa[]): WFMEstatisticas {
-  const conds = conductores.filter(c => c.empresaId === empresaId || empresaId === '10000000-0000-0000-0000-000000000001');
-  const vj = viajes.filter(v => v.empresaId === empresaId || empresaId === '10000000-0000-0000-0000-000000000001');
+export function getWFMStats( conductores: ConductorWFM[], viajes: ViajeOperativa[]): WFMEstatisticas {
+  const conds = conductores;
+  const vj = viajes;
 
   const disponibles = conds.filter(c => c.estadoWFM === 'disponible' && !c.enDescanso).length;
   const enRuta = conds.filter(c => c.estadoWFM === 'en_ruta').length;
@@ -492,7 +473,7 @@ export function getWFMStats(empresaId: string, conductores: ConductorWFM[], viaj
   };
 }
 
-// Re-export aliases for compatibility with TenantContext
+// Re-export aliases for compatibility with AppContext
 export {
   initialConductores as mockConductoresWFM,
   initialVehicles as mockVehiculosIniciales,

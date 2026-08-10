@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import { getWFMStats } from '../../lib/mockData';
 import { TorreControlView } from './TorreControlView';
 import { ProgramacionServiciosView } from './ProgramacionServiciosView';
@@ -8,12 +8,12 @@ import { ClientesTarifacionView } from './ClientesTarifacionView';
 import { RecursosWFMView } from './RecursosWFMView';
 import { Radio, Calendar, AlertTriangle, Building2, Users, Car, CheckCircle, Upload, Plus } from 'lucide-react';
 
-export const TenantAdminPortal: React.FC = () => {
-  const { currentTenant, conductores, vehiculos, viajes } = useTenant();
+export const AdminPortal: React.FC = () => {
+  const {  conductores, vehiculos, viajes } = useApp();
   const [activeEje, setActiveEje] = useState<'torre' | 'conductores' | 'vehiculos' | 'programacion' | 'incidencias' | 'clientes' | 'recursos'>('torre');
   
-  const stats = getWFMStats(currentTenant.id, conductores, viajes);
-  const vehiculosCount = vehiculos.filter(v => v.empresaId === currentTenant.id || currentTenant.id === '10000000-0000-0000-0000-000000000001').length;
+  const stats = getWFMStats('default', conductores, viajes);
+  const vehiculosCount = vehiculos.length;
   const conductoresCount = stats.totalConductores;
 
   // Cálculo dinámico de fecha actual para planificación
@@ -57,7 +57,7 @@ export const TenantAdminPortal: React.FC = () => {
       </div>
 
       {/* Encabezado del Módulo y Tarjeta de Marca del Tenant */}
-      <div className="enterprise-card p-6 border-l-4 shadow-sm bg-white dark:bg-[#161D27]" style={{ borderLeftColor: currentTenant.primaryColor }}>
+      <div className="enterprise-card p-6 border-l-4 shadow-sm bg-white dark:bg-[#161D27]" style={{ borderLeftColor: '#1E3A8A' }}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
@@ -69,7 +69,7 @@ export const TenantAdminPortal: React.FC = () => {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">
-              {currentTenant.nombre}
+              {'Transportes Biobío'}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Control centralizado de flota, telemetría en tiempo real, programación de rutas e incidencias en ruta.

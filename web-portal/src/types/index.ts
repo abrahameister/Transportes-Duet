@@ -22,7 +22,6 @@ export interface EmpresaTenant {
 
 export interface VehiculoFlota {
   id: string;
-  empresaId: string;
   marca: string;
   modelo: string;
   anio: number;
@@ -36,7 +35,6 @@ export interface VehiculoFlota {
 
 export interface ConductorWFM {
   id: string;
-  empresaId: string;
   nombreCompleto: string;
   email: string;
   telefono: string;
@@ -76,7 +74,6 @@ export interface TarifarioB2B {
 
 export interface ClienteCorporativo {
   id: string;
-  empresaId: string;
   nombreCorporativo: string;
   rutIdentificador: string;
   direccionFiscal: string;
@@ -98,7 +95,6 @@ export interface IncidenciaOperativa {
 
 export interface ViajeOperativa {
   id: string;
-  empresaId: string;
   clienteCorporativoId: string;
   clienteNombre?: string;
   conductorId?: string;
@@ -123,7 +119,6 @@ export interface ViajeOperativa {
 
 export interface RutaRecurrente {
   id: string;
-  empresaId: string;
   clienteCorporativoId: string;
   clienteNombre: string;
   nombreRuta: string;

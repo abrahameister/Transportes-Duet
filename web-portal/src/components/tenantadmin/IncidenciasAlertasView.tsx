@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import { AlertTriangle, ShieldAlert, Wrench, CheckCircle2 } from 'lucide-react';
 import type { ViajeOperativa } from '../../types';
 
 export const IncidenciasAlertasView: React.FC = () => {
-  const { viajes, conductores, reasignarViajeRescate } = useTenant();
+  const { viajes, conductores, reasignarViajeRescate } = useApp();
   const [selectedIncidenciaForRescate, setSelectedIncidenciaForRescate] = useState<ViajeOperativa | null>(null);
   const [rescateSuccess, setRescateSuccess] = useState<string | null>(null);
 

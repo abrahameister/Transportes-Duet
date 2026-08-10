@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useTenant } from '../../context/TenantContext';
+import { useApp } from '../../context/AppContext';
 import { UploadCloud, PlusCircle, Calendar, CheckCircle, ArrowRight, MapPin, Download, FileText, Sparkles, Users } from 'lucide-react';
 
 const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
@@ -22,7 +22,7 @@ const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
 ];
 
 export const ProgramacionServiciosView: React.FC = () => {
-  const { clientes, crearViaje, importarViajesCSV, rutasRecurentes, activeClienteB2BId } = useTenant();
+  const { clientes, crearViaje, importarViajesCSV, rutasRecurentes, activeClienteB2BId } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeClientObj = clientes.find(c => c.id === activeClienteB2BId) || clientes[0];
   const currentDateTime = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' hrs';

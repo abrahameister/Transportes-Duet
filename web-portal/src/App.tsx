@@ -1,14 +1,13 @@
-import { TenantProvider, useTenant } from './context/TenantContext';
+import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
-import { SuperAdminPortal } from './components/superadmin/SuperAdminPortal';
-import { TenantAdminPortal } from './components/tenantadmin/TenantAdminPortal';
+import { AdminPortal } from './components/tenantadmin/AdminPortal';
 import { ClientPortalB2B } from './components/b2b/ClientPortalB2B';
 import { PasajeroPWA } from './components/pasajero/PasajeroPWA';
 import { ConductorApp } from './components/conductor/ConductorApp';
 import { LoginView } from './components/auth/LoginView';
 
 const MainRouter: React.FC = () => {
-  const { currentRoleView, userRole, authUser, authLoading } = useTenant();
+  const { currentRoleView, userRole, authUser, authLoading } = useApp();
 
   // Pantalla de carga al verificar sesión activa
   if (authLoading) {
@@ -26,22 +25,19 @@ const MainRouter: React.FC = () => {
   }
 
   let renderedView = null;
-  if (currentRoleView === 'superadmin' && userRole === 'superadmin') {
-    renderedView = <SuperAdminPortal />;
-  } else if (currentRoleView === 'tenant_admin' && (userRole === 'superadmin' || userRole === 'tenant_admin')) {
-    renderedView = <TenantAdminPortal />;
+  if (currentRoleView === 'admin' && userRole === 'admin') {
+    renderedView = <AdminPortal />;
   } else if (currentRoleView === 'cliente_b2b' && userRole === 'cliente_b2b') {
     renderedView = <ClientPortalB2B />;
-  } else if (currentRoleView === 'app_conductor' && (userRole === 'superadmin' || userRole === 'tenant_admin' || userRole === 'app_conductor')) {
+  } else if (currentRoleView === 'app_conductor' && (userRole === 'admin' || userRole === 'app_conductor')) {
     renderedView = <ConductorApp />;
   } else if (currentRoleView === 'pwa_pasajero') {
     renderedView = <PasajeroPWA />;
   } else {
     // Fallback de seguridad en caso de que intenten forzar una vista prohibida
-    if (userRole === 'superadmin') renderedView = <SuperAdminPortal />;
-    else if (userRole === 'cliente_b2b') renderedView = <ClientPortalB2B />;
+    if (userRole === 'cliente_b2b') renderedView = <ClientPortalB2B />;
     else if (userRole === 'app_conductor') renderedView = <ConductorApp />;
-    else renderedView = <TenantAdminPortal />;
+    else renderedView = <AdminPortal />;
   }
 
   return (
@@ -54,8 +50,8 @@ const MainRouter: React.FC = () => {
 
       <footer className="border-t border-slate-200 dark:border-[#212A38] bg-white dark:bg-[#090C10] py-4 text-center text-xs text-slate-500 dark:text-gray-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="flex items-center gap-1">Creado con <span className="text-rose-500">♥</span> por <a href="https://www.duetsolutions.cl/" target="_blank" rel="noopener noreferrer" className="font-bold text-slate-700 dark:text-slate-300 hover:text-[#E8832A] dark:hover:text-[#E8832A] hover:underline transition-colors">Duet Solutions</a></span>
-          <span>Plataforma de Transporte de Personal Chile ● v1.0.0</span>
+          <span className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">Transportes Biobío</span>
+          <span>Plataforma de Transporte de Personal Chile ● v2.0.0</span>
         </div>
       </footer>
     </div>
@@ -64,8 +60,8 @@ const MainRouter: React.FC = () => {
 
 export default function App() {
   return (
-    <TenantProvider>
+    <AppProvider>
       <MainRouter />
-    </TenantProvider>
+    </AppProvider>
   );
 }

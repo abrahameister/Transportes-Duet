@@ -1,35 +1,27 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import type { EmpresaTenant, ConductorWFM, ViajeOperativa, VehiculoFlota, ClienteCorporativo, RutaRecurrente, AvisoOperativo } from '../types';
-import { initialTenants, mockConductoresWFM, mockViajesIniciales, mockVehiculosIniciales, mockClientesIniciales, mockRutasRecurentes } from '../lib/mockData';
+import type { ConductorWFM, ViajeOperativa, VehiculoFlota, ClienteCorporativo, RutaRecurrente, AvisoOperativo } from '../types';
+import { mockConductoresWFM, mockViajesIniciales, mockVehiculosIniciales, mockClientesIniciales, mockRutasRecurentes } from '../lib/mockData';
 import { supabase, testSupabaseConnection } from '../lib/supabase';
 
-interface TenantContextType {
-  tenants: EmpresaTenant[];
-  currentTenant: EmpresaTenant;
+interface AppContextType {
   conductores: ConductorWFM[];
   vehiculos: VehiculoFlota[];
   clientes: ClienteCorporativo[];
   viajes: ViajeOperativa[];
   rutasRecurentes: RutaRecurrente[];
-  currentRoleView: 'superadmin' | 'tenant_admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor';
-  setCurrentRoleView: (role: 'superadmin' | 'tenant_admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor') => void;
+  currentRoleView: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor';
+  setCurrentRoleView: (role: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor') => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
-  selectTenant: (tenantId: string) => void;
-  updateTenantBranding: (tenantId: string, updates: Partial<EmpresaTenant>) => void;
-  addNewTenant: (tenant: EmpresaTenant) => void;
 
-  // Cola en tiempo real de Avisos Rápidos y Alertas S.O.S (Pasajero -> Conductor / Central)
   avisosOperativos: AvisoOperativo[];
   enviarAvisoOperativo: (aviso: Partial<AvisoOperativo>) => void;
   marcarAvisoLeido: (id: string) => void;
 
-  // Sesión activa del cliente B2B (aislamiento de datos)
   activeClienteB2BId: string | null;
   setActiveClienteB2BId: (id: string | null) => void;
-  viajesB2B: ViajeOperativa[]; // Sólo los viajes del cliente B2B activo
+  viajesB2B: ViajeOperativa[]; 
   
-  // Acciones Operativas de Despacho
   toggleConductorEstado: (conductorId: string) => void;
   despacharViajeSimulado: (viajeId: string, conductorId?: string) => void;
   reasignarViajeRescate: (viajeId: string, nuevoConductorId: string) => void;
@@ -37,7 +29,6 @@ interface TenantContextType {
   importarViajesCSV: (cantidad: number) => void;
   importarViajesDesdeCSV: (viajes: ViajeOperativa[]) => void;
   
-  // CRUD de Recursos
   agregarVehiculo: (vehiculo: VehiculoFlota) => void;
   actualizarVehiculo: (id: string, updates: Partial<VehiculoFlota>) => void;
   eliminarVehiculo: (id: string) => void;
@@ -49,37 +40,31 @@ interface TenantContextType {
   agregarCliente: (cliente: ClienteCorporativo) => void;
   actualizarCliente: (id: string, updates: Partial<ClienteCorporativo>) => void;
 
-  // Sesión y Autenticación WFM (Supabase Auth & Demo Fallback)
   userRole: string;
   authUser: any | null;
   authLoading: boolean;
   logoutAuth: () => Promise<void>;
-  loginDemoBypass: (correo?: string, rol?: 'superadmin' | 'tenant_admin' | 'cliente_b2b', tenantId?: string) => void;
+  loginDemoBypass: (correo?: string, rol?: 'admin' | 'cliente_b2b') => void;
 }
 
-const TenantContext = createContext<TenantContextType | undefined>(undefined);
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [tenants, setTenants] = useState<EmpresaTenant[]>(initialTenants);
-  const [currentTenantId, setCurrentTenantId] = useState<string>(initialTenants[0].id);
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [conductores, setConductores] = useState<ConductorWFM[]>(mockConductoresWFM);
   const [vehiculos, setVehiculos] = useState<VehiculoFlota[]>(mockVehiculosIniciales);
   const [clientes, setClientes] = useState<ClienteCorporativo[]>(mockClientesIniciales);
   const [viajes, setViajes] = useState<ViajeOperativa[]>(mockViajesIniciales);
   const [rutasRecurentes] = useState<RutaRecurrente[]>(mockRutasRecurentes);
-  const [currentRoleView, setCurrentRoleViewInternal] = useState<'superadmin' | 'tenant_admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor'>('tenant_admin');
+  const [currentRoleView, setCurrentRoleViewInternal] = useState<'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor'>('admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
-  // Estado de Autenticación Supabase Auth
   const [authUser, setAuthUser] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
-  const userRole = useMemo(() => authUser?.user_metadata?.rol || 'tenant_admin', [authUser]);
+  const userRole = useMemo(() => authUser?.user_metadata?.rol || 'admin', [authUser]);
 
-  // Sesión activa del cliente B2B — aislamiento estricto de datos
   const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>('cl-b2b-04');
 
-  // Cola de Avisos Operativos (Comunicación en vivo)
   const [avisosOperativos, setAvisosOperativos] = useState<AvisoOperativo[]>([
     {
       id: 'aviso-init-1',
@@ -112,7 +97,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     setAvisosOperativos(prev => [nuevo, ...prev]);
 
-    // Transacción Cloud en segundo plano (con resiliencia al fallo y Offline Fallback)
     supabase.from('avisos_operativos').insert([{
       id: nuevo.id,
       viaje_id: nuevo.viajeId || null,
@@ -130,32 +114,23 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAvisosOperativos(prev => prev.map(a => a.id === id ? { ...a, leido: true } : a));
   };
 
-  // Al cambiar de rol, limpiar la sesión B2B si el destino no es cliente_b2b
-  const setCurrentRoleView = (role: 'superadmin' | 'tenant_admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor') => {
+  const setCurrentRoleView = (role: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor') => {
     if (role !== 'cliente_b2b') {
-      // Limpiar sesión B2B al salir del portal corporativo
       setActiveClienteB2BId(null);
     }
     setCurrentRoleViewInternal(role);
   };
 
-  const currentTenant = useMemo(() => {
-    return tenants.find(t => t.id === currentTenantId) || tenants[0];
-  }, [tenants, currentTenantId]);
-
-  // Viajes filtrados por cliente B2B activo (aislamiento de datos)
   const viajesB2B = useMemo(() => {
     if (!activeClienteB2BId) return [];
     return viajes.filter(v => v.clienteCorporativoId === activeClienteB2BId);
   }, [viajes, activeClienteB2BId]);
 
   useEffect(() => {
-    if (currentTenant) {
-      document.documentElement.style.setProperty('--tenant-primary', currentTenant.primaryColor);
-      document.documentElement.style.setProperty('--tenant-secondary', currentTenant.secondaryColor);
-      document.documentElement.style.setProperty('--tenant-accent', currentTenant.accentColor || '#E8832A');
-    }
-  }, [currentTenant]);
+    document.documentElement.style.setProperty('--tenant-primary', '#1E3A8A');
+    document.documentElement.style.setProperty('--tenant-secondary', '#3B82F6');
+    document.documentElement.style.setProperty('--tenant-accent', '#E8832A');
+  }, []);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -165,20 +140,17 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [isDarkMode]);
 
-  // --- CAPA DE CONEXIÓN CLOUD & RESILIENCIA WFM (SUPABASE REALTIME & FALLBACK) ---
   useEffect(() => {
     let isSubscribed = true;
 
     async function syncFromSupabase() {
       const isOnline = await testSupabaseConnection();
       if (!isOnline || !isSubscribed) {
-        console.log('🛡️ [WFM Offline Fallback] Operando con caché local garantizada y resiliencia en terreno.');
+        console.log('🛡️ [WFM Offline Fallback] Operando con caché local garantizada.');
         return;
       }
 
       try {
-        // Carga relacional en vivo desde Supabase
-        const { data: dbTenants } = await supabase.from('empresas_tenants').select('*');
         const { data: dbVehiculos } = await supabase.from('vehiculos_flota').select('*');
         const { data: dbConductores } = await supabase.from('conductores_wfm').select('*');
         const { data: dbClientes } = await supabase.from('clientes_corporativos_b2b').select('*');
@@ -186,25 +158,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const { data: dbAvisos } = await supabase.from('avisos_operativos').select('*');
 
         if (isSubscribed) {
-          if (dbTenants && dbTenants.length > 0) {
-            setTenants(dbTenants.map(t => ({
-              id: t.id,
-              nombre: t.nombre,
-              slug: t.slug,
-              logoUrl: t.logo_url || '',
-              primaryColor: t.primary_color || '#1E293B',
-              secondaryColor: t.secondary_color || '#0F172A',
-              accentColor: t.accent_color || '#E8832A',
-              estadoPago: (t.estado_pago as any) || 'al_dia',
-              planSuscripto: t.plan_suscripto || 'Pro Tier-1',
-              razonSocial: t.razon_social,
-              rut: t.rut
-            })));
-          }
           if (dbVehiculos && dbVehiculos.length > 0) {
             setVehiculos(dbVehiculos.map(v => ({
               id: v.id,
-              empresaId: v.empresa_id,
               marca: v.marca,
               modelo: v.modelo,
               anio: v.anio,
@@ -219,7 +175,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (dbConductores && dbConductores.length > 0) {
             setConductores(dbConductores.map(c => ({
               id: c.id,
-              empresaId: c.empresa_id,
               nombreCompleto: c.nombre_completo,
               email: c.email,
               telefono: c.telefono,
@@ -240,7 +195,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (dbClientes && dbClientes.length > 0) {
             setClientes(dbClientes.map(cl => ({
               id: cl.id,
-              empresaId: cl.empresa_id,
               nombreCorporativo: cl.nombre_corporativo,
               rutIdentificador: cl.rut_identificador,
               direccionFiscal: cl.direccion_fiscal,
@@ -258,7 +212,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (dbViajes && dbViajes.length > 0) {
             setViajes(dbViajes.map(v => ({
               id: v.id,
-              empresaId: v.empresa_id,
               clienteCorporativoId: v.cliente_corporativo_id,
               conductorId: v.conductor_id,
               vehiculoId: v.vehiculo_id,
@@ -288,19 +241,16 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               tipo: (a.tipo as any) || 'aviso_rapido'
             })));
           }
-          console.log('☁️ [Supabase Live Sync] Datos corporativos sincronizados con éxito desde Transportes-Duet.');
         }
       } catch (err) {
-        console.warn('⚡ [Supabase Live Sync] Conmuta a Offline Fallback debido a error de lectura:', err);
+        console.warn('⚡ [Supabase Live Sync] Conmuta a Offline Fallback debido a error:', err);
       }
     }
 
     syncFromSupabase();
 
-    // Suscripción WebSockets en Tiempo Real (<100ms lag)
     const realtimeChannel = supabase.channel('wfm-realtime-channel')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos_operativos' }, payload => {
-        console.log('⚡ [Realtime WebSocket] Nuevo aviso operativo en ruta:', payload.new);
         const nuevo: AvisoOperativo = {
           id: payload.new.id,
           viajeId: payload.new.viaje_id,
@@ -313,7 +263,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setAvisosOperativos(prev => [nuevo, ...prev.filter(a => a.id !== nuevo.id)]);
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conductores_wfm' }, payload => {
-        console.log('⚡ [Realtime WebSocket] Cambio de estado en conductor WFM:', payload.new);
         setConductores(prev => prev.map(c => c.id === payload.new.id ? { ...c, estadoWFM: payload.new.estado_wfm || c.estadoWFM } : c));
       })
       .subscribe();
@@ -324,7 +273,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, []);
 
-  // --- CAPA DE AUTENTICACIÓN INSTITUCIONAL WFM (SUPABASE AUTH & RESOLUCION DE ROLES) ---
   useEffect(() => {
     let mounted = true;
 
@@ -336,27 +284,15 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const email = (rawUser.email || '').toLowerCase();
       let authoritativeRole = rawUser.user_metadata?.rol;
 
-      // Regla SOBERANA INEXPUGNABLE: Cuentas @duetsolutions.cl adquieren nivel Superadmin (Master Control)
-      if (email.endsWith('@duetsolutions.cl') || email.includes('duetsolutions')) {
-        authoritativeRole = 'superadmin';
-        setCurrentRoleViewInternal('superadmin');
-        console.log('👑 [WFM Master Control] Administrador de Duet Solutions verificado -> Asignando rol superadmin y vista Master.');
-      } else if (rawUser.user_metadata?.rol === 'cliente_b2b' || email.includes('@sanatorioaleman.cl') || email.includes('@arauco.cl') || email.includes('@cap.cl')) {
+      if (rawUser.user_metadata?.rol === 'cliente_b2b' || email.includes('@sanatorioaleman.cl') || email.includes('@arauco.cl') || email.includes('@cap.cl')) {
         authoritativeRole = 'cliente_b2b';
         setCurrentRoleViewInternal('cliente_b2b');
       } else if (rawUser.user_metadata?.rol === 'pwa_pasajero' || rawUser.user_metadata?.rol === 'app_conductor') {
         authoritativeRole = rawUser.user_metadata.rol;
         setCurrentRoleViewInternal(rawUser.user_metadata.rol);
       } else {
-        authoritativeRole = 'tenant_admin';
-        setCurrentRoleViewInternal('tenant_admin');
-        if (rawUser.user_metadata?.tenantId) {
-          setCurrentTenantId(rawUser.user_metadata.tenantId);
-        } else if (email.includes('andina')) {
-          setCurrentTenantId('t_andina');
-        } else if (email.includes('nexo')) {
-          setCurrentTenantId('t_nexo');
-        }
+        authoritativeRole = 'admin';
+        setCurrentRoleViewInternal('admin');
       }
 
       const enrichedUser = {
@@ -369,7 +305,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setAuthUser(enrichedUser);
     };
 
-    // Obtener sesión actual de Supabase al cargar la aplicación
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted) {
         if (session?.user) {
@@ -381,7 +316,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     });
 
-    // Suscribir a cambios de autenticación en tiempo real
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
         if (session?.user) {
@@ -403,58 +337,22 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAuthLoading(true);
     try {
       await supabase.auth.signOut();
-    } catch (err) {
-      console.warn('⚠️ [WFM Auth] Cierre de sesión en caché:', err);
-    }
+    } catch (err) {}
     setAuthUser(null);
     setAuthLoading(false);
   };
 
-  const loginDemoBypass = (correo: string = 'carlos.munoz@andina.cl', rol: 'superadmin' | 'tenant_admin' | 'cliente_b2b' = 'tenant_admin', tenantId?: string) => {
-    console.log('🚀 [WFM Auth Bypass] Activado acceso de demostración rápida para Netlify:', correo, rol);
-    setAuthUser({ id: 'user-demo-wfm', email: correo, user_metadata: { name: 'Usuario WFM Demo', rol: rol, tenantId: tenantId } });
+  const loginDemoBypass = (correo: string = 'admin@empresa.cl', rol: 'admin' | 'cliente_b2b' = 'admin') => {
+    setAuthUser({ id: 'user-demo-wfm', email: correo, user_metadata: { name: 'Usuario WFM Demo', rol: rol } });
     setCurrentRoleView(rol);
-    if (tenantId) {
-      setCurrentTenantId(tenantId);
-    }
   };
 
   const toggleDarkMode = () => setIsDarkMode(prev => !prev);
-  const selectTenant = (id: string) => setCurrentTenantId(id);
-  const updateTenantBranding = (id: string, updates: Partial<EmpresaTenant>) => setTenants(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-  const addNewTenant = async (newTenant: EmpresaTenant) => {
-    setTenants(prev => [...prev, newTenant]);
-    setCurrentTenantId(newTenant.id);
-    // Sincronizar en vivo con la base de datos de producción Supabase
-    const { error } = await supabase.from('empresas_tenants').insert([{
-      id: newTenant.id,
-      nombre: newTenant.nombre,
-      slug: newTenant.slug,
-      logo_url: newTenant.logoUrl || '',
-      primary_color: newTenant.primaryColor || '#0F172A',
-      secondary_color: newTenant.secondaryColor || '#1E293B',
-      accent_color: newTenant.accentColor || '#E8832A',
-      estado_pago: (newTenant.estadoPago as any) || 'al_dia',
-      plan_suscripto: newTenant.planSuscripto || 'Plan Pro Exclusivo',
-      razon_social: newTenant.razonSocial,
-      rut: newTenant.rut,
-      contacto_principal: newTenant.contactoPrincipal,
-      contacto_email: newTenant.contactoEmail,
-      contacto_telefono: newTenant.contactoTelefono
-    }]);
-    if (error) {
-      console.warn('⚠️ [WFM Cloud] Aviso al registrar nueva empresa transportista en Nube:', error.message);
-    } else {
-      console.log('✅ [WFM Cloud] Nueva empresa transportista creada y persistida con éxito en Supabase.');
-    }
-  };
 
-  // --- MÉTODOS DE CONTROL WFM & DISPATCHING ---
   const toggleConductorEstado = (conductorId: string) => {
     setConductores(prev => prev.map(cond => {
       if (cond.id !== conductorId) return cond;
       if (cond.enDescanso) {
-        // Sacar de descanso y reactivar
         return { ...cond, enDescanso: false, estadoWFM: 'disponible', motivoBloqueo: undefined, horasConducidasHoy: 0 };
       }
       const nextState = cond.estadoWFM === 'disponible' ? 'offline' : cond.estadoWFM === 'offline' ? 'disponible' : 'disponible';
@@ -463,7 +361,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const despacharViajeSimulado = (viajeId: string, customConductorId?: string) => {
-    const condId = customConductorId || conductores.find(c => c.empresaId === currentTenantId && c.estadoWFM === 'disponible' && !c.enDescanso)?.id || conductores[0].id;
+    const condId = customConductorId || conductores.find(c => c.estadoWFM === 'disponible' && !c.enDescanso)?.id || conductores[0]?.id;
     const conductorAsignado = conductores.find(c => c.id === condId);
 
     setViajes(prev => prev.map(v => {
@@ -489,7 +387,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const viajeActual = viajes.find(v => v.id === viajeId);
 
     if (viajeActual && viajeActual.conductorId) {
-      // Mandar el auto averiado anterior al taller y liberar / bloquear al chofer
       const prevCondId = viajeActual.conductorId;
       setConductores(prev => prev.map(c => c.id === prevCondId ? { ...c, estadoWFM: 'offline', motivoBloqueo: 'Unidad en revisión técnica por incidencia en ruta.' } : c));
       if (viajeActual.vehiculoId) {
@@ -519,7 +416,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const crearViaje = (data: Partial<ViajeOperativa>) => {
     const nuevoViaje: ViajeOperativa = {
       id: `viaje-${Date.now()}`,
-      empresaId: currentTenantId,
       clienteCorporativoId: data.clienteCorporativoId || clientes[0]?.id || 'cl-biobio-001',
       clienteNombre: data.clienteNombre || clientes[0]?.nombreCorporativo || 'Cuenta B2B Chile',
       pasajeroNombre: data.pasajeroNombre || 'Pasajero Nuevo',
@@ -541,7 +437,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const importarViajesCSV = (cantidad: number) => {
     const generados: ViajeOperativa[] = Array.from({ length: cantidad }).map((_, i) => ({
       id: `viaje-csv-${Date.now()}-${i}`,
-      empresaId: currentTenantId,
       clienteCorporativoId: clientes[0]?.id || 'cl-biobio-001',
       clienteNombre: clientes[0]?.nombreCorporativo || 'Forestal Arauco Biobío S.A.',
       pasajeroNombre: `Colaborador Turno Lote #${i + 1}`,
@@ -564,26 +459,20 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setViajes(prev => [...nuevos, ...prev]);
   };
 
-  // --- CRUD FLOTA ---
   const agregarVehiculo = (vehiculo: VehiculoFlota) => setVehiculos(prev => [vehiculo, ...prev]);
   const actualizarVehiculo = (id: string, updates: Partial<VehiculoFlota>) => setVehiculos(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
   const eliminarVehiculo = (id: string) => setVehiculos(prev => prev.filter(v => v.id !== id));
 
-  // --- CRUD CONDUCTORES ---
   const agregarConductor = (cond: ConductorWFM) => setConductores(prev => [cond, ...prev]);
   const actualizarConductor = (id: string, updates: Partial<ConductorWFM>) => setConductores(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   const eliminarConductor = (id: string) => setConductores(prev => prev.filter(c => c.id !== id));
 
-  // --- CRUD CLIENTES B2B & TARIFAS ---
   const agregarCliente = (cl: ClienteCorporativo) => setClientes(prev => [cl, ...prev]);
   const actualizarCliente = (id: string, updates: Partial<ClienteCorporativo>) => setClientes(prev => prev.map(cl => cl.id === id ? { ...cl, ...updates } : cl));
 
   return (
-    <TenantContext.Provider
+    <AppContext.Provider
       value={{
-        userRole,
-        tenants,
-        currentTenant,
         conductores,
         vehiculos,
         clientes,
@@ -593,9 +482,6 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setCurrentRoleView,
         isDarkMode,
         toggleDarkMode,
-        selectTenant,
-        updateTenantBranding,
-        addNewTenant,
         activeClienteB2BId,
         setActiveClienteB2BId,
         viajesB2B,
@@ -616,6 +502,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         eliminarConductor,
         agregarCliente,
         actualizarCliente,
+        userRole,
         authUser,
         authLoading,
         logoutAuth,
@@ -623,12 +510,12 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }}
     >
       {children}
-    </TenantContext.Provider>
+    </AppContext.Provider>
   );
 };
 
-export const useTenant = (): TenantContextType => {
-  const context = useContext(TenantContext);
-  if (!context) throw new Error('useTenant debe ser utilizado dentro de un TenantProvider');
+export const useApp = (): AppContextType => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error('useApp debe ser utilizado dentro de un AppProvider');
   return context;
 };

@@ -1,9 +1,9 @@
 import React from 'react';
-import { useTenant } from '../context/TenantContext';
+import { useApp } from '../context/AppContext';
 import { Shield, Building2, Briefcase, RefreshCw, Sun, Moon, Navigation, LogOut } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { userRole, currentTenant, tenants, selectTenant, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode, authUser, logoutAuth, clientes, activeClienteB2BId, setActiveClienteB2BId } = useTenant();
+  const { userRole, currentRoleView, setCurrentRoleView, isDarkMode, toggleDarkMode, authUser, logoutAuth, clientes, activeClienteB2BId, setActiveClienteB2BId } = useApp();
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-[#0D1117]/95 backdrop-blur-sm border-b border-slate-200 dark:border-[#212A38]">
@@ -13,25 +13,12 @@ export const Navbar: React.FC = () => {
           {/* 1. Lo Esencial: Logo y Tenant Activo */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded bg-slate-100 dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] flex items-center justify-center overflow-hidden shrink-0">
-              {currentRoleView === 'superadmin' ? (
-                <Shield className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-              ) : (
-                <img 
-                  src={currentTenant.logoUrl} 
-                  alt="" 
-                  className="w-full h-full object-cover"
-                />
-              )}
+              <Building2 className="w-4 h-4 text-[#1E3A8A] dark:text-[#3B82F6]" />
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm font-bold text-slate-900 dark:text-gray-100 tracking-tight">
-              {currentRoleView === 'superadmin' ? 'Administración General' : currentRoleView === 'cliente_b2b' ? 'Portal Empresas Contratantes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : currentTenant.nombre}
+              {currentRoleView === 'cliente_b2b' ? 'Portal Empresas Contratantes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : 'Transportes Biobío'}
               </span>
-              {currentRoleView !== 'superadmin' && (
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 border-l border-slate-200 dark:border-[#212A38] pl-2 font-medium">
-                  {currentTenant.slug}
-                </span>
-              )}
             </div>
           </div>
 
@@ -51,12 +38,12 @@ export const Navbar: React.FC = () => {
               </button>
             )}
 
-            {(userRole === 'superadmin' || userRole === 'tenant_admin') && (
+            {(userRole === 'admin') && (
               <button
-                onClick={() => setCurrentRoleView('tenant_admin')}
-                style={currentRoleView === 'tenant_admin' ? { backgroundColor: 'var(--tenant-primary)', color: '#FFFFFF' } : {}}
+                onClick={() => setCurrentRoleView('admin')}
+                style={currentRoleView === 'admin' ? { backgroundColor: 'var(--tenant-primary)', color: '#FFFFFF' } : {}}
                 className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  currentRoleView === 'tenant_admin'
+                  currentRoleView === 'admin'
                     ? 'text-white font-semibold shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
                 }`}
@@ -80,7 +67,7 @@ export const Navbar: React.FC = () => {
               </button>
             )}
 
-            {(userRole === 'superadmin' || userRole === 'tenant_admin' || userRole === 'app_conductor') && (
+            {(userRole === 'admin' || userRole === 'app_conductor') && (
               <button
                 onClick={() => setCurrentRoleView('app_conductor')}
                 className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -98,24 +85,10 @@ export const Navbar: React.FC = () => {
           {/* 3. Acción Principal & Selector de Entidades según Rol */}
           <div className="flex items-center space-x-2.5">
             
-            {/* Selector de Empresas Transportistas sólo para Admin Duet Solutions (SuperAdmin) */}
-            {userRole === 'superadmin' && (
-              <select
-                value={currentTenant.id}
-                onChange={(e) => selectTenant(e.target.value)}
-                title="Seleccionar Empresa Transportista Administrada"
-                className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-md px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 focus:outline-none focus:border-blue-500 cursor-pointer shadow-2xs"
-              >
-                {tenants.map((t) => (
-                  <option key={t.id} value={t.id} className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">
-                    🏢 {t.nombre}
-                  </option>
-                ))}
-              </select>
-            )}
+            {/* El selector de Empresas Transportistas ha sido eliminado por migración a Single-Tenant */}
 
             {/* Selector de Clientes Corporativos B2B sólo para Empresa Transportista (Tenant Admin) */}
-            {userRole === 'tenant_admin' && (
+            {userRole === 'admin' && (
               <select
                 value={activeClienteB2BId || 'cl-b2b-04'}
                 onChange={(e) => setActiveClienteB2BId(e.target.value)}

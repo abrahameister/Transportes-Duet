@@ -26,7 +26,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
  */
 export async function testSupabaseConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from('empresas_tenants').select('id').limit(1);
+    const { error } = await supabase.from('empresas_[]').select('id').limit(1);
     if (error) {
       console.warn('⚠️ [WFM Resilience] Aviso del motor Supabase:', error.message);
       return false;
