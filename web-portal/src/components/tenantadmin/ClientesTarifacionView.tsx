@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useApp } from '../../context/AppContext';
 import type { ClienteCorporativo } from '../../types';
 import { Building2, DollarSign, Plus, X, CheckCircle2 } from 'lucide-react';
@@ -103,27 +104,59 @@ export const ClientesTarifacionView: React.FC = () => {
     setTimeout(() => setActionMsg(null), 4000);
   };
 
-  const handleSaveNuevoCliente = (e: React.FormEvent) => {
+  const handleSaveNuevoCliente = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nuevo: ClienteCorporativo = {
-      id: `cl-${Date.now()}`,
-      
-      nombreCorporativo,
-      rutIdentificador: rut,
-      direccionFiscal: direccion,
-      contactoNombre,
-      contactoEmail,
-      tarifario: {
-        tarifaPorKm: 1800,
-        tarifaMinima: 12000,
-        tiempoEsperaPorHora: 15000,
-        rutasFijas: [
-          { id: 'rf-new-1', nombre: 'Aeropuerto Carriel Sur ➔ Casa Matriz', origen: 'Aeropuerto Carriel Sur, Talcahuano', destino: direccion, precioClp: 26000 }
-        ]
+    if (!contactoEmail) {
+      alert('Debes proporcionar un email de contacto para enviar la invitación B2B.');
+      return;
+    }
+    
+    // 1. Insert in clientes_corporativos
+    const { data: clienteData, error: clienteError } = await supabase.from('clientes_corporativos').insert([{
+      nombre_corporativo: nombreCorporativo,
+      rut_identificador: rut,
+      direccion_fiscal: direccion,
+      contacto_nombre: contactoNombre,
+      contacto_email: contactoEmail,
+      contacto_telefono: ''
+    }]).select().single();
+
+    if (clienteError) {
+      console.error(clienteError);
+      alert('Error creando empresa en DB: ' + clienteError.message);
+      return;
+    }
+
+    // 2. Invoke Edge Function to create Auth user and Profile
+    const { error: edgeError } = await supabase.functions.invoke('invite-b2b', {
+      body: { 
+        email: contactoEmail, 
+        fullName: contactoNombre, 
+        cliente_corporativo_id: clienteData.id 
       }
-    };
-    agregarCliente(nuevo);
-    setActionMsg(`Cuenta Corporativa B2B (${nombreCorporativo}) creada con tarifario chileno ($ CLP).`);
+    });
+
+    if (edgeError) {
+      console.error(edgeError);
+      alert('Empresa creada, pero falló el envío de invitación al usuario: ' + edgeError.message);
+    } else {
+      setActionMsg(`Empresa ${nombreCorporativo} creada. ¡Correo de confirmación enviado a ${contactoEmail}!`);
+    }
+
+    // Actualizamos la UI local (opcional, la DB ya tiene el dato y syncFromSupabase lo traerá en F5)
+    agregarCliente({
+      id: clienteData.id,
+      nombreCorporativo: clienteData.nombre_corporativo,
+      rutIdentificador: clienteData.rut_identificador,
+      direccionFiscal: clienteData.direccion_fiscal,
+      contactoNombre: clienteData.contacto_nombre,
+      contactoEmail: clienteData.contacto_email,
+      contactoTelefono: clienteData.contacto_telefono,
+      tarifario: {
+        tarifaPorKm: 1800, tarifaMinima: 12000, tiempoEsperaPorHora: 15000, rutasFijas: []
+      }
+    });
+    
     setShowClienteModal(false);
     setTimeout(() => setActionMsg(null), 4000);
   };
