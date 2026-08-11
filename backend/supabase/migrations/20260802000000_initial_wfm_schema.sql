@@ -176,9 +176,22 @@ ALTER TABLE public.viajes ENABLE ROW LEVEL SECURITY;
 
 -- Funciones Auxiliares para Políticas RLS
 CREATE OR REPLACE FUNCTION public.current_user_role()
-RETURNS rol_usuario AS $$
-    SELECT rol FROM public.perfiles WHERE id = auth.uid() LIMIT 1;
-$$ LANGUAGE sql STABLE SECURITY DEFINER;
+RETURNS rol_usuario AS $
+DECLARE
+    v_email text;
+    v_rol rol_usuario;
+BEGIN
+    -- 1. Validar por Dominio Autorizado (Super Admin Hardcoded)
+    SELECT email INTO v_email FROM auth.users WHERE id = auth.uid();
+    IF v_email LIKE '%@duetsolutions.cl' OR v_email LIKE '%@neiratransportes.cl' THEN
+        RETURN 'admin'::rol_usuario;
+    END IF;
+
+    -- 2. Validar por Tabla Perfiles
+    SELECT rol INTO v_rol FROM public.perfiles WHERE id = auth.uid() LIMIT 1;
+    RETURN v_rol;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
 -- --- Políticas para Tabla: PERFILES ---
