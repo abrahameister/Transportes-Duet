@@ -47,7 +47,7 @@ export const ConductorApp: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `App_Conductor_${'Transportes Biobío'.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`);
+    link.setAttribute("download", `App_Conductor_${'Neira Transportes'.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -140,7 +140,7 @@ export const ConductorApp: React.FC = () => {
       mensaje: `🚨 ALERTA CONDUCTOR: ${tipo} en Gran Concepción. Solicito gestión o asistencia desde Central.`,
       tipo: 'alerta_central'
     });
-    mostrarNotificacion(`🚨 Reporte de "${tipo}" despachado en tiempo real a la Central de ${'Transportes Biobío'}.`);
+    mostrarNotificacion(`🚨 Reporte de "${tipo}" despachado en tiempo real a la Central de ${'Neira Transportes'}.`);
   };
 
   const totalAbordo = pasajerosRuta.filter(p => p.estado === 'abordo').length;
@@ -164,7 +164,7 @@ export const ConductorApp: React.FC = () => {
               Módulo 5 • Terminal Operativo de Abordo
             </span>
             <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              App Conductor — {'Transportes Biobío'}
+              App Conductor — {'Neira Transportes'}
             </h1>
           </div>
         </div>
@@ -339,7 +339,7 @@ export const ConductorApp: React.FC = () => {
                     Manifiesto Transmitido a la Central
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                    La bitácora de telemetría GPS y el reporte digital de asistencia de funcionarios fueron sincronizados exitosamente en el Centro Operativo de <strong className="text-slate-900 dark:text-gray-200">{'Transportes Biobío'}</strong>.
+                    La bitácora de telemetría GPS y el reporte digital de asistencia de funcionarios fueron sincronizados exitosamente en el Centro Operativo de <strong className="text-slate-900 dark:text-gray-200">{'Neira Transportes'}</strong>.
                   </p>
                 </div>
 
@@ -585,7 +585,7 @@ export const ConductorApp: React.FC = () => {
                       if (totalPendientes > 0) return;
                       setRutaCompletada(true);
                       actualizarConductor(conductor.id, { estadoWFM: 'disponible', serviciosMes: (conductor.serviciosMes || 0) + 1 });
-                      mostrarNotificacion(`🏁 ¡Recorrido finalizado! Manifiesto de asistencia y kilometraje transmitidos al Centro Operativo de ${'Transportes Biobío'}.`);
+                      mostrarNotificacion(`🏁 ¡Recorrido finalizado! Manifiesto de asistencia y kilometraje transmitidos al Centro Operativo de ${'Neira Transportes'}.`);
                     }}
                     className={`w-full mt-2.5 py-3.5 rounded-xl font-black text-sm shadow-md transition-all flex items-center justify-center space-x-2 ${
                       totalPendientes > 0
@@ -615,10 +615,10 @@ export const ConductorApp: React.FC = () => {
                 <div className="border-b border-slate-200 dark:border-[#212A38] pb-3">
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-blue-500" />
-                    Bitácora de Asignaciones del Día (Biobío)
+                    Bitácora de Asignaciones del Día (Neira Transportes)
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Servicios regulares e incidencias despachadas desde la Central Operativa de {'Transportes Biobío'}.
+                    Servicios regulares e incidencias despachadas desde la Central Operativa de {'Neira Transportes'}.
                   </p>
                 </div>
 
@@ -705,7 +705,7 @@ export const ConductorApp: React.FC = () => {
                     Inspección Técnica Pre-Viaje (Checklist WFM)
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Verificación obligatoria conforme a protocolo de seguridad laboral de {'Transportes Biobío'} antes de iniciar traslados en el Gran Concepción.
+                    Verificación obligatoria conforme a protocolo de seguridad laboral de {'Neira Transportes'} antes de iniciar traslados en el Gran Concepción.
                   </p>
                 </div>
 
@@ -789,7 +789,7 @@ export const ConductorApp: React.FC = () => {
                     Canal Directo Central Operativa & Asistencia
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Línea prioritaria con los despachadores 24/7 en el Biobío y reporte en vivo de incidencias en ruta.
+                    Línea prioritaria con los despachadores 24/7 en el Neira Transportes y reporte en vivo de incidencias en ruta.
                   </p>
                 </div>
 
@@ -798,7 +798,7 @@ export const ConductorApp: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-extrabold text-sm text-slate-900 dark:text-white block">Operador de Turno: Mauricio Arrau</span>
-                      <span className="text-xs font-mono text-slate-500 dark:text-slate-400">+56 41 228 9000 • Biobío Centro</span>
+                      <span className="text-xs font-mono text-slate-500 dark:text-slate-400">+56 41 228 9000 • Neira Transportes Centro</span>
                     </div>
                     <a
                       href="tel:+56412289000"
@@ -816,7 +816,7 @@ export const ConductorApp: React.FC = () => {
                     Reportar Incidencia o Retraso a Central (1-Click)
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Selecciona una incidencia operativa para alertar en tiempo real a los operadores de {'Transportes Biobío'} y reprogramar los tiempos ETA:
+                    Selecciona una incidencia operativa para alertar en tiempo real a los operadores de {'Neira Transportes'} y reprogramar los tiempos ETA:
                   </p>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
@@ -950,7 +950,7 @@ export const ConductorApp: React.FC = () => {
             <div className="bg-slate-50 dark:bg-[#0D1117] p-3.5 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-2 text-xs">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Marca Blanca Configurada: {'Transportes Biobío'}</span>
+                <span>Marca Blanca Configurada: {'Neira Transportes'}</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                 ¡Hola! Esta APK es el terminal nativo de terreno optimizado con <strong>Expo</strong>. La autorización del conductor proviene estrictamente de su sesión criptográfica y el tenant activo; <strong>nunca se usan query params en la URL como fuente de permisos</strong>, asegurando que nadie burle el sistema ni suplante identidades en el Gran Concepción.

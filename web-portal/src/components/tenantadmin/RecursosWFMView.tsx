@@ -227,7 +227,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `App_Conductor_${'Transportes Biobío'.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`;
+                    a.download = `App_Conductor_${'Neira Transportes'.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -567,7 +567,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                     className="enterprise-input flex-1 text-xs"
                   />
                 </div>
-                <span className="text-[11px] text-slate-400 block mt-1">Los usuarios verán esta foto al solicitar su servicio de transporte en Concepción y Biobío.</span>
+                <span className="text-[11px] text-slate-400 block mt-1">Los usuarios verán esta foto al solicitar su servicio de transporte en Concepción y Neira Transportes.</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -632,7 +632,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         title={`¿Dar de baja la unidad de flota ${vehiculoToDelete?.placa}?`}
         message={
           <span>
-            Estás a punto de eliminar de la central operativa el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>). Esta acción removerá el móvil de las asignaciones de turno vigentes en {'Transportes Biobío'}.
+            Estás a punto de eliminar de la central operativa el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>). Esta acción removerá el móvil de las asignaciones de turno vigentes en {'Neira Transportes'}.
           </span>
         }
         confirmText="Confirmar Baja de Unidad"

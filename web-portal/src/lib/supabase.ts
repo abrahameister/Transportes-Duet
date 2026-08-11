@@ -22,7 +22,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 /**
  * Verifica de forma ultrarazona si la conexión a Supabase está activa y configurada.
  * Utilizado por el motor WFM para conmutar al Caché Local frente a pérdidas temporales
- * de señal 4G/LTE en rutas rurales o subterráneos del Biobío (Patrón Offline Fallback).
+ * de señal 4G/LTE en rutas rurales o subterráneos del Neira Transportes (Patrón Offline Fallback).
  */
 export async function testSupabaseConnection(): Promise<boolean> {
   try {

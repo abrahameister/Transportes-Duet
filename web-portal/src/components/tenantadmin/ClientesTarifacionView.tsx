@@ -31,7 +31,7 @@ export const ClientesTarifacionView: React.FC = () => {
     if (tenantMatch) {
       setNombreCorporativo(tenantMatch.nombre);
       setRut((tenantMatch as any).rut || '77.491.330-1');
-      setDireccion('Casa Matriz / Base Operativa Biobío');
+      setDireccion('Casa Matriz / Base Operativa Neira Transportes');
       setContactoNombre((tenantMatch as any).contacto || 'Jefatura WFM');
       setContactoEmail((tenantMatch as any).email || 'operaciones@empresa.cl');
     } else if (val === 'codelco') {
@@ -41,7 +41,7 @@ export const ClientesTarifacionView: React.FC = () => {
       setContactoNombre('Roberto Valdés - Despacho');
       setContactoEmail('rvaldes001@codelco.cl');
     } else if (val === 'arauco') {
-      setNombreCorporativo('Celulosa y Forestal Arauco Biobío S.A.');
+      setNombreCorporativo('Celulosa y Forestal Arauco Neira Transportes S.A.');
       setRut('96.536.000-5');
       setDireccion('Planta Horcones s/n, Arauco');
       setContactoNombre('Paulina Gacitúa - Logística');
@@ -59,9 +59,9 @@ export const ClientesTarifacionView: React.FC = () => {
     if (!selectedClienteForTariffs) return;
     const newRoute = {
       id: `rf-${Date.now()}`,
-      nombre: 'Nueva Ruta Corporativa (Concepción ➔ Biobío)',
+      nombre: 'Nueva Ruta Corporativa (Concepción ➔ Neira Transportes)',
       origen: 'Centro Concepción / Plaza Independencia',
-      destino: 'Planta Industrial Biobío',
+      destino: 'Planta Industrial Neira Transportes',
       precioClp: 22000
     };
     const updated = {
@@ -330,8 +330,8 @@ export const ClientesTarifacionView: React.FC = () => {
                       <option key={t.id} value={t.id}>{t.nombre} ({(t as any).rut || 'RUT Registrado'})</option>
                     ))}
                   </optgroup>
-                  <optgroup label="🏭 Grandes Corporaciones del Biobío / Chile">
-                    <option value="arauco">Celulosa y Forestal Arauco Biobío S.A.</option>
+                  <optgroup label="🏭 Grandes Corporaciones del Neira Transportes / Chile">
+                    <option value="arauco">Celulosa y Forestal Arauco Neira Transportes S.A.</option>
                     <option value="huachipato">Compañía Siderúrgica Huachipato CAP</option>
                     <option value="codelco">Codelco División El Teniente</option>
                   </optgroup>
@@ -340,7 +340,7 @@ export const ClientesTarifacionView: React.FC = () => {
 
               <div className="border-t border-slate-200 dark:border-[#212A38] pt-2">
                 <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Razón Social Contratante (*):</label>
-                <input type="text" value={nombreCorporativo} onChange={(e) => setNombreCorporativo(e.target.value)} placeholder="Ej. Forestal Arauco Biobío S.A." required className="enterprise-input w-full text-xs" />
+                <input type="text" value={nombreCorporativo} onChange={(e) => setNombreCorporativo(e.target.value)} placeholder="Ej. Forestal Arauco Neira Transportes S.A." required className="enterprise-input w-full text-xs" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">RUT Contratante (*):</label>

@@ -239,10 +239,10 @@ export const initialConductores: ConductorWFM[] = [
 
 export const initialClientes: ClienteCorporativo[] = [
   {
-    id: 'cl-b2b-01',
-      nombreCorporativo: 'Forestal Arauco Biobío S.A.',
+    id: 'acciona-01',
+      nombreCorporativo: 'Forestal Arauco Neira Transportes S.A.',
     rutIdentificador: '76.012.345-0',
-    direccionFiscal: 'Parque Industrial Escuadrón Oeste, Coronel, Biobío',
+    direccionFiscal: 'Parque Industrial Escuadrón Oeste, Coronel, Neira Transportes',
     contactoNombre: 'Ing. Rodrigo Fernández (Jefe de Logística y Personal)',
     contactoEmail: 'rodrigo.fernandez@arauco.cl',
     contactoTelefono: '+56 41 234 5000',
@@ -257,10 +257,10 @@ export const initialClientes: ClienteCorporativo[] = [
     }
   },
   {
-    id: 'cl-b2b-02',
+    id: 'swissport-01',
       nombreCorporativo: 'Compañía Siderúrgica Huachipato S.A.',
     rutIdentificador: '76.332.110-8',
-    direccionFiscal: 'Av. Gran Bretaña 2910, Talcahuano, Región del Biobío',
+    direccionFiscal: 'Av. Gran Bretaña 2910, Talcahuano, Región del Neira Transportes',
     contactoNombre: 'Lic. Marcela Alarcón (Subgerente de RRHH)',
     contactoEmail: 'malarcon@huachipato.cl',
     contactoTelefono: '+56 41 254 2000',
@@ -274,8 +274,8 @@ export const initialClientes: ClienteCorporativo[] = [
     }
   },
   {
-    id: 'cl-b2b-03',
-      nombreCorporativo: 'Universidad de Concepción (Dirección de Finanzas)',
+    id: 'jetsmart-01',
+      nombreCorporativo: 'Jetsmart de Concepción (Dirección de Finanzas)',
     rutIdentificador: '70.003.500-4',
     direccionFiscal: 'Víctor Lamas 1290, Barrio Universitario, Concepción',
     contactoNombre: 'Dr. Hernán Solar Valdés',
@@ -291,8 +291,8 @@ export const initialClientes: ClienteCorporativo[] = [
     }
   },
   {
-    id: 'cl-b2b-04',
-      nombreCorporativo: 'Clínica Sanatorio Alemán / Urgencias',
+    id: 'generico-01',
+      nombreCorporativo: 'Acciona / Urgencias',
     rutIdentificador: '70.211.900-3',
     direccionFiscal: 'Pedro de Valdivia 801, Concepción',
     contactoNombre: 'Dra. María Paz Solar (Jefe de Turnos Urgencia)',
@@ -303,7 +303,7 @@ export const initialClientes: ClienteCorporativo[] = [
       tarifaMinima: 14000,
       tiempoEsperaPorHora: 16000,
       rutasFijas: [
-        { id: 'rf-05', nombre: 'Chacabuco 1400 ➔ Clínica Sanatorio Alemán', origen: 'Chacabuco 1400, Concepción', destino: 'Pedro de Valdivia 801, Concepción', precioClp: 18500 }
+        { id: 'rf-05', nombre: 'Chacabuco 1400 ➔ Acciona', origen: 'Chacabuco 1400, Concepción', destino: 'Pedro de Valdivia 801, Concepción', precioClp: 18500 }
       ]
     }
   }
@@ -312,8 +312,8 @@ export const initialClientes: ClienteCorporativo[] = [
 export const initialViajes: ViajeOperativa[] = [
   {
     id: 'viaje-001',
-      clienteCorporativoId: 'cl-b2b-01',
-    clienteNombre: 'Forestal Arauco Biobío S.A.',
+      clienteCorporativoId: 'acciona-01',
+    clienteNombre: 'Forestal Arauco Neira Transportes S.A.',
     conductorId: 'c-101',
     conductorNombre: 'Marco Antonio Solar',
     vehiculoId: 'veh-101',
@@ -333,7 +333,7 @@ export const initialViajes: ViajeOperativa[] = [
   },
   {
     id: 'viaje-002',
-      clienteCorporativoId: 'cl-b2b-02',
+      clienteCorporativoId: 'swissport-01',
     clienteNombre: 'Siderúrgica Huachipato S.A.',
     conductorId: 'c-102',
     conductorNombre: 'Cristian Becerra Tapia',
@@ -354,8 +354,8 @@ export const initialViajes: ViajeOperativa[] = [
   },
   {
     id: 'viaje-003',
-      clienteCorporativoId: 'cl-b2b-03',
-    clienteNombre: 'Universidad de Concepción (Finanzas)',
+      clienteCorporativoId: 'jetsmart-01',
+    clienteNombre: 'Jetsmart de Concepción (Finanzas)',
     conductorId: 'c-103',
     conductorNombre: 'Héctor Saavedra Cruz',
     vehiculoId: 'veh-103',
@@ -375,8 +375,8 @@ export const initialViajes: ViajeOperativa[] = [
   },
   {
     id: 'viaje-004',
-      clienteCorporativoId: 'cl-b2b-01',
-    clienteNombre: 'Forestal Arauco Biobío S.A.',
+      clienteCorporativoId: 'acciona-01',
+    clienteNombre: 'Forestal Arauco Neira Transportes S.A.',
     conductorId: 'c-104',
     conductorNombre: 'Víctor Hugo Paredes',
     vehiculoId: 'veh-104',
@@ -405,7 +405,7 @@ export const initialViajes: ViajeOperativa[] = [
   },
   {
     id: 'viaje-005',
-      clienteCorporativoId: 'cl-b2b-02',
+      clienteCorporativoId: 'swissport-01',
     clienteNombre: 'Siderúrgica Huachipato S.A.',
     pasajeroNombre: 'Ing. Claudio Arriagada',
     pasajeroTelefono: '+56 9 5567 8901',
@@ -425,8 +425,8 @@ export const initialViajes: ViajeOperativa[] = [
 export const initialRutasRecurrentes: RutaRecurrente[] = [
   {
     id: 'rr-concep-01',
-      clienteCorporativoId: 'cl-b2b-01',
-    clienteNombre: 'Forestal Arauco Biobío S.A.',
+      clienteCorporativoId: 'acciona-01',
+    clienteNombre: 'Forestal Arauco Neira Transportes S.A.',
     nombreRuta: 'Turno Matinal Jefaturas (Concepción ➔ Coronel)',
     diasSemana: 'Lunes a Viernes',
     horaProgramada: '07:15 AM',
@@ -437,7 +437,7 @@ export const initialRutasRecurrentes: RutaRecurrente[] = [
   },
   {
     id: 'rr-concep-02',
-      clienteCorporativoId: 'cl-b2b-02',
+      clienteCorporativoId: 'swissport-01',
     clienteNombre: 'Siderúrgica Huachipato S.A.',
     nombreRuta: 'Conexión Aeropuerto ➔ Gerencia Huachipato',
     diasSemana: 'Lunes, Miércoles y Viernes',

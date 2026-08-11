@@ -268,7 +268,7 @@ BEGIN
         veh.modelo as vehiculo_modelo,
         veh.placa as vehiculo_placa,
         veh.color as vehiculo_color,
-        'Transportes Biobío'::VARCHAR as empresa_nombre,
+        'Neira Transportes'::VARCHAR as empresa_nombre,
         'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=150&q=80'::TEXT as empresa_logo,
         '#1E293B'::VARCHAR as empresa_color_primary,
         '#0F172A'::VARCHAR as empresa_color_secondary

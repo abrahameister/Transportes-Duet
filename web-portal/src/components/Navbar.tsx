@@ -17,7 +17,7 @@ export const Navbar: React.FC = () => {
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm font-bold text-slate-900 dark:text-gray-100 tracking-tight">
-              {currentRoleView === 'cliente_b2b' ? 'Portal Empresas Contratantes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : 'Transportes Biobío'}
+              {currentRoleView === 'cliente_b2b' ? 'Portal Empresas Contratantes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : 'Neira Transportes'}
               </span>
             </div>
           </div>

@@ -459,7 +459,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clienteNombre: data.clienteNombre || clientes[0]?.nombreCorporativo || 'Cuenta B2B Chile',
       pasajeroNombre: data.pasajeroNombre || 'Pasajero Nuevo',
       pasajeroTelefono: data.pasajeroTelefono || '+56 9 8123 4567',
-      origenDireccion: data.origenDireccion || 'Aeropuerto Carriel Sur, Talcahuano, Región del Biobío',
+      origenDireccion: data.origenDireccion || 'Aeropuerto Carriel Sur, Talcahuano, Región del Neira Transportes',
       origenLat: -36.7824,
       origenLng: -73.0631,
       destinoDireccion: data.destinoDireccion || 'Plaza Independencia 400, Concepción Centro',
@@ -477,7 +477,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const generados: ViajeOperativa[] = Array.from({ length: cantidad }).map((_, i) => ({
       id: `viaje-csv-${Date.now()}-${i}`,
       clienteCorporativoId: clientes[0]?.id || 'cl-biobio-001',
-      clienteNombre: clientes[0]?.nombreCorporativo || 'Forestal Arauco Biobío S.A.',
+      clienteNombre: clientes[0]?.nombreCorporativo || 'Forestal Arauco Neira Transportes S.A.',
       pasajeroNombre: `Colaborador Turno Lote #${i + 1}`,
       pasajeroTelefono: `+56 9 ${Math.floor(6000 + Math.random() * 3999)} ${Math.floor(1000 + Math.random() * 8999)}`,
       origenDireccion: 'Planta Industrial Huachipato / Coronel',

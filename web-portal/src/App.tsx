@@ -50,7 +50,7 @@ const MainRouter: React.FC = () => {
 
       <footer className="border-t border-slate-200 dark:border-[#212A38] bg-white dark:bg-[#090C10] py-4 text-center text-xs text-slate-500 dark:text-gray-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">Transportes Biobío</span>
+          <span className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">Neira Transportes</span>
           <span>Plataforma de Transporte de Personal Chile ● v2.0.0</span>
         </div>
       </footer>

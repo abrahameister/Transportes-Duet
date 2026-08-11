@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { UploadCloud, PlusCircle, Calendar, CheckCircle, ArrowRight, MapPin, Download, FileText, Sparkles, Users } from 'lucide-react';
 
 const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
-  'Aeropuerto Carriel Sur, Talcahuano, Región del Biobío',
+  'Aeropuerto Carriel Sur, Talcahuano, Región del Neira Transportes',
   'Siderúrgica Huachipato, Gran Bretaña 2910, Talcahuano',
   'Plaza Independencia 400, Concepción Centro',
   'Barrio Universitario UdeC, Chacabuco, Concepción',
@@ -12,13 +12,13 @@ const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
   'Casino Marina del Sol, Calle A 809, Talcahuano',
   'Mall Plaza Trebol, Jorge Alessandri 3177, Talcahuano',
   'Av. Pedro de Valdivia 1200, Concepción',
-  'San Pedro de la Paz, Huerto de los Olivos 45, Biobío',
+  'San Pedro de la Paz, Huerto de los Olivos 45, Neira Transportes',
   'Clínica Sanatorio Alemán, Pedro de Valdivia 801, Concepción',
   'Aeropuerto Internacional Arturo Merino Benítez (AMB), Pudahuel, Santiago',
   'Av. Vitacura 2670, Las Condes, Santiago',
   'Plaza Baquedano / Italia, Providencia, Santiago',
   'Puerto Lirquén, Recinto Portuario s/n, Penco',
-  'Planta Biobío Cementos Bío Bío, Talcahuano'
+  'Planta Neira Transportes Cementos Bío Bío, Talcahuano'
 ];
 
 export const ProgramacionServiciosView: React.FC = () => {
@@ -68,7 +68,7 @@ export const ProgramacionServiciosView: React.FC = () => {
               <td>Carla Morales Rojas</td>
               <td>+56 9 7222 3344</td>
               <td>Barrio Universitario UdeC, Concepción</td>
-              <td>San Pedro de la Paz, Biobío</td>
+              <td>San Pedro de la Paz, Neira Transportes</td>
               <td>14000</td>
               <td>CC-FINANZAS</td>
             </tr>
@@ -126,7 +126,7 @@ export const ProgramacionServiciosView: React.FC = () => {
       clienteNombre: clienteSeleccionado?.nombreCorporativo || 'Cuenta B2B',
       pasajeroNombre,
       pasajeroTelefono,
-      origenDireccion: origen || 'Aeropuerto Carriel Sur, Talcahuano, Región del Biobío',
+      origenDireccion: origen || 'Aeropuerto Carriel Sur, Talcahuano, Región del Neira Transportes',
       destinoDireccion: destino || 'Plaza Independencia 400, Concepción Centro',
       montoEstimado: Number(monto),
       fechaProgramada: 'Inmediato (Hoy)'
@@ -437,7 +437,7 @@ export const ProgramacionServiciosView: React.FC = () => {
               className="border-2 border-dashed border-slate-300 dark:border-[#212A38] hover:border-emerald-500 rounded-xl p-6 transition-all bg-slate-50/50 dark:bg-[#0D1117] cursor-pointer mt-4"
             >
               <FileText className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-              <span className="text-xs font-semibold text-slate-700 dark:text-gray-300 block">Zona de Carga Segura WFM (Excel / Biobío)</span>
+              <span className="text-xs font-semibold text-slate-700 dark:text-gray-300 block">Zona de Carga Segura WFM (Excel / Neira Transportes)</span>
               <span className="text-[11px] text-slate-400 block mt-1">Haga clic aquí o en el botón verde superior para adjuntar la planilla Excel (.XLS / .XLSX)</span>
             </div>
           </div>
@@ -449,7 +449,7 @@ export const ProgramacionServiciosView: React.FC = () => {
         <div className="enterprise-card overflow-hidden">
           <div className="p-5 border-b border-slate-200 dark:border-[#212A38] bg-slate-50/50 dark:bg-[#0D1117]/50 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Rutas Programadas y Recurrentes (Región del Biobío)</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Rutas Programadas y Recurrentes (Región del Neira Transportes)</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">Se autogeneran cada día en el tablero de Live Dispatch 30 minutos antes del turno acordado.</p>
             </div>
           </div>

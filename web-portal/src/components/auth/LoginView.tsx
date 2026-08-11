@@ -12,8 +12,8 @@ export const LoginView: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const logoUrl = null;
-  const brandName = 'Transportes Biobío';
-  const headerText = 'Centro Operativo de Transporte • Transportes Biobío';
+  const brandName = 'Neira Transportes';
+  const headerText = 'Centro Operativo de Transporte • Neira Transportes';
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +207,7 @@ export const LoginView: React.FC = () => {
 
         {/* Footer Seguro */}
         <div className="mt-8 text-center text-xs text-slate-500 flex flex-col items-center gap-2">
-          <p>© {new Date().getFullYear()} Transportes Biobío. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} Neira Transportes. Todos los derechos reservados.</p>
           <div className="flex items-center gap-1 opacity-60">
             <Shield className="w-3 h-3" />
             <span>Sistema protegido por cifrado de grado militar</span>
