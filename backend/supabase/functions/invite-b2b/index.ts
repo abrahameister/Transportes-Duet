@@ -15,17 +15,24 @@ serve(async (req) => {
   try {
     const { email, role, fullName, cliente_corporativo_id } = await req.json()
 
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header provided by the client.');
+    }
+
     // Create a Supabase client with the Auth context of the user calling the function.
-    // We check if they are authenticated.
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: authHeader } } }
     )
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    // Using the explicit token for getUser is more reliable in Edge Functions
+    const token = authHeader.replace('Bearer ', '').trim();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
     if (userError || !user) {
-      throw new Error('Unauthorized - Must be logged in')
+      throw new Error('Unauthorized. Token validation failed: ' + (userError?.message || 'Unknown error'));
     }
 
     // Verify if the caller is an admin (Optional extra security, assuming RLS already protects the tables)
