@@ -35,14 +35,25 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Verify caller role in perfiles
-    const { data: callerProfile } = await supabaseAdmin
-      .from('perfiles')
-      .select('rol')
-      .eq('id', user.id)
-      .single()
+    // Verify caller role in perfiles OR via domain check
+    let isAdmin = false;
+    const userEmail = (user.email || '').toLowerCase();
+    
+    if (userEmail.endsWith('@duetsolutions.cl') || userEmail.endsWith('@neiratransportes.cl')) {
+      isAdmin = true;
+    } else {
+      const { data: callerProfile } = await supabaseAdmin
+        .from('perfiles')
+        .select('rol')
+        .eq('id', user.id)
+        .single()
+        
+      if (callerProfile?.rol === 'admin') {
+        isAdmin = true;
+      }
+    }
 
-    if (callerProfile?.rol !== 'admin') {
+    if (!isAdmin) {
       throw new Error('Unauthorized - Must be an admin to invite B2B clients')
     }
 
