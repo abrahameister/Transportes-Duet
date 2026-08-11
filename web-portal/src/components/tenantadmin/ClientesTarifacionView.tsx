@@ -128,23 +128,9 @@ export const ClientesTarifacionView: React.FC = () => {
       return;
     }
 
-    // 2. Invoke Edge Function to create Auth user and Profile
-    const { error: edgeError } = await supabase.functions.invoke('invite-b2b', {
-      body: { 
-        email: contactoEmail, 
-        fullName: contactoNombre, 
-        cliente_corporativo_id: clienteData.id 
-      }
-    });
+    setActionMsg(`Empresa ${nombreCorporativo} creada exitosamente en base de datos.`);
 
-    if (edgeError) {
-      console.error(edgeError);
-      alert('Empresa creada, pero falló el envío de invitación al usuario: ' + edgeError.message);
-    } else {
-      setActionMsg(`Empresa ${nombreCorporativo} creada. ¡Correo de confirmación enviado a ${contactoEmail}!`);
-    }
-
-    // Actualizamos la UI local (opcional, la DB ya tiene el dato y syncFromSupabase lo traerá en F5)
+    // Actualizamos la UI local
     agregarCliente({
       id: clienteData.id,
       nombreCorporativo: clienteData.nombre_corporativo,
@@ -160,6 +146,42 @@ export const ClientesTarifacionView: React.FC = () => {
     
     setShowClienteModal(false);
     setTimeout(() => setActionMsg(null), 4000);
+  };
+
+  const handleInviteClient = async (cl: ClienteCorporativo) => {
+    if (!cl.contactoEmail) {
+      alert('Esta empresa no tiene un correo electrónico configurado.');
+      return;
+    }
+    
+    setInvitingId(cl.id);
+    
+    const { error: edgeError } = await supabase.functions.invoke('invite-b2b', {
+      body: { 
+        email: cl.contactoEmail, 
+        fullName: cl.contactoNombre, 
+        cliente_corporativo_id: cl.id 
+      }
+    });
+
+    setInvitingId(null);
+
+    if (edgeError) {
+      console.error(edgeError);
+      let realErrorMessage = edgeError.message;
+      try {
+        if (edgeError.context) {
+          const errorContext = await edgeError.context.json();
+          if (errorContext && errorContext.error) {
+            realErrorMessage = errorContext.error;
+          }
+        }
+      } catch (e) {}
+      alert('Error al enviar invitación: ' + realErrorMessage);
+    } else {
+      setActionMsg(`¡Invitación enviada con éxito a ${cl.contactoEmail}!`);
+      setTimeout(() => setActionMsg(null), 4000);
+    }
   };
 
   return (
