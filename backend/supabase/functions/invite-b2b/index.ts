@@ -58,6 +58,7 @@ serve(async (req) => {
     }
 
     // 1. Invite the user
+    let userId = null;
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: {
         rol: role || 'cliente_corporativo',
@@ -66,12 +67,27 @@ serve(async (req) => {
     })
 
     if (inviteError) {
-      throw inviteError
+      // Check if user already exists
+      if (inviteError.message?.toLowerCase().includes('already registered') || inviteError.status === 422 || inviteError.status === 400) {
+        // Find existing user in perfiles
+        const { data: existingProfile, error: searchError } = await supabaseAdmin.from('perfiles').select('id').eq('email', email).single()
+        if (existingProfile) {
+          userId = existingProfile.id
+        } else {
+          // It's possible the user exists in auth.users but NOT in perfiles. We can't query auth.users by email easily without listUsers
+          // So we just throw the original error with a helpful message
+          throw new Error('El correo ingresado ya existe en la base de datos (Auth), pero no tiene un perfil asociado. Intenta con un correo diferente.')
+        }
+      } else {
+        throw inviteError
+      }
+    } else {
+      userId = inviteData.user.id
     }
 
-    // 2. Insert into perfiles
+    // 2. Insert or update into perfiles
     const { error: profileError } = await supabaseAdmin.from('perfiles').upsert({
-      id: inviteData.user.id,
+      id: userId,
       rol: role || 'cliente_corporativo',
       nombre_completo: fullName,
       email: email,
