@@ -24,10 +24,12 @@ export const ClientesTarifacionView: React.FC = () => {
 
   const clientesTenant = clientes;
 
+  const tenants: any[] = [];
+
   const handleSelectTemplate = (val: string) => {
     setSelectedTemplate(val);
     if (!val) return;
-    const tenantMatch = ([].find)(t => t.id === val);
+    const tenantMatch = (tenants as any[]).find(t => t.id === val);
     if (tenantMatch) {
       setNombreCorporativo(tenantMatch.nombre);
       setRut((tenantMatch as any).rut || '77.491.330-1');
@@ -326,7 +328,7 @@ export const ClientesTarifacionView: React.FC = () => {
                 >
                   <option value="">-- Ingreso Manual Libre --</option>
                   <optgroup label="🏢 Empresas Tenants de Nexo Mobility">
-                    {[].map(t => (
+                    {tenants.map((t: any) => (
                       <option key={t.id} value={t.id}>{t.nombre} ({(t as any).rut || 'RUT Registrado'})</option>
                     ))}
                   </optgroup>

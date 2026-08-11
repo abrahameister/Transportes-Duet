@@ -1270,7 +1270,7 @@ export const ClientPortalB2B: React.FC = () => {
                   <span className="text-slate-400 block font-bold">EJECUTIVO DE CUENTA ASIGNADO:</span>
                   <strong className="text-slate-900 dark:text-white block text-sm mt-0.5">Matías Vergara Lazo</strong>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Ejecutivo Grandes Cuentas Neira Transportes</span>
-                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 block mt-0.5">mvergara@{'' || 'andina'}.cl</span>
+                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 block mt-0.5">mvergara@andina.cl</span>
                 </div>
               </div>
             </div>
@@ -1463,7 +1463,7 @@ export const ClientPortalB2B: React.FC = () => {
               <div className="bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-3.5 flex items-start space-x-3 text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed mt-4">
                 <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <span>
-                  Al registrar, <strong>{'Neira Transportes' || 'Transportes'}</strong> verificará la viabilidad y cobertura de la dirección en un máximo de 2 horas hábiles.
+                  Al registrar, <strong>{'Neira Transportes'}</strong> verificará la viabilidad y cobertura de la dirección en un máximo de 2 horas hábiles.
                 </span>
               </div>
 

@@ -12,7 +12,7 @@ export const AdminPortal: React.FC = () => {
   const {  conductores, vehiculos, viajes } = useApp();
   const [activeEje, setActiveEje] = useState<'torre' | 'conductores' | 'vehiculos' | 'programacion' | 'incidencias' | 'clientes' | 'recursos'>('torre');
   
-  const stats = getWFMStats('default', conductores, viajes);
+  const stats = getWFMStats(conductores, viajes);
   const vehiculosCount = vehiculos.length;
   const conductoresCount = stats.totalConductores;
 

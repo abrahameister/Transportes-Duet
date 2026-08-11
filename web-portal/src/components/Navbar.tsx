@@ -26,9 +26,9 @@ export const Navbar: React.FC = () => {
           <nav className="hidden md:flex items-center space-x-1">
             {userRole === 'superadmin' && (
               <button
-                onClick={() => setCurrentRoleView('superadmin')}
+                onClick={() => setCurrentRoleView('admin')}
                 className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  currentRoleView === 'superadmin'
+                  currentRoleView === 'admin'
                     ? 'bg-slate-100 dark:bg-[#161D27] text-slate-900 dark:text-white font-semibold border border-slate-200 dark:border-[#212A38]'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-[#161D27]/50'
                 }`}
