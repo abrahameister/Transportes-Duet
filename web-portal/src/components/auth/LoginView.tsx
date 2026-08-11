@@ -1,149 +1,87 @@
-// ==============================================================================
-// COMPONENTE CORPORATIVO DE AUTENTICACIÓN WFM — TRANSPORTES DUET
-// ==============================================================================
-// Gestiona Inicio de Sesión, Registro, Recuperación de Contraseña y Bypass de Demo
-// con manejo visual y granular de errores UX en español chilenizado.
-// ==============================================================================
-
 import React, { useState } from 'react';
+import { Shield, Mail, Lock, ArrowRight, CheckCircle, RefreshCcw } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useApp } from '../../context/AppContext';
-import { Mail, Lock, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, KeyRound, Eye, EyeOff, Building2, Sparkles, Terminal, Shield, Truck, Briefcase } from 'lucide-react';
-
-type AuthMode = 'signin' | 'forgot';
-
-interface ErrorBannerState {
-  type: 'no_account' | 'invalid_email' | 'wrong_password' | 'general' | 'success';
-  title: string;
-  message: string;
-}
 
 export const LoginView: React.FC = () => {
-  const { loginDemoBypass } = useApp();
-  
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const [mode, setMode] = useState<'signin' | 'forgot'>('signin');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [feedback, setFeedback] = useState<ErrorBannerState | null>(null);
-  const [isHumanVerified, setIsHumanVerified] = useState<boolean>(false);
-
-  // Validación de sintaxis de correo electrónico corporativo
-  const isValidEmail = (correo: string): boolean => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(correo.trim());
-  };
-
-  const handleClearFeedback = () => setFeedback(null);
-
-  // --- SUBMIT: MANEJO DE ERRORES INTELIGENTE Y GRANULAR ---
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    handleClearFeedback();
-
-    if (mode === 'signin' && !isHumanVerified) {
-      setFeedback({
-        type: 'general',
-        title: '¡Epa! Falta confirmar que eres humano',
-        message: 'Por favor marca la casilla de verificación para asegurarnos de que eres una persona real (¡y no un robot al volante!).'
-      });
-      return;
-    }
-
-    // 1. VALIDACIÓN: Correo incorrecto o formato inválido
-    if (!email || !isValidEmail(email)) {
-      setFeedback({
-        type: 'invalid_email',
-        title: 'Correo Electrónico Inválido',
-        message: 'El formato del correo corporativo es inválido o no está registrado en Transportes Duet. Verifica la ortografía y vuelve a intentar.'
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      if (mode === 'signin') {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password.trim(),
-        });
-
-        if (error) {
-          const errMsg = error.message.toLowerCase();
-          
-          // 2. DETECCIÓN DE USUARIO SIN CUENTA VS CONTRASEÑA INCORRECTA
-          // Si es un correo típico de prueba no registrado o rechazo por usuario inexistente
-          if (errMsg.includes('user not found') || errMsg.includes('email not confirmed') || (errMsg.includes('invalid login credentials') && !email.includes('@andina.cl') && !email.includes('@sanatorioaleman.cl') && !email.includes('@duet'))) {
-            setFeedback({
-              type: 'no_account',
-              title: 'Cuenta No Registrada o Sin Acceso WFM',
-              message: 'No existe una cuenta activa asociada a este correo corporativo. Te invitamos a registrarte o utilizar el Acceso de Prueba Rápido al pie de la página.'
-            });
-          } else {
-            // 3. DETECCIÓN DE CONTRASEÑA INCORRECTA
-            setFeedback({
-              type: 'wrong_password',
-              title: 'Contraseña Incorrecta',
-              message: 'La contraseña ingresada es incorrecta para esta cuenta WFM. Si no la recuerdas, presiona "¿Olvidaste tu contraseña?" más abajo para restablecerla al instante.'
-            });
-          }
-        } else if (data.session) {
-          // Sesión iniciada y sincronizada de forma automática con AppContext
-          console.log('✅ [WFM Auth] Autenticado exitosamente como:', data.session.user.email);
-        }
-      } else if (mode === 'forgot') {
-        // 4. FLUJO PARA RECUPERACIÓN DE CONTRASEÑA
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: `${window.location.origin}/`,
-        });
-
-        if (error) {
-          setFeedback({
-            type: 'invalid_email',
-            title: 'Error de Envío',
-            message: 'No logramos despachar el correo de recuperación. Verifica que la dirección electrónica sea la correcta.'
-          });
-        } else {
-          setFeedback({
-            type: 'success',
-            title: '¡Correo de Rescate Enviado!',
-            message: 'Revisa tu bandeja de entrada o carpeta Spam. Encontrarás un enlace mágico y seguro para restablecer y elegir tu nueva contraseña WFM de Transportes Duet.'
-          });
-        }
-      }
-    } catch (err: any) {
-      setFeedback({
-        type: 'general',
-        title: 'Error de Comunicación',
-        message: err?.message || 'Ocurrió una interrupción al intentar comunicar con los servidores de Supabase.'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [captchaVerified, setCaptchaVerified] = useState<boolean>(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const logoUrl = null;
   const brandName = 'Transportes Biobío';
   const headerText = 'Centro Operativo de Transporte • Transportes Biobío';
 
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!captchaVerified) {
+      setError('Por favor completa la validación de seguridad (Captcha).');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError('Credenciales inválidas. Verifica tu correo y contraseña.');
+      setLoading(false);
+    }
+  };
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!captchaVerified) {
+      setError('Por favor completa la validación de seguridad (Captcha).');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password',
+    });
+
+    if (resetError) {
+      setError('Hubo un problema al intentar enviar el correo. Revisa que esté bien escrito.');
+    } else {
+      setSuccessMsg('¡Te hemos enviado un correo seguro! Sigue las instrucciones allí para recuperar tu acceso.');
+      setEmail('');
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans text-slate-100">
-      {/* Fondo Arquitectura WFM (Gradients y Patrones) */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0C121E] to-[#081828] z-0 pointer-events-none" />
-      <div className="absolute -top-40 -right-40 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      
+      {/* Fondo estético */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] animate-blob"></div>
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-emerald-500 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-32 left-1/2 w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-[100px] animate-blob animation-delay-4000"></div>
+      </div>
 
-      <div className="w-full max-w-md bg-[#111827]/90 border border-[#212A38] rounded-2xl shadow-2xl p-6 sm:p-8 z-10 backdrop-blur-sm">
-        {/* Cabecera Institucional */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-tr from-[#0F172A] via-[#1E293B] to-[#334155] rounded-2xl mx-auto flex items-center justify-center border border-[#334155] shadow-lg mb-3 overflow-hidden">
+      <div className="w-full max-w-md z-10">
+        
+        {/* Cabecera corporativa */}
+        <div className="text-center mb-10">
+          <div className="w-20 h-20 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl mx-auto mb-6 flex items-center justify-center relative overflow-hidden">
             {logoUrl ? (
               <img src={logoUrl} alt={brandName} className="w-full h-full object-cover" />
             ) : (
-              <Building2 className="w-8 h-8 text-[#E8832A]" />
+              <Shield className="w-10 h-10 text-blue-500" />
             )}
+            <div className="absolute inset-0 border border-white/10 rounded-2xl pointer-events-none"></div>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
             {brandName}
@@ -154,216 +92,128 @@ export const LoginView: React.FC = () => {
           </p>
         </div>
 
-        {/* Banner de Errores o Confirmaciones */}
-        {feedback && (
-          <div className={`mb-5 p-3.5 rounded-xl border flex items-start space-x-3 text-xs shadow-inner animate-in fade-in duration-200 ${
-            feedback.type === 'success' 
-              ? 'bg-emerald-950/60 border-emerald-700/80 text-emerald-200' 
-              : feedback.type === 'wrong_password'
-              ? 'bg-red-950/60 border-red-700/80 text-red-200'
-              : 'bg-amber-950/60 border-amber-700/80 text-amber-200'
-          }`}>
-            {feedback.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-            )}
-            <div className="flex-1">
-              <h4 className="font-bold text-white text-sm mb-0.5">{feedback.title}</h4>
-              <p className="leading-relaxed opacity-95">{feedback.message}</p>
-              
-              {feedback.type === 'wrong_password' && mode === 'signin' && (
-                <button
-                  type="button"
-                  onClick={() => { setMode('forgot'); setFeedback(null); }}
-                  className="mt-2 text-[#E8832A] hover:underline font-bold flex items-center gap-1 text-xs"
-                >
-                  <KeyRound className="w-3.5 h-3.5" /> Ir a recuperar contraseña ahora ➔
-                </button>
-              )}
-              {feedback.type === 'no_account' && mode === 'signin' && (
-                <div className="mt-2 text-slate-300 text-xs italic">
-                  ¿Es tu primera vez por aquí o necesitas acceso? Recuerda que las cuentas son exclusivas y administradas de forma centralizada por el área operativa. Habla directamente con el Oficial de Tráfico o Administrador WFM de tu empresa para solicitar tus credenciales.
-                </div>
-              )}
+        {/* Tarjeta de Autenticación */}
+        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl p-8 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500"></div>
+          
+          <h2 className="text-xl font-semibold mb-6 text-white text-center">
+            {mode === 'signin' ? 'Acceso Seguro' : 'Recuperar Contraseña'}
+          </h2>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+              {error}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Pestañas de Navegación de Formulario */}
-        <div className="grid grid-cols-2 gap-1 bg-[#090D14] p-1 rounded-xl mb-6 border border-[#1E293B]">
-          <button
-            type="button"
-            onClick={() => { setMode('signin'); handleClearFeedback(); }}
-            className={`py-2 text-xs font-bold rounded-lg transition-all ${
-              mode === 'signin' ? 'bg-[#1E293B] text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Ingresar
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('forgot'); handleClearFeedback(); }}
-            className={`py-2 text-xs font-bold rounded-lg transition-all ${
-              mode === 'forgot' ? 'bg-[#1E293B] text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Recuperar Clave
-          </button>
-        </div>
-
-        {/* Formulario Principal */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Correo Electrónico Corporativo
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3 top-3.5 text-slate-500" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ej: c.munoz@andina.cl o dr.barros@sanatorio.cl"
-                required
-                className="w-full bg-[#0B0F17] border border-[#2B374A] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#E8832A] focus:ring-1 focus:ring-[#E8832A] transition-colors"
-              />
+          {successMsg && (
+            <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-sm flex gap-3 items-center">
+              <CheckCircle className="w-5 h-5 shrink-0" />
+              <p>{successMsg}</p>
             </div>
-          </div>
+          )}
 
-          {mode !== 'forgot' && (
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="text-xs font-semibold text-slate-300">
-                  Contraseña Institucional
-                </label>
-                {mode === 'signin' && (
-                  <button
-                    type="button"
-                    onClick={() => { setMode('forgot'); handleClearFeedback(); }}
-                    className="text-xs text-slate-400 hover:text-[#E8832A] transition-colors"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </button>
-                )}
-              </div>
+          <form onSubmit={mode === 'signin' ? handleSignIn : handleForgot} className="space-y-5">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-400 ml-1">Correo Electrónico</label>
               <div className="relative">
-                <Lock className="w-4 h-4 absolute left-3 top-3.5 text-slate-500" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-slate-500" />
+                </div>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  placeholder="usuario@ejemplo.com"
                   required
-                  className="w-full bg-[#0B0F17] border border-[#2B374A] rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#E8832A] focus:ring-1 focus:ring-[#E8832A] transition-colors"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
               </div>
             </div>
-          )}
 
-          {/* Captcha Amigable & Casual WFM */}
-          {mode === 'signin' && (
-            <div 
-              onClick={() => setIsHumanVerified(!isHumanVerified)}
-              className={`mt-3 p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                isHumanVerified 
-                  ? 'bg-emerald-950/40 border-emerald-500/60 text-emerald-200 shadow-sm' 
-                  : 'bg-[#121824] hover:bg-[#182030] border-[#2B374A] text-slate-300 shadow-inner'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={isHumanVerified}
-                  onChange={(e) => { e.stopPropagation(); setIsHumanVerified(e.target.checked); }}
-                  className="w-5 h-5 rounded text-[#E8832A] bg-[#0B0F17] border-[#2B374A] focus:ring-0 cursor-pointer accent-[#E8832A]"
-                />
-                <span className="text-xs sm:text-sm font-medium select-none flex items-center gap-1.5">
-                  <Sparkles className={`w-4 h-4 ${isHumanVerified ? 'text-emerald-400' : 'text-amber-500'}`} />
-                  <span>Confirmo que soy humano <span className="text-slate-400 font-normal">(y no un bot al volante)</span></span>
-                </span>
+            {mode === 'signin' && (
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-medium text-slate-400 ml-1">Contraseña</label>
+                  <button 
+                    type="button"
+                    onClick={() => { setMode('forgot'); setError(null); setSuccessMsg(null); }}
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    ¿La olvidaste?
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-slate-500" />
+                  </div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider bg-slate-800/90 text-slate-300 border border-slate-700/50">
-                {isHumanVerified ? '✓ LISTO' : 'VERIFICAR'}
-              </span>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-[#E8832A] hover:bg-[#d6731a] text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-950/30 hover:shadow-amber-900/50 transition-all flex items-center justify-center gap-2 mt-4"
-          >
-            {loading ? (
-              <span>Procesando...</span>
-            ) : mode === 'signin' ? (
-              <><span>Ingresar</span> <ArrowRight className="w-4 h-4" /></>
-            ) : (
-              <><span>Recuperar Acceso</span> <KeyRound className="w-4 h-4" /></>
             )}
-          </button>
-        </form>
 
-        {/* Separador */}
-        <div className="my-6 flex items-center">
-          <div className="flex-1 border-t border-slate-800" />
-          <span className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            o utiliza el bypass local
-          </span>
-          <div className="flex-1 border-t border-slate-800" />
+            {/* Simulación/Placeholder de Captcha (Turnstile o reCAPTCHA) */}
+            <div className="mt-6 p-4 bg-slate-950/50 border border-slate-800 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div 
+                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-colors ${captchaVerified ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600 hover:border-slate-500'}`}
+                  onClick={() => setCaptchaVerified(!captchaVerified)}
+                >
+                  {captchaVerified && <CheckCircle className="w-4 h-4 text-white" />}
+                </div>
+                <span className="text-sm text-slate-300">Soy humano</span>
+              </div>
+              <div className="flex flex-col items-end">
+                <Shield className="w-5 h-5 text-slate-600 mb-0.5" />
+                <span className="text-[9px] text-slate-500 uppercase tracking-wider">Seguridad WFM</span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 px-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+            >
+              {loading ? (
+                <RefreshCcw className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  {mode === 'signin' ? 'Iniciar Sesión' : 'Enviar Correo de Recuperación'}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {mode === 'forgot' && (
+             <div className="mt-6 text-center">
+               <button 
+                 onClick={() => { setMode('signin'); setError(null); setSuccessMsg(null); }}
+                 className="text-sm text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+               >
+                 <ArrowRight className="w-4 h-4 rotate-180" />
+                 Volver al inicio de sesión
+               </button>
+             </div>
+          )}
         </div>
 
-        <div className="bg-[#0f141e] border border-slate-700/50 p-4 rounded-xl mt-4">
-          <div className="text-center mb-3 text-xs text-slate-300 font-medium flex items-center justify-center gap-1.5">
-            <Terminal className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Panel de Demostración & Eval (Entorno Local)</span>
-          </div>
-          <div className="space-y-2.5">
-            <button
-              type="button"
-              onClick={() => loginDemoBypass('admin@transportesbiobio.cl', 'admin')}
-              className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
-            >
-              <Shield className="w-4 h-4 text-blue-400 shrink-0" />
-              <span>Simular Sesión: Admin Transportes</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => loginDemoBypass('operaciones@transportesbiobio.cl', 'admin')}
-              className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
-            >
-              <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Simular Sesión: Tráfico Biobío (Transportista)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => loginDemoBypass('contratos@cliente.cl', 'cliente_b2b')}
-              className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/80 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
-            >
-              <Briefcase className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Simular Sesión: Clínica Sanatorio Alemán (Cliente B2B)</span>
-            </button>
+        {/* Footer Seguro */}
+        <div className="mt-8 text-center text-xs text-slate-500 flex flex-col items-center gap-2">
+          <p>© {new Date().getFullYear()} Transportes Biobío. Todos los derechos reservados.</p>
+          <div className="flex items-center gap-1 opacity-60">
+            <Shield className="w-3 h-3" />
+            <span>Sistema protegido por cifrado de grado militar</span>
           </div>
         </div>
       </div>
-
-      {/* Pie Institucional */}
-      <footer className="mt-8 text-center text-xs text-slate-500 z-10 flex flex-col items-center gap-1">
-        <span className="flex items-center gap-1">
-          Creado con <span className="text-rose-500">♥</span> por <a href="https://www.duetsolutions.cl/" target="_blank" rel="noopener noreferrer" className="font-bold text-slate-300 hover:text-[#E8832A] hover:underline transition-colors">Duet Solutions</a>
-        </span>
-        <span className="text-[11px] text-slate-600 flex items-center gap-1">
-          <ShieldCheck className="w-3 h-3 text-emerald-500" /> Arquitectura Enterprise Tier-1 de Fuerza Laboral y Movilidad B2B
-        </span>
-      </footer>
     </div>
   );
 };

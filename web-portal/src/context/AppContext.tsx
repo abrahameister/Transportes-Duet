@@ -59,11 +59,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
   const [authUser, setAuthUser] = useState<any | null>(null);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
-  const userRole = useMemo(() => authUser?.user_metadata?.rol || 'admin', [authUser]);
+  const userRole = useMemo(() => userProfile?.rol || authUser?.user_metadata?.rol || 'admin', [userProfile, authUser]);
 
   const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>('cl-b2b-04');
+
+
+  useEffect(() => {
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      handleAuthChange(session);
+      setAuthLoading(false);
+    };
+
+    const handleAuthChange = async (session: any) => {
+      if (session?.user) {
+        setAuthUser(session.user);
+        // Fetch profile
+        const { data: profile } = await supabase.from('perfiles').select('*').eq('id', session.user.id).single();
+        if (profile) {
+          setUserProfile(profile);
+          if (profile.rol === 'admin') setCurrentRoleViewInternal('admin');
+          if (profile.rol === 'cliente_corporativo') setCurrentRoleViewInternal('cliente_b2b');
+          if (profile.rol === 'conductor') setCurrentRoleViewInternal('app_conductor');
+          if (profile.cliente_corporativo_id) setActiveClienteB2BId(profile.cliente_corporativo_id);
+        }
+      } else {
+        setAuthUser(null);
+        setUserProfile(null);
+      }
+    };
+
+    initAuth();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleAuthChange(session);
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
 
   const [avisosOperativos, setAvisosOperativos] = useState<AvisoOperativo[]>([
     {

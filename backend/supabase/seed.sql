@@ -9,19 +9,31 @@
 
 -- 2. CREACIÓN DE PERFILES DE USUARIO (ROLES SISTEMA)
 -- Nota: En entorno local con Supabase Auth deshabilitado para testing de UI, usamos UUIDs estables.
-INSERT INTO public.perfiles (id, rol, nombre_completo, email, telefono, activo)
+-- Insertar clientes corporativos antes de perfiles para evitar violaciones de clave foránea
+INSERT INTO public.clientes_corporativos (id, nombre_corporativo, rut_identificador, direccion_fiscal, contacto_nombre, contacto_email)
+VALUES
+(
+    'cccc0000-0000-0000-0000-000000000001',
+    'Tech Global México S.A. de C.V.',
+    'TGM-981020-H43',
+    'Av. Paseo de la Reforma 250, Piso 15, Cuauhtémoc, CDMX',
+    'Laura Martínez',
+    'laura.m@techglobal.mx'
+);
+
+INSERT INTO public.perfiles (id, rol, nombre_completo, email, telefono, activo, cliente_corporativo_id)
 VALUES
 -- Super-Admin (SaaS Master - Sin empresa asignada)
-('11111111-1111-1111-1111-111111111111', 'admin', 'Arquitecto WFM SaaS Master', 'master@wfm-transport-saas.com', '+525500001111', true),
+('11111111-1111-1111-1111-111111111111', 'admin', 'Arquitecto WFM SaaS Master', 'master@wfm-transport-saas.com', '+525500001111', true, NULL),
 
 -- Admin 
-('22222222-2222-2222-2222-222222222222', 'admin', 'Roberto Gómez (Gerente Biobío)', 'roberto@biobio.cl', '+525511223344', true),
+('22222222-2222-2222-2222-222222222222', 'admin', 'Roberto Gómez (Gerente Biobío)', 'roberto@biobio.cl', '+525511223344', true, NULL),
 
 -- Conductor 1: Vip Express (Disponible WFM)
-('44444444-4444-4444-4444-444444444444', 'conductor', 'Carlos ' || 'El Rápido' || ' Mendoza', 'carlos.chofer@vipexpress.com', '+525544332211', true),
+('44444444-4444-4444-4444-444444444444', 'conductor', 'Carlos ' || 'El Rápido' || ' Mendoza', 'carlos.chofer@vipexpress.com', '+525544332211', true, NULL),
 
 -- Cliente Corporativo B2B Administrador
-('66666666-6666-6666-6666-666666666666', 'cliente_corporativo', 'Laura Martínez (RRHH Tech Global)', 'laura.m@techglobal.mx', '+525588001122', true);
+('66666666-6666-6666-6666-666666666666', 'cliente_corporativo', 'Laura Martínez (RRHH Tech Global)', 'laura.m@techglobal.mx', '+525588001122', true, 'cccc0000-0000-0000-0000-000000000001');
 
 -- 3. FLOTA DE VEHÍCULOS
 INSERT INTO public.vehiculos (id, marca, modelo, anio, placa, color, capacidad_pasajeros)
@@ -42,17 +54,7 @@ VALUES
     '2028-12-31'
 );
 
--- 5. CLIENTES CORPORATIVOS B2B
-INSERT INTO public.clientes_corporativos (id, nombre_corporativo, rut_identificador, direccion_fiscal, contacto_nombre, contacto_email)
-VALUES
-(
-    'cccc0000-0000-0000-0000-000000000001',
-    'Tech Global México S.A. de C.V.',
-    'TGM-981020-H43',
-    'Av. Paseo de la Reforma 250, Piso 15, Cuauhtémoc, CDMX',
-    'Laura Martínez',
-    'laura.m@techglobal.mx'
-);
+-- 5. CLIENTES CORPORATIVOS B2B (Ya insertados arriba para evitar error FK)
 
 -- 6. VIAJES OPERACIONALES (PARA DESPACHO WORKER Y PWA PASAJERO)
 INSERT INTO public.viajes (

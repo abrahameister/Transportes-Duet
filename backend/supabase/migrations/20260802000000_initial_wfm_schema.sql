@@ -115,6 +115,9 @@ CREATE TABLE public.clientes_corporativos (
     UNIQUE(rut_identificador)
 );
 
+ALTER TABLE public.perfiles
+    ADD COLUMN cliente_corporativo_id UUID REFERENCES public.clientes_corporativos(id) ON DELETE SET NULL;
+
 -- Tabla Maestro transaccional de Viajes
 CREATE TABLE public.viajes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -202,8 +205,11 @@ CREATE POLICY "Conductor actualiza su propio estado WFM y GPS" ON public.conduct
 CREATE POLICY "Conductor ve su propio registro WFM" ON public.conductores_wfm
     FOR SELECT USING (id = auth.uid());
 
-CREATE POLICY "Admin y Cliente Corporativo Gestiona Clientes Corporativos" ON public.clientes_corporativos
-    FOR ALL USING (public.current_user_role() IN ('admin', 'cliente_corporativo'));
+CREATE POLICY "Admin Gestiona Clientes Corporativos" ON public.clientes_corporativos
+    FOR ALL USING (public.current_user_role() = 'admin');
+
+CREATE POLICY "Cliente Corporativo Gestiona su propio Cliente" ON public.clientes_corporativos
+    FOR ALL USING (id = (SELECT p.cliente_corporativo_id FROM perfiles p WHERE p.id = auth.uid()));
 
 -- --- Políticas para VIAJES ---
 CREATE POLICY "Admin Todo Viajes" ON public.viajes
@@ -216,7 +222,7 @@ CREATE POLICY "Conductor actualiza estado de su viaje asignado" ON public.viajes
     FOR UPDATE USING (conductor_id = auth.uid() AND public.current_user_role() = 'conductor');
 
 CREATE POLICY "Cliente Corporativo crea y ve sus viajes" ON public.viajes
-    FOR ALL USING (public.current_user_role() = 'cliente_corporativo');
+    FOR ALL USING (cliente_corporativo_id = (SELECT p.cliente_corporativo_id FROM perfiles p WHERE p.id = auth.uid()));
 
 -- ============================================================================
 -- 7. FUNCIÓN RPC SEGURA PARA PWA DEL PASAJERO (SIN DESCARGAS)
