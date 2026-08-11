@@ -179,6 +179,7 @@ export const ClientesTarifacionView: React.FC = () => {
       } catch (e) {}
       alert('Error al enviar invitación: ' + realErrorMessage);
     } else {
+      actualizarCliente(cl.id, { invitacionEnviada: true });
       setActionMsg(`¡Invitación enviada con éxito a ${cl.contactoEmail}!`);
       setTimeout(() => setActionMsg(null), 4000);
     }
@@ -245,13 +246,29 @@ export const ClientesTarifacionView: React.FC = () => {
                 </td>
                 <td className="py-3.5 px-4 text-right flex items-center justify-end space-x-2">
                   <button
-                    onClick={() => handleInviteClient(cl)}
+                    onClick={() => {
+                      if (cl.invitacionEnviada) {
+                        const confirm = window.confirm('Este cliente ya fue notificado. ¿Deseas reenviar la invitación? (Se enviará un correo de recuperación de contraseña como recordatorio).');
+                        if (!confirm) return;
+                      }
+                      handleInviteClient(cl);
+                    }}
                     disabled={invitingId === cl.id}
-                    title="Enviar invitación de acceso B2B al cliente"
-                    className="px-2.5 py-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 text-xs font-semibold transition-colors inline-flex items-center space-x-1 border border-blue-200 dark:border-blue-800"
+                    title={cl.invitacionEnviada ? "Invitación enviada. Reenviar correo" : "Enviar invitación de acceso B2B al cliente"}
+                    className={`px-2.5 py-1.5 rounded text-xs font-semibold transition-colors inline-flex items-center space-x-1 border ${
+                      cl.invitacionEnviada 
+                        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' 
+                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
+                    }`}
                   >
-                    {invitingId === cl.id ? <Loader2 className="w-3.5 h-3.5 mr-0.5 animate-spin" /> : <Mail className="w-3.5 h-3.5 mr-0.5" />}
-                    <span>Notificar</span>
+                    {invitingId === cl.id ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-0.5 animate-spin" />
+                    ) : cl.invitacionEnviada ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-0.5" />
+                    ) : (
+                      <Mail className="w-3.5 h-3.5 mr-0.5" />
+                    )}
+                    <span>{cl.invitacionEnviada ? 'Notificado' : 'Notificar'}</span>
                   </button>
 
                   <button

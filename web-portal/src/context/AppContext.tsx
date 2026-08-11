@@ -240,6 +240,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               contactoNombre: cl.contacto_nombre,
               contactoEmail: cl.contacto_email,
               contactoTelefono: cl.contacto_telefono,
+              invitacionEnviada: cl.invitacion_enviada,
               tarifario: {
                 tarifaPorKm: Number(cl.tarifa_por_km || 1300),
                 tarifaMinima: Number(cl.tarifa_minima || 7000),

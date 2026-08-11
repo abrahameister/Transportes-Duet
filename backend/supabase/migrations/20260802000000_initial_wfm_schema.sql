@@ -111,6 +111,7 @@ CREATE TABLE public.clientes_corporativos (
     contacto_nombre VARCHAR(255),
     contacto_email VARCHAR(255),
     contacto_telefono VARCHAR(50),
+    invitacion_enviada BOOLEAN DEFAULT false NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     UNIQUE(rut_identificador)
 );
