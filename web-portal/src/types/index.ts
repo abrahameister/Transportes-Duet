@@ -80,6 +80,7 @@ export interface ClienteCorporativo {
   contactoNombre: string;
   contactoEmail: string;
   contactoTelefono?: string;
+  invitacionEnviada?: boolean;
   tarifario: TarifarioB2B;
 }
 
