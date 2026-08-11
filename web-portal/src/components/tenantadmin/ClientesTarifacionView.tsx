@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../context/AppContext';
 import type { ClienteCorporativo } from '../../types';
-import { Building2, DollarSign, Plus, X, CheckCircle2 } from 'lucide-react';
+import { Building2, DollarSign, Plus, X, CheckCircle2, Mail, Loader2 } from 'lucide-react';
 
 export const ClientesTarifacionView: React.FC = () => {
   const { clientes,   agregarCliente, actualizarCliente } = useApp();
   const [selectedClienteForTariffs, setSelectedClienteForTariffs] = useState<ClienteCorporativo | null>(null);
   const [showClienteModal, setShowClienteModal] = useState<boolean>(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [invitingId, setInvitingId] = useState<string | null>(null);
 
   // States para edición rápida de tarifas de cliente seleccionado ($ CLP)
   const [tarifaKm, setTarifaKm] = useState<number>(0);
@@ -220,7 +221,17 @@ export const ClientesTarifacionView: React.FC = () => {
                     {cl.tarifario.rutasFijas.length} rutas configuradas
                   </span>
                 </td>
-                <td className="py-3.5 px-4 text-right">
+                <td className="py-3.5 px-4 text-right flex items-center justify-end space-x-2">
+                  <button
+                    onClick={() => handleInviteClient(cl)}
+                    disabled={invitingId === cl.id}
+                    title="Enviar invitación de acceso B2B al cliente"
+                    className="px-2.5 py-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 text-xs font-semibold transition-colors inline-flex items-center space-x-1 border border-blue-200 dark:border-blue-800"
+                  >
+                    {invitingId === cl.id ? <Loader2 className="w-3.5 h-3.5 mr-0.5 animate-spin" /> : <Mail className="w-3.5 h-3.5 mr-0.5" />}
+                    <span>Notificar</span>
+                  </button>
+
                   <button
                     onClick={() => handleOpenTariffDrawer(cl)}
                     className="px-3 py-1.5 rounded bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 text-xs font-semibold shadow-sm transition-colors inline-flex items-center space-x-1"
