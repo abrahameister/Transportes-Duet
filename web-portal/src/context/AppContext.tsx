@@ -488,9 +488,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       modelo: vehiculo.modelo, 
       placa: vehiculo.placa,
       anio: vehiculo.anio || new Date().getFullYear(),
-      color: vehiculo.color || 'Blanco',
       capacidad_pasajeros: vehiculo.capacidadPasajeros || 4,
-      activo: true 
+      estado_operativo: vehiculo.estadoOperativo || 'operativo'
     };
     const { data, error } = await supabase.from('vehiculos').insert([dbObj]).select().single();
     if (error) {

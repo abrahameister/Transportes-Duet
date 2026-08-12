@@ -404,28 +404,7 @@ export const ClientesTarifacionView: React.FC = () => {
           <div className="enterprise-card p-6 max-w-md w-full space-y-4 animate-in zoom-in-95">
             <h3 className="text-base font-bold text-slate-900 dark:text-white">Alta de Cuenta Corporativa B2B (Chile)</h3>
             <form onSubmit={handleSaveNuevoCliente} className="space-y-3.5">
-              <div>
-                <label className="text-xs font-semibold text-blue-600 dark:text-blue-400 block mb-1">⚡ Autocompletar desde Empresa / Plantilla B2B Existente:</label>
-                <select
-                  value={selectedTemplate}
-                  onChange={(e) => handleSelectTemplate(e.target.value)}
-                  className="enterprise-input w-full text-xs bg-blue-50/60 dark:bg-blue-950/30 font-semibold border-blue-300 dark:border-blue-800"
-                >
-                  <option value="">-- Ingreso Manual Libre --</option>
-                  <optgroup label="🏢 Empresas Tenants de Nexo Mobility">
-                    {tenants.map((t: any) => (
-                      <option key={t.id} value={t.id}>{t.nombre} ({(t as any).rut || 'RUT Registrado'})</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="🏭 Grandes Corporaciones del Neira Transportes / Chile">
-                    <option value="arauco">Celulosa y Forestal Arauco Neira Transportes S.A.</option>
-                    <option value="huachipato">Compañía Siderúrgica Huachipato CAP</option>
-                    <option value="codelco">Codelco División El Teniente</option>
-                  </optgroup>
-                </select>
-              </div>
-
-              <div className="border-t border-slate-200 dark:border-[#212A38] pt-2">
+              <div className="pt-2">
                 <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Razón Social Contratante (*):</label>
                 <input type="text" value={nombreCorporativo} onChange={(e) => setNombreCorporativo(e.target.value)} placeholder="Ej. Forestal Arauco Neira Transportes S.A." required className="enterprise-input w-full text-xs" />
               </div>
