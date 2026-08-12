@@ -30,15 +30,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
  */
 export async function testSupabaseConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from('empresas_[]').select('id').limit(1);
+    const { error } = await supabase.rpc('get_auth_rol');
     if (error) {
-      console.warn('⚠️ [WFM Resilience] Aviso del motor Supabase:', error.message);
+      console.warn('⚠️ [Supabase] No fue posible verificar la conexión:', error.message);
       return false;
     }
-    console.log('✅ [WFM Resilience] Conexión productiva con Supabase verificada en vivo.');
     return true;
   } catch (err) {
-    console.warn('📡 [WFM Resilience] Sin conexión de red (Offline Fallback activado).', err);
+    console.warn('📡 [Supabase] Sin conexión de red.', err);
     return false;
   }
 }
