@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, role, fullName, cliente_corporativo_id } = await req.json()
+    const { email, role, fullName, cliente_corporativo_id, redirectTo } = await req.json()
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -70,7 +70,8 @@ serve(async (req) => {
       data: {
         rol: role || 'cliente_corporativo',
         nombre_completo: fullName
-      }
+      },
+      redirectTo: redirectTo || undefined
     })
 
     if (inviteError) {

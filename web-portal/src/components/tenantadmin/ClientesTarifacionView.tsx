@@ -160,7 +160,8 @@ export const ClientesTarifacionView: React.FC = () => {
       body: { 
         email: cl.contactoEmail, 
         fullName: cl.contactoNombre, 
-        cliente_corporativo_id: cl.id 
+        cliente_corporativo_id: cl.id,
+        redirectTo: window.location.origin + '/reset-password'
       }
     });
 

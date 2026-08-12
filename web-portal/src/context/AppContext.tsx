@@ -190,8 +190,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       try {
-        const { data: dbVehiculos } = await supabase.from('vehiculos_flota').select('*');
-        const { data: dbConductores } = await supabase.from('conductores_wfm').select('*');
+        const { data: dbVehiculos } = await supabase.from('vehiculos').select('*');
+        const { data: dbConductores } = await supabase.from('conductores_wfm').select('*, perfiles(nombre_completo, email, telefono, avatar_url)');
         const { data: dbClientes } = await supabase.from('clientes_corporativos').select('*');
         const { data: dbViajes } = await supabase.from('viajes').select('*');
         const { data: dbAvisos } = await supabase.from('avisos_operativos').select('*');
@@ -214,11 +214,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (dbConductores && dbConductores.length > 0) {
             setConductores(dbConductores.map(c => ({
               id: c.id,
-              nombreCompleto: c.nombre_completo,
-              email: c.email,
-              telefono: c.telefono,
-              avatarUrl: c.avatar_url || '',
-              rut: c.rut,
+              nombreCompleto: c.perfiles?.nombre_completo || c.nombre_completo,
+              email: c.perfiles?.email || c.email,
+              telefono: c.perfiles?.telefono || c.telefono,
+              avatarUrl: c.perfiles?.avatar_url || c.avatar_url || '',
+              rut: c.perfiles?.rut || c.rut,
               tipoLicencia: c.tipo_licencia as any,
               puntualidad: c.puntualidad,
               serviciosMes: c.servicios_mes,
@@ -500,24 +500,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const agregarVehiculo = async (vehiculo: VehiculoFlota) => {
-    // Generar UUID si no tiene (simulado) y luego insertar
-    const dbObj = { id: vehiculo.id, marca: vehiculo.marca, modelo: vehiculo.modelo, placa: vehiculo.placa, activo: true };
-    await supabase.from('vehiculos').insert([dbObj]);
-    setVehiculos(prev => [vehiculo, ...prev]);
+    // Omitting ID so Supabase generates a real UUID
+    const dbObj = { 
+      marca: vehiculo.marca, 
+      modelo: vehiculo.modelo, 
+      placa: vehiculo.placa,
+      anio: vehiculo.anio || new Date().getFullYear(),
+      color: vehiculo.color || 'Blanco',
+      capacidad_pasajeros: vehiculo.capacidadPasajeros || 4,
+      activo: true 
+    };
+    const { data, error } = await supabase.from('vehiculos').insert([dbObj]).select().single();
+    if (error) {
+      console.error('Error insertando vehiculo:', error);
+      alert('Error guardando vehiculo: ' + error.message);
+      return;
+    }
+    setVehiculos(prev => [{...vehiculo, id: data.id}, ...prev]);
   };
   const actualizarVehiculo = async (id: string, updates: Partial<VehiculoFlota>) => {
     // Omitting full DB sync logic for brevity, but here is where it updates
     setVehiculos(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
   };
   const eliminarVehiculo = async (id: string) => {
-    await supabase.from('vehiculos').delete().eq('id', id);
-    setVehiculos(prev => prev.filter(v => v.id !== id));
+    const { error } = await supabase.from('vehiculos').delete().eq('id', id);
+    if (error) console.error(error);
+    else setVehiculos(prev => prev.filter(v => v.id !== id));
   };
 
   const agregarConductor = async (cond: ConductorWFM) => {
-    const dbObj = { id: cond.id, nombre_completo: cond.nombreCompleto, email: cond.email, rut: cond.rut };
-    await supabase.from('conductores_wfm').insert([dbObj]);
-    setConductores(prev => [cond, ...prev]);
+    // 1. Invitar al conductor usando la Edge Function para crear auth.user y perfiles
+    const { data: inviteRes, error: edgeError } = await supabase.functions.invoke('invite-b2b', {
+      body: { 
+        email: cond.email, 
+        fullName: cond.nombreCompleto, 
+        role: 'conductor',
+        redirectTo: window.location.origin + '/reset-password'
+      }
+    });
+
+    if (edgeError) {
+      console.error("Error creando conductor en Auth/Perfiles:", edgeError);
+      alert('Error Auth/Perfiles: ' + edgeError.message);
+      return;
+    }
+
+    const newId = inviteRes?.user?.id || cond.id;
+
+    // 2. Insertar en la tabla operativa conductores_wfm
+    const dbObj = { 
+      id: newId, 
+      numero_licencia: cond.numeroLicencia || 'PENDIENTE',
+      vencimiento_licencia: cond.vencimientoLicencia || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      estado_wfm: 'offline'
+    };
+    
+    const { error: insertError } = await supabase.from('conductores_wfm').insert([dbObj]);
+    if (insertError) {
+      console.error('Error insertando conductor_wfm:', insertError);
+      alert('Error guardando operativamente: ' + insertError.message);
+      return;
+    }
+    setConductores(prev => [{...cond, id: newId}, ...prev]);
   };
   const actualizarConductor = async (id: string, updates: Partial<ConductorWFM>) => {
     setConductores(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
