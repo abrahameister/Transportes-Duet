@@ -190,11 +190,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       try {
-        const { data: dbVehiculos } = await supabase.from('vehiculos').select('*');
-        const { data: dbConductores } = await supabase.from('conductores_wfm').select('*, perfiles(nombre_completo, email, telefono, avatar_url)');
-        const { data: dbClientes } = await supabase.from('clientes_corporativos').select('*');
-        const { data: dbViajes } = await supabase.from('viajes').select('*');
-        const { data: dbAvisos } = await supabase.from('avisos_operativos').select('*');
+        const { data: dbVehiculos, error: errVehiculos } = await supabase.from('vehiculos').select('*');
+        if (errVehiculos) console.error('Error fetch vehiculos:', errVehiculos);
+        
+        const { data: dbConductores, error: errConductores } = await supabase.from('conductores_wfm').select('*, perfiles(nombre_completo, email, telefono, avatar_url)');
+        if (errConductores) console.error('Error fetch conductores:', errConductores);
+        
+        const { data: dbClientes, error: errClientes } = await supabase.from('clientes_corporativos').select('*');
+        if (errClientes) console.error('Error fetch clientes:', errClientes);
+        
+        const { data: dbViajes, error: errViajes } = await supabase.from('viajes').select('*');
+        if (errViajes) console.error('Error fetch viajes:', errViajes);
+        
+        const { data: dbAvisos, error: errAvisos } = await supabase.from('avisos_operativos').select('*');
+        if (errAvisos) console.error('Error fetch avisos:', errAvisos);
 
         if (isSubscribed) {
           if (dbVehiculos && dbVehiculos.length > 0) {

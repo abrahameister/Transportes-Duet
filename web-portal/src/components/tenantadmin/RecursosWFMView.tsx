@@ -61,7 +61,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     setCondNombre(c.nombreCompleto || '');
     setCondRut(c.rut || '');
     setCondLicencia((c.tipoLicencia as 'A1' | 'A2' | 'A3') || 'A3');
-    setCondVencimiento(c.vencimientoLicencia || '15/08/2028');
+    setCondVencimiento(c.vencimientoLicencia || '2028-08-15');
     setCondTelefono(c.telefono || '+56 9 ');
     setCondEmail(c.email || '');
     setCondFoto(c.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop');
