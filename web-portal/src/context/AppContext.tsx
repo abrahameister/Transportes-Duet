@@ -207,16 +207,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (isSubscribed) {
           if (dbVehiculos && dbVehiculos.length > 0) {
             setVehiculos(dbVehiculos.map(v => ({
+              ...v,
               id: v.id,
               marca: v.marca,
               modelo: v.modelo,
               anio: v.anio,
-              placa: v.placa,
-              color: v.color,
-              capacidadPasajeros: v.capacidad_pasajeros,
-              kilometraje: v.kilometraje,
-              estadoOperativo: (v.estado_operativo as any) || 'operativo',
-              activo: v.activo
+              placa: v.patente,
+              patente: v.patente,
+              capacidadPasajeros: v.capacidad,
+              capacidad: v.capacidad,
+              estadoOperativo: v.estado || 'operativo',
+              estado: v.estado,
+              activo: v.estado === 'activo'
             })));
           }
           if (dbConductores && dbConductores.length > 0) {
@@ -486,10 +488,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const dbObj = { 
       marca: vehiculo.marca, 
       modelo: vehiculo.modelo, 
-      placa: vehiculo.placa,
+      patente: vehiculo.patente || vehiculo.placa || 'N/A',
       anio: vehiculo.anio || new Date().getFullYear(),
-      capacidad_pasajeros: vehiculo.capacidadPasajeros || 4,
-      estado_operativo: vehiculo.estadoOperativo || 'operativo'
+      capacidad: vehiculo.capacidad || vehiculo.capacidadPasajeros || 4,
+      estado: vehiculo.estado || vehiculo.estadoOperativo || 'operativo'
     };
     const { data, error } = await supabase.from('vehiculos').insert([dbObj]).select().single();
     if (error) {
