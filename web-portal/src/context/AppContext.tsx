@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { ConductorWFM, ViajeOperativa, VehiculoFlota, ClienteCorporativo, RutaRecurrente, AvisoOperativo } from '../types';
 import { mockRutasRecurentes } from '../lib/mockData';
-import { supabase, testSupabaseConnection } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 interface AppContextType {
   conductores: ConductorWFM[];
@@ -182,11 +182,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let isSubscribed = true;
 
     async function syncFromSupabase() {
-      const isOnline = await testSupabaseConnection();
-      if (!isOnline || !isSubscribed) {
-        console.log('🛡️ [WFM Offline Fallback] Operando con caché local garantizada.');
-        return;
-      }
+      if (!isSubscribed) return;
 
       try {
         const { data: dbVehiculos, error: errVehiculos } = await supabase.from('vehiculos').select('*');
@@ -205,7 +201,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (errAvisos) console.error('Error fetch avisos:', errAvisos);
 
         if (isSubscribed) {
-          if (dbVehiculos && dbVehiculos.length > 0) {
+          if (dbVehiculos) {
             setVehiculos(dbVehiculos.map(v => ({
               ...v,
               id: v.id,
@@ -241,7 +237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               motivoBloqueo: c.motivo_bloqueo
             })));
           }
-          if (dbClientes && dbClientes.length > 0) {
+          if (dbClientes) {
             setClientes(dbClientes.map(cl => ({
               id: cl.id,
               nombreCorporativo: cl.nombre_corporativo,
