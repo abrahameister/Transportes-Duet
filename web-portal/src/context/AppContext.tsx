@@ -180,6 +180,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [isDarkMode]);
 
   useEffect(() => {
+    if (!authUser) return;
     let isSubscribed = true;
 
     async function syncFromSupabase() {
@@ -320,7 +321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isSubscribed = false;
       supabase.removeChannel(realtimeChannel);
     };
-  }, []);
+  }, [authUser]);
 
   useEffect(() => {
     let mounted = true;
