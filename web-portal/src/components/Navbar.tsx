@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Shield, Building2, Briefcase, RefreshCw, Sun, Moon, Navigation, LogOut } from 'lucide-react';

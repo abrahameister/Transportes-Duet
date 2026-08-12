@@ -1,5 +1,5 @@
 # ==============================================================================
-# CONFIGURACIÓN DE DESPLIEGUE EN NETLIFY — TRANSPORTES DUET
+# CONFIGURACIÓN DE DESPLIEGUE EN NETLIFY — NEIRA TRANSPORTES
 # ==============================================================================
 # Arquitectura Monorepo con React 19 / Vite en la carpeta web-portal/
 # ==============================================================================
@@ -20,7 +20,7 @@
   to = "/index.html"
   status = 200
 
-# Encabezados de seguridad institucionales para protección WFM y PWA
+# Encabezados de seguridad institucionales para protección
 [[headers]]
   for = "/*"
   [headers.values]
@@ -29,3 +29,5 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Cache-Control = "public, max-age=3600, must-revalidate"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Content-Security-Policy = "frame-ancestors 'none'"

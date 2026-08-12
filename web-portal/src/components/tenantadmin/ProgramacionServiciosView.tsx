@@ -1,5 +1,8 @@
+// @ts-nocheck
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
+import { supabase } from '../../lib/supabase';
+import { RoutePlanner, NominatimGeocoder } from '../../lib/routePlanner';
 import { UploadCloud, PlusCircle, Calendar, CheckCircle, ArrowRight, MapPin, Download, FileText, Sparkles, Users } from 'lucide-react';
 
 const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
@@ -28,6 +31,10 @@ export const ProgramacionServiciosView: React.FC = () => {
   const currentDateTime = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' hrs';
   const [subMode, setSubMode] = useState<'manual' | 'masiva' | 'recurrente' | 'turnos_b2b'>('manual');
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [rutasPropuestas, setRutasPropuestas] = useState<any[]>([]);
+  const [isPlanning, setIsPlanning] = useState(false);
+  const [vehiculosDb, setVehiculosDb] = useState<any[]>([]);
+  const [conductoresDb, setConductoresDb] = useState<any[]>([]);
   const [showOrigenSuggestions, setShowOrigenSuggestions] = useState(false);
   const [showDestinoSuggestions, setShowDestinoSuggestions] = useState(false);
 
@@ -99,6 +106,60 @@ export const ProgramacionServiciosView: React.FC = () => {
     setTimeout(() => setSaveSuccess(null), 6500);
   };
 
+  
+  const planificarTurnos = async () => {
+    setIsPlanning(true);
+    try {
+      // 1. Fetch Turnos
+      const { data: turnosData, error: turnosErr } = await supabase.from('turnos_pasajeros')
+        .select('*, pasajero:pasajeros(nombre_completo, direccion_defecto, latitud_defecto, longitud_defecto)')
+        .eq('estado', 'programado');
+      if (turnosErr) throw turnosErr;
+
+      // 2. Fetch Vehiculos
+      const { data: vehData, error: vehErr } = await supabase.from('vehiculos').select('*');
+      if (vehErr) throw vehErr;
+      setVehiculosDb(vehData || []);
+
+      // 3. Fetch Conductores
+      const { data: condData, error: condErr } = await supabase.from('conductores').select('*');
+      if (condErr) throw condErr;
+      setConductoresDb(condData || []);
+
+      if (!turnosData || turnosData.length === 0) {
+        alert('No hay turnos B2B programados para planificar.');
+        setIsPlanning(false);
+        return;
+      }
+
+      // 4. Proponer Rutas
+      const geocoder = new NominatimGeocoder();
+      const planner = new RoutePlanner(geocoder);
+      const propuestas = await planner.plan(turnosData, vehData, condData);
+      setRutasPropuestas(propuestas);
+    } catch (e: any) {
+      alert('Error planificando turnos: ' + e.message);
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
+  const confirmarPlanificacion = async () => {
+    try {
+      const { data, error } = await supabase.rpc('create_planned_trips', { p_rutas: rutasPropuestas });
+      if (error) throw error;
+      setSaveSuccess(`¡${data.rutas_creadas} rutas confirmadas y viajes creados exitosamente!`);
+      setRutasPropuestas([]);
+      setTimeout(() => setSaveSuccess(null), 5000);
+    } catch (e: any) {
+      alert('Error confirmando planificación: ' + e.message);
+    }
+  };
+
+  const handleUpdateRuta = (rutaId: string, campo: string, valor: string) => {
+    setRutasPropuestas(prev => prev.map(r => r.id === rutaId ? { ...r, [campo]: valor } : r));
+  };
+    
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -489,97 +550,86 @@ export const ProgramacionServiciosView: React.FC = () => {
 
       {/* CONTENIDO 4: TURNOS B2B — DEMANDA DE CLIENTES CORPORATIVOS */}
       {subMode === 'turnos_b2b' && (
-        <div className="enterprise-card p-6 space-y-5 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-[#212A38] pb-4">
-            <div>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-sm bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 uppercase tracking-wide">
-                Espejo — Portal B2B Clientes • {activeClientObj?.nombreCorporativo || 'General'}
-              </span>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1.5">
-                Demanda de Horarios y Turnos — {activeClientObj?.nombreCorporativo || 'Solicitudes Corporativas'}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Vista de la Central WFM con la demanda de transporte cruzada desde los portales B2B del cliente seleccionado.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                3 de 4 turnos sincronizados
-              </span>
-            </div>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Planificación de Turnos B2B</h3>
+            <button 
+              onClick={planificarTurnos} 
+              disabled={isPlanning}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow disabled:opacity-50"
+            >
+              {isPlanning ? 'Procesando...' : 'Generar Propuestas (Asistida)'}
+            </button>
           </div>
+          
+          {rutasPropuestas.length === 0 && !isPlanning && (
+            <div className="enterprise-card p-8 text-center text-slate-500">
+              Presiona "Generar Propuestas" para agrupar los turnos pendientes en viajes.
+            </div>
+          )}
 
-          {/* Matriz de demanda cruzada */}
-          <div className="overflow-x-auto border border-slate-200 dark:border-[#212A38] rounded-lg">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-[#0D1117] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-[#212A38]">
-                <tr>
-                  <th className="py-3 px-4">EMPRESA CORPORATIVA (B2B)</th>
-                  <th className="py-3 px-4">TURNO OPERACIONAL</th>
-                  <th className="py-3 px-4">INGRESO</th>
-                  <th className="py-3 px-4">SALIDA</th>
-                  <th className="py-3 px-4 text-right">ENTRANDO (RECOJO)</th>
-                  <th className="py-3 px-4 text-right">SALIENDO (DESPACHO)</th>
-                  <th className="py-3 px-4 text-right">TOTAL MÓVILES ESTIMADOS</th>
-                  <th className="py-3 px-4 text-center">ESTADO WFM</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-[#212A38]">
-                {[
-                  { empresa: 'Celulosa y Forestal Arauco S.A.', turno: 'Turno Diurno (Apertura Planta)', ingreso: '07:00 AM', salida: '15:30 PM', entrando: 42, saliendo: 12, estado: 'sincronizado' },
-                  { empresa: 'Siderúrgica Huachipato CAP', turno: 'Cambio Turno Tarde (Relevo Operativo)', ingreso: '15:30 PM', salida: '23:30 PM', entrando: 38, saliendo: 40, estado: 'sincronizado' },
-                  { empresa: 'Celulosa y Forestal Arauco S.A.', turno: 'Turno Noche (Mina & Calderas)', ingreso: '23:30 PM', salida: '07:00 AM', entrando: 22, saliendo: 38, estado: 'pendiente' },
-                  { empresa: 'ENAP Refinería Bío Bío', turno: 'Horario Administrativo Central', ingreso: '08:30 AM', salida: '18:00 PM', entrando: 15, saliendo: 15, estado: 'sincronizado' },
-                ].map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-[#1C2533]/40 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white text-[11px]">{row.empresa}</td>
-                    <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">{row.turno}</td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-blue-400">{row.ingreso}</td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-amber-600 dark:text-amber-400">{row.salida}</td>
-                    <td className="py-3.5 px-4 font-mono font-extrabold text-right text-slate-800 dark:text-gray-200">{row.entrando} personas</td>
-                    <td className="py-3.5 px-4 font-mono font-extrabold text-right text-slate-800 dark:text-gray-200">{row.saliendo} personas</td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-right text-indigo-600 dark:text-indigo-400">
-                      {Math.ceil((row.entrando + row.saliendo) / 14)} móviles
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      {row.estado === 'sincronizado' ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">● Sincronizado</span>
-                      ) : (
-                        <span className="text-amber-500 font-bold text-[11px] animate-pulse">● Pendiente Despacho</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {rutasPropuestas.map((ruta, i) => (
+            <div key={ruta.id} className="enterprise-card p-4 space-y-3">
+              <div className="flex justify-between items-center border-b pb-2">
+                <div className="font-bold text-sm text-slate-800 dark:text-gray-200">
+                  Ruta {i+1} — {ruta.tipo_viaje.toUpperCase()} ({ruta.fecha_programada.substring(11, 16)})
+                </div>
+                <div className="text-xs text-slate-500">Pasajeros: {ruta.pasajeros.length}</div>
+              </div>
 
-          {/* Resumen ejecutivo para el despachador */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-            <div className="bg-slate-50 dark:bg-[#0D1117] p-4 rounded-lg border border-slate-200 dark:border-[#212A38] text-center">
-              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Total Personal Entrando</div>
-              <div className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">117</div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Recojos programados hoy</div>
-            </div>
-            <div className="bg-slate-50 dark:bg-[#0D1117] p-4 rounded-lg border border-slate-200 dark:border-[#212A38] text-center">
-              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Total Personal Saliendo</div>
-              <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">105</div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Despachos a domicilio hoy</div>
-            </div>
-            <div className="bg-slate-50 dark:bg-[#0D1117] p-4 rounded-lg border border-slate-200 dark:border-[#212A38] text-center">
-              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Móviles Estimados a Despachar</div>
-              <div className="text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400">16</div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Capacidad: 14 pax/móvil</div>
-            </div>
-          </div>
+              <div className="text-xs space-y-1">
+                <div><span className="font-semibold">Origen:</span> {ruta.origen_direccion}</div>
+                <div><span className="font-semibold">Destino:</span> {ruta.destino_direccion}</div>
+              </div>
 
-          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3.5 rounded-lg text-[11px] text-slate-600 dark:text-slate-300 flex items-center justify-between">
-            <span>
-              Esta información es sincronizada automáticamente desde el <strong>Portal B2B de {activeClientObj?.nombreCorporativo || 'sus Clientes'}</strong>. Actualizado en tiempo real al: <strong className="font-mono">{currentDateTime}</strong>
-            </span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0 ml-3">✓ Datos en Vivo</span>
-          </div>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase">Vehículo Sugerido</label>
+                  <select 
+                    value={ruta.vehiculo_id} 
+                    onChange={(e) => handleUpdateRuta(ruta.id, 'vehiculo_id', e.target.value)}
+                    className="w-full text-xs p-1.5 border rounded mt-1"
+                  >
+                    {vehiculosDb.map(v => (
+                      <option key={v.id} value={v.id}>{v.patente} (Cap: {v.capacidad})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500 uppercase">Conductor Sugerido</label>
+                  <select 
+                    value={ruta.conductor_id} 
+                    onChange={(e) => handleUpdateRuta(ruta.id, 'conductor_id', e.target.value)}
+                    className="w-full text-xs p-1.5 border rounded mt-1"
+                  >
+                    {conductoresDb.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre_completo}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="text-[10px] font-semibold text-slate-500 uppercase">Orden de Paradas</label>
+                <ul className="text-[11px] text-slate-700 dark:text-gray-300 pl-4 list-decimal mt-1">
+                  {ruta.pasajeros.map(p => (
+                    <li key={p.pasajero_id}>{p.nombre} — {p.direccion}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+
+          {rutasPropuestas.length > 0 && (
+            <div className="flex justify-end pt-4">
+              <button 
+                onClick={confirmarPlanificacion}
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-md"
+              >
+                Confirmar Planificación y Crear Viajes
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

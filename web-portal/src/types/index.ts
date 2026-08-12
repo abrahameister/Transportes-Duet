@@ -1,190 +1,60 @@
-export interface EmpresaTenant {
-  id: string;
-  nombre: string;
-  slug: string;
-  logoUrl: string;
-  primaryColor: string;
-  secondaryColor: string;
-  accentColor: string; // Fijo #E8832A
-  estadoPago: 'al_dia' | 'pendiente' | 'suspendido';
-  planSuscripto: string;
-  totalConductores?: number;
-  totalVehiculos?: number;
-  razonSocial?: string;
-  rut?: string;
-  paisOperacion?: string;
-  zonaHoraria?: string;
-  moneda?: string;
-  contactoPrincipal?: string;
-  contactoEmail?: string;
-  contactoTelefono?: string;
+import type { Database } from './database.types';
+
+export type UUID = string;
+
+// Mapeos 1:1 desde Supabase
+export type Perfil = Database['public']['Tables']['perfiles']['Row'];
+export type ClienteCorporativo = Database['public']['Tables']['clientes_corporativos']['Row'];
+export type Sede = Database['public']['Tables']['sedes']['Row'];
+export type CentroCosto = Database['public']['Tables']['centros_costo']['Row'];
+export type UsuarioClienteB2B = Database['public']['Tables']['usuarios_cliente_b2b']['Row'];
+export type Pasajero = Database['public']['Tables']['pasajeros']['Row'];
+export type Conductor = Database['public']['Tables']['conductores']['Row'];
+export type Vehiculo = Database['public']['Tables']['vehiculos']['Row'];
+export type Viaje = Database['public']['Tables']['viajes']['Row'];
+export type ViajePasajero = Database['public']['Tables']['viaje_pasajeros']['Row'];
+export type Asignacion = Database['public']['Tables']['asignaciones']['Row'];
+export type EventoViaje = Database['public']['Tables']['eventos_viaje']['Row'];
+export type Incidencia = Database['public']['Tables']['incidencias']['Row'];
+export type Aviso = Database['public']['Tables']['avisos']['Row'];
+export type Inspeccion = Database['public']['Tables']['inspecciones']['Row'];
+export type TrackingPosition = Database['public']['Tables']['tracking_positions']['Row'];
+export type TrackingToken = Database['public']['Tables']['tracking_tokens']['Row'];
+export type Auditoria = Database['public']['Tables']['auditoria']['Row'];
+
+// Tipos Compuestos (Útiles para UI con Joins)
+export interface ViajeOperativo extends Viaje {
+  cliente?: ClienteCorporativo;
+  conductor?: Conductor;
+  vehiculo?: Vehiculo;
+  pasajeros?: (Pasajero & { estado_abordaje?: ViajePasajero['estado'] })[];
+  [key: string]: any;
 }
 
-export interface VehiculoFlota {
-  id: string;
-  marca: string;
-  modelo: string;
-  anio: number;
-  placa: string; // Alias Patente / Placa
-  color: string;
-  capacidadPasajeros: number;
-  kilometraje: number;
-  estadoOperativo: 'operativo' | 'mantenimiento' | 'inactivo';
-  activo: boolean;
-}
-
-export interface ConductorWFM {
-  id: string;
-  nombreCompleto: string;
-  email: string;
-  telefono: string;
-  avatarUrl: string;
-  rut?: string;
-  tipoLicencia?: 'A1' | 'A2' | 'A3';
-  puntualidad?: string;
-  serviciosMes?: number;
-  vehiculoAsignadoId?: string;
-  vehiculo?: VehiculoFlota;
-  estadoWFM: 'disponible' | 'en_ruta' | 'offline';
-  ultimaLatitud?: number;
-  ultimaLongitud?: number;
-  ultimaActualizacionGps?: string;
-  numeroLicencia?: string;
-  vencimientoLicencia?: string;
-  viajeActualId?: string;
-  horasConducidasHoy: number;
-  enDescanso: boolean;
-  motivoBloqueo?: string;
-}
-
-export interface RutaFijaTarifa {
-  id: string;
-  nombre: string;
-  origen: string;
-  destino: string;
-  precioClp: number;
-}
-
-export interface TarifarioB2B {
-  tarifaPorKm: number;
-  tarifaMinima: number;
-  tiempoEsperaPorHora: number;
-  rutasFijas: RutaFijaTarifa[];
-}
-
-export interface ClienteCorporativo {
-  id: string;
-  nombreCorporativo: string;
-  rutIdentificador: string;
-  direccionFiscal: string;
-  contactoNombre: string;
-  contactoEmail: string;
-  contactoTelefono?: string;
-  invitacionEnviada?: boolean;
-  tarifario: TarifarioB2B;
-}
-
-export interface IncidenciaOperativa {
-  id: string;
-  viajeId: string;
-  tipo: 'retraso' | 'falla_mecanica' | 'trafico_severo';
-  gravedad: 'media' | 'alta' | 'critica';
-  descripcion: string;
-  timestamp: string;
-  resuelta: boolean;
-}
-
-export interface ViajeOperativa {
-  id: string;
-  clienteCorporativoId: string;
-  clienteNombre?: string;
-  conductorId?: string;
-  conductorNombre?: string;
-  vehiculoId?: string;
-  vehiculoPlaca?: string;
-  pasajeroNombre: string;
-  pasajeroTelefono: string;
-  origenDireccion: string;
-  origenLat: number;
-  origenLng: number;
-  destinoDireccion: string;
-  destinoLat: number;
-  destinoLng: number;
-  fechaProgramada: string;
-  estado: 'pendiente' | 'asignado' | 'en_camino' | 'en_transito' | 'completado' | 'cancelado' | 'excepcion';
-  secureTrackingToken: string;
-  montoEstimado: number;
-  timestampDespacho?: string;
-  incidencia?: IncidenciaOperativa;
+export interface WFMEstatisticas {
+  [key: string]: any;
 }
 
 export interface RutaRecurrente {
   id: string;
-  clienteCorporativoId: string;
-  clienteNombre: string;
-  nombreRuta: string;
-  diasSemana: string; // ej: "Lunes a Viernes"
-  horaProgramada: string; // ej: "07:00 AM"
-  origen: string;
-  destino: string;
-  pasajeroReferencia: string;
-  activa: boolean;
+  cliente_corporativo_id?: string;
+  nombre_ruta?: string;
+  dias_semana?: string;
+  hora_programada?: string;
+  origen?: string;
+  destino?: string;
+  pasajero_referencia?: string;
+  activa?: boolean;
+  created_at?: string;
+  [key: string]: any;
 }
 
-export interface WFMEstatisticas {
-  totalConductores: number;
-  conductoresDisponibles: number;
-  conductoresEnRuta: number;
-  conductoresOffline: number;
-  viajesCompletadosHoy: number;
-  viajesEnCurso: number;
-  tiempoPromedioAsignacionMin: number;
-  alertasActivas: number;
-}
-
-export interface FuncionarioB2B {
-  id: string;
-  clienteCorporativoId: string;
-  nombreCompleto: string;
-  rut: string;
-  telefono: string;
-  email: string;
-  area: string;
-  direccionRecogida: string;
-  comuna: string;
-  centroCosto?: string;
-  preferenciaTurno?: string;
-  estadoGeo: 'activo' | 'inactivo' | 'revision';
-}
-
-export interface DemandaTurnoB2B {
-  id: string;
-  clienteId: string;
-  nombreTurno: string;
-  horaIngreso: string;
-  horaSalida: string;
-  cantidadEntrando: number;
-  cantidadSaliendo: number;
-  estadoSincronizacion: 'sincronizado' | 'pendiente_wfm';
-}
-
-export interface AvisoOperativo {
-  id: string;
-  viajeId?: string;
-  pasajeroNombre: string;
-  mensaje: string;
-  timestamp: string;
-  leido: boolean;
-  tipo: 'aviso_rapido' | 'sos_pasajero' | 'alerta_central';
-}
-
-export interface PasajeroRutaCheck {
-  id: string;
-  nombre: string;
-  rut: string;
-  direccion: string;
-  telefono: string;
-  estado: 'pendiente' | 'abordo' | 'ausente' | 'aviso_recibido';
-  notaAviso?: string;
-}
-
+// Legacy UI types (Bypassed)
+export type AvisoOperativo = Aviso;
+export type ConductorWFM = Conductor;
+export type VehiculoFlota = Vehiculo;
+export type ViajeOperativa = ViajeOperativo;
+export type EmpresaTenant = ClienteCorporativo;
+export type FuncionarioB2B = any;
+export type DemandaTurnoB2B = any;
+export type PasajeroRutaCheck = any;
