@@ -191,8 +191,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { data: dbClientes, error: errClientes } = await supabase.from('clientes_corporativos').select('*');
         if (errClientes) console.error('Error fetch clientes:', errClientes);
         
-        const { data: dbViajes, error: errViajes } = await supabase.from('viajes').select('*');
-        if (errViajes) console.error('Error fetch viajes:', errViajes);
+        let { data: dbViajes, error: errViajes } = await supabase
+          .from('viajes')
+          .select(`
+            *,
+            viaje_pasajeros(
+              estado,
+              pasajero:pasajeros(nombre_completo, telefono)
+            ),
+            asignaciones(
+              estado,
+              conductor:conductores(id, nombre_completo),
+              vehiculo:vehiculos(id, patente)
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (errViajes) {
+          console.warn('Sync viajes fallback simple:', errViajes.message);
+          const simpleRes = await supabase.from('viajes').select('*').order('created_at', { ascending: false });
+          dbViajes = simpleRes.data;
+        }
         
         const { data: dbAvisos, error: errAvisos } = await supabase.from('avisos').select('*');
         if (errAvisos) console.error('Error fetch avisos:', errAvisos);
@@ -254,26 +273,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               }
             })));
           }
-          if (dbViajes && dbViajes.length > 0) {
-            setViajes(dbViajes.map(v => ({
-              id: v.id,
-              clienteCorporativoId: v.cliente_corporativo_id,
-              conductorId: v.conductor_id,
-              vehiculoId: v.vehiculo_id,
-              pasajeroNombre: v.pasajero_nombre,
-              pasajeroTelefono: v.pasajero_telefono,
-              origenDireccion: v.origen_direccion,
-              origenLat: v.origen_lat || -36.8200,
-              origenLng: v.origen_lng || -73.0440,
-              destinoDireccion: v.destino_direccion,
-              destinoLat: v.destino_lat || -36.8290,
-              destinoLng: v.destino_lng || -73.0480,
-              fechaProgramada: v.fecha_programada,
-              estado: (v.estado as any) || 'en_transito',
-              secureTrackingToken: v.secure_tracking_token,
-              montoEstimado: Number(v.monto_estimado || 18000),
-              timestampDespacho: v.timestamp_despacho ? new Date(v.timestamp_despacho).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined
-            })));
+          if (dbViajes) {
+            setViajes(dbViajes.map(v => {
+              let parsedObs: any = {};
+              try {
+                if (v.observaciones && v.observaciones.startsWith('{')) {
+                  parsedObs = JSON.parse(v.observaciones);
+                }
+              } catch (_) {}
+
+              const activeAsignacion = v.asignaciones?.find((a: any) => a.estado === 'activa') || v.asignaciones?.[0];
+              const primerPasajero = v.viaje_pasajeros?.[0]?.pasajero;
+              const clNombre = dbClientes?.find(c => c.id === v.cliente_corporativo_id)?.nombre_corporativo;
+
+              return {
+                id: v.id,
+                clienteCorporativoId: v.cliente_corporativo_id,
+                clienteNombre: clNombre || parsedObs.clienteNombre || 'Cuenta B2B',
+                conductorId: activeAsignacion?.conductor?.id,
+                conductorNombre: activeAsignacion?.conductor?.nombre_completo,
+                vehiculoId: activeAsignacion?.vehiculo?.id,
+                vehiculoPlaca: activeAsignacion?.vehiculo?.patente,
+                pasajeroNombre: primerPasajero?.nombre_completo || parsedObs.pasajeroNombre || 'Pasajero',
+                pasajeroTelefono: primerPasajero?.telefono || parsedObs.pasajeroTelefono || '',
+                origenDireccion: v.origen_direccion || '',
+                origenLat: v.origen_lat || -36.8200,
+                origenLng: v.origen_lng || -73.0440,
+                destinoDireccion: v.destino_direccion || '',
+                destinoLat: v.destino_lat || -36.8290,
+                destinoLng: v.destino_lng || -73.0480,
+                fechaProgramada: v.fecha_programada ? new Date(v.fecha_programada).toLocaleString('es-CL') : 'Inmediato',
+                estado: v.estado || 'solicitado',
+                secureTrackingToken: `token-${v.id}`,
+                montoEstimado: parsedObs.montoEstimado || 18000,
+                timestampDespacho: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined
+              };
+            }));
           }
           if (dbAvisos && dbAvisos.length > 0) {
             setAvisosOperativos(dbAvisos.map(a => ({
@@ -463,25 +498,119 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // The trip engine RPCs should be called directly by components instead of AppContext
 
 
-  const crearViaje = (data: Partial<ViajeOperativa>) => {
-    const nuevoViaje: ViajeOperativa = {
-      id: `viaje-${Date.now()}`,
-      clienteCorporativoId: data.clienteCorporativoId || clientes[0]?.id || 'cl-biobio-001',
-      clienteNombre: data.clienteNombre || clientes[0]?.nombreCorporativo || 'Cuenta B2B Chile',
-      pasajeroNombre: data.pasajeroNombre || 'Pasajero Nuevo',
-      pasajeroTelefono: data.pasajeroTelefono || '+56 9 8123 4567',
-      origenDireccion: data.origenDireccion || 'Aeropuerto Carriel Sur, Talcahuano, Región del Neira Transportes',
-      origenLat: -36.7824,
-      origenLng: -73.0631,
-      destinoDireccion: data.destinoDireccion || 'Plaza Independencia 400, Concepción Centro',
-      destinoLat: -36.8269,
-      destinoLng: -73.0498,
-      fechaProgramada: data.fechaProgramada || 'Inmediato (Hoy)',
-      estado: 'pendiente',
-      secureTrackingToken: `token-${Date.now()}`,
-      montoEstimado: data.montoEstimado || 18500
-    };
-    setViajes(prev => [nuevoViaje, ...prev]);
+  const crearViaje = async (data: Partial<ViajeOperativa>) => {
+    try {
+      // 1. Obtener cliente_corporativo_id válido
+      let clienteCorpId = data.clienteCorporativoId;
+      if (!clienteCorpId || !clienteCorpId.includes('-')) {
+        clienteCorpId = clientes[0]?.id;
+      }
+      
+      if (!clienteCorpId) {
+        const { data: dbCl } = await supabase.from('clientes_corporativos').select('id, nombre_corporativo').limit(1).single();
+        clienteCorpId = dbCl?.id;
+      }
+
+      if (!clienteCorpId) {
+        alert('Debe existir al menos un Cliente Corporativo registrado en el sistema para programar viajes.');
+        return;
+      }
+
+      // 2. Normalizar fecha programada a ISO TIMESTAMPTZ
+      let fechaIso = new Date().toISOString();
+      if (data.fechaProgramada && !data.fechaProgramada.includes('Inmediato') && !data.fechaProgramada.includes('Hoy')) {
+        const parsed = new Date(data.fechaProgramada);
+        if (!isNaN(parsed.getTime())) {
+          fechaIso = parsed.toISOString();
+        }
+      }
+
+      const observacionesObj = {
+        pasajeroNombre: data.pasajeroNombre || 'Pasajero Nuevo',
+        pasajeroTelefono: data.pasajeroTelefono || '',
+        montoEstimado: data.montoEstimado || 18500,
+        clienteNombre: data.clienteNombre || 'Cuenta B2B'
+      };
+
+      const dbViaje = {
+        cliente_corporativo_id: clienteCorpId,
+        fecha_programada: fechaIso,
+        tipo_viaje: 'especial',
+        estado: 'solicitado',
+        origen_direccion: data.origenDireccion || 'Aeropuerto Carriel Sur, Talcahuano',
+        origen_lat: data.origenLat || -36.7824,
+        origen_lng: data.origenLng || -73.0631,
+        destino_direccion: data.destinoDireccion || 'Plaza Independencia 400, Concepción',
+        destino_lat: data.destinoLat || -36.8269,
+        destino_lng: data.destinoLng || -73.0498,
+        observaciones: JSON.stringify(observacionesObj)
+      };
+
+      const { data: insertedViaje, error: insertError } = await supabase
+        .from('viajes')
+        .insert([dbViaje])
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error insertando viaje:', insertError);
+        alert('Error al guardar viaje en base de datos: ' + insertError.message);
+        return;
+      }
+
+      // 3. Crear pasajero y viaje_pasajero si tenemos datos
+      if (data.pasajeroNombre && insertedViaje?.id) {
+        try {
+          const fakeRut = 'RUT-P-' + Date.now().toString().slice(-6);
+          const { data: insPasajero } = await supabase
+            .from('pasajeros')
+            .insert([{
+              cliente_corporativo_id: clienteCorpId,
+              nombre_completo: data.pasajeroNombre,
+              rut: fakeRut,
+              telefono: data.pasajeroTelefono || '+56900000000',
+              estado: 'activo'
+            }])
+            .select()
+            .single();
+
+          if (insPasajero?.id) {
+            await supabase.from('viaje_pasajeros').insert([{
+              viaje_id: insertedViaje.id,
+              pasajero_id: insPasajero.id,
+              estado: 'pendiente',
+              orden_parada: 1
+            }]);
+          }
+        } catch (e) {
+          console.warn('Registro complementario de pasajero:', e);
+        }
+      }
+
+      const nuevoViajeState: ViajeOperativa = {
+        id: insertedViaje.id,
+        clienteCorporativoId: clienteCorpId,
+        clienteNombre: data.clienteNombre || clientes.find(c => c.id === clienteCorpId)?.nombreCorporativo || 'Cuenta B2B',
+        pasajeroNombre: data.pasajeroNombre || 'Pasajero Nuevo',
+        pasajeroTelefono: data.pasajeroTelefono || '',
+        origenDireccion: dbViaje.origen_direccion,
+        origenLat: dbViaje.origen_lat,
+        origenLng: dbViaje.origen_lng,
+        destinoDireccion: dbViaje.destino_direccion,
+        destinoLat: dbViaje.destino_lat,
+        destinoLng: dbViaje.destino_lng,
+        fechaProgramada: new Date(fechaIso).toLocaleString('es-CL'),
+        estado: 'solicitado',
+        secureTrackingToken: `token-${insertedViaje.id}`,
+        montoEstimado: data.montoEstimado || 18500,
+        timestampDespacho: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setViajes(prev => [nuevoViajeState, ...prev]);
+    } catch (err: any) {
+      console.error('Error en crearViaje:', err);
+      alert('Error al registrar viaje: ' + (err?.message || err));
+    }
   };
 
   const importarViajesCSV = (cantidad: number) => {

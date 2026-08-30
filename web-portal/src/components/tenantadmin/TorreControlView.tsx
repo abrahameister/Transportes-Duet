@@ -16,6 +16,9 @@ export const TorreControlView: React.FC = () => {
 
   const filteredViajes = viajesTenant.filter(v => {
     if (filterEstado === 'todos') return true;
+    if (filterEstado === 'solicitado' || filterEstado === 'pendiente') {
+      return v.estado === 'solicitado' || v.estado === 'pendiente' || v.estado === 'validado';
+    }
     return v.estado === filterEstado;
   });
 
@@ -25,7 +28,6 @@ export const TorreControlView: React.FC = () => {
 
   const handleGenerarEnlace = async (viaje: ViajeOperativa) => {
     try {
-      // Usamos un viaje real de la base de datos para la prueba si el ID mockeado falla
       const viajeId = viaje.id.startsWith('v-') ? 't1000000-0000-0000-0000-000000000000' : viaje.id;
       const pasajeroId = 'ps100000-0000-0000-0000-000000000000'; // ID pasajero test
 
@@ -49,7 +51,16 @@ export const TorreControlView: React.FC = () => {
     if (!selectedViajeForDispatch) return;
     try {
       const conductor = conductores.find(c => c.id === conductorId);
-      const vehiculoId = conductor?.vehiculoAsignadoId || 'v1000000-0000-0000-0000-000000000000'; // Fallback for dev if needed
+      let vehiculoId = conductor?.vehiculoAsignadoId;
+      if (!vehiculoId) {
+        const { data: vehList } = await supabase.from('vehiculos').select('id').limit(1);
+        vehiculoId = vehList?.[0]?.id;
+      }
+
+      if (!vehiculoId) {
+        alert('Debe existir al menos un vehículo registrado en la flota para asignar el viaje.');
+        return;
+      }
       
       const { error: assignError } = await supabase.rpc('trip_assign', {
         p_viaje_id: selectedViajeForDispatch.id,
@@ -65,6 +76,7 @@ export const TorreControlView: React.FC = () => {
       
       alert('Viaje asignado y despachado con éxito.');
     } catch (err: any) {
+      console.error(err);
       alert('Error despachando viaje: ' + err.message);
     }
     setSelectedViajeForDispatch(null);
@@ -107,10 +119,11 @@ export const TorreControlView: React.FC = () => {
               className="enterprise-input py-1 px-2 text-xs bg-white dark:bg-[#161D27]"
             >
               <option value="todos">Todos los viajes ({viajesTenant.length})</option>
-              <option value="pendiente">Pendientes ({viajesTenant.filter(v => v.estado === 'pendiente').length})</option>
+              <option value="solicitado">Pendientes / Solicitados ({viajesTenant.filter(v => v.estado === 'solicitado' || v.estado === 'pendiente' || v.estado === 'validado').length})</option>
               <option value="asignado">Asignados ({viajesTenant.filter(v => v.estado === 'asignado').length})</option>
-              <option value="en_camino">En Camino ({viajesTenant.filter(v => v.estado === 'en_camino').length})</option>
-              <option value="excepcion">Excepciones / Alerta ({viajesTenant.filter(v => v.estado === 'excepcion').length})</option>
+              <option value="despachado">Despachados ({viajesTenant.filter(v => v.estado === 'despachado').length})</option>
+              <option value="en_camino">En Camino / Ruta ({viajesTenant.filter(v => v.estado === 'en_camino' || v.estado === 'en_ruta').length})</option>
+              <option value="finalizado">Finalizados ({viajesTenant.filter(v => v.estado === 'finalizado').length})</option>
             </select>
           </div>
         )}
@@ -131,8 +144,8 @@ export const TorreControlView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-[#212A38] text-slate-700 dark:text-gray-300">
               {filteredViajes.map((v) => {
-                const isPendiente = v.estado === 'pendiente';
-                const isExcepcion = v.estado === 'excepcion';
+                const isPendiente = v.estado === 'pendiente' || v.estado === 'solicitado' || v.estado === 'validado';
+                const isExcepcion = v.estado === 'excepcion' || v.estado === 'incidencia' || v.estado === 'rescate_solicitado';
                 return (
                   <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-[#1C2533] transition-colors">
                     <td className="py-3.5 px-4">
