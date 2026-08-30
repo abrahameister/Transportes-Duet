@@ -131,20 +131,27 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const vehiculosTenant = vehiculos;
   const conductoresTenant = conductores;
 
-  const filteredConductores = conductoresTenant.filter(c =>
-    !searchQuery ||
-    c.nombreCompleto.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.rut && c.rut.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (c.numeroLicencia && c.numeroLicencia.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredConductores = conductoresTenant.filter(c => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (c.nombreCompleto && c.nombreCompleto.toLowerCase().includes(q)) ||
+      (c.rut && c.rut.toLowerCase().includes(q)) ||
+      (c.numeroLicencia && c.numeroLicencia.toLowerCase().includes(q)) ||
+      (c.email && c.email.toLowerCase().includes(q))
+    );
+  });
 
-  const filteredVehiculos = vehiculosTenant.filter(v =>
-    !searchQuery ||
-    v.placa.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.marca.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    v.modelo.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredVehiculos = vehiculosTenant.filter(v => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (v.placa && v.placa.toLowerCase().includes(q)) ||
+      (v.patente && v.patente.toLowerCase().includes(q)) ||
+      (v.marca && v.marca.toLowerCase().includes(q)) ||
+      (v.modelo && v.modelo.toLowerCase().includes(q))
+    );
+  });
 
   const handleOpenNewVehiculo = () => {
     setEditingVehiculo(null);

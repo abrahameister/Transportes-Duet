@@ -185,7 +185,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { data: dbVehiculos, error: errVehiculos } = await supabase.from('vehiculos').select('*');
         if (errVehiculos) console.error('Error fetch vehiculos:', errVehiculos);
         
-        const { data: dbConductores, error: errConductores } = await supabase.from('conductores').select('*, perfiles(nombre_completo, email, telefono, avatar_url)');
+        const { data: dbConductores, error: errConductores } = await supabase.from('conductores').select('*');
         if (errConductores) console.error('Error fetch conductores:', errConductores);
         
         const { data: dbClientes, error: errClientes } = await supabase.from('clientes_corporativos').select('*');
@@ -214,16 +214,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               activo: v.estado === 'activo'
             })));
           }
-          if (dbConductores && dbConductores.length > 0) {
+          if (dbConductores) {
             setConductores(dbConductores.map(c => ({
               id: c.id,
-              nombreCompleto: c.nombre_completo || c.perfiles?.nombre_completo || 'Conductor',
-              email: c.perfiles?.email || '',
-              telefono: c.telefono || c.perfiles?.telefono || '',
-              avatarUrl: c.perfiles?.avatar_url || '',
-              rut: c.rut,
+              nombreCompleto: c.nombre_completo || 'Conductor',
+              email: '',
+              telefono: c.telefono || '',
+              avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
+              rut: c.rut || '',
               tipoLicencia: (c.tipo_licencia || 'A2') as any,
               vencimientoLicencia: c.vencimiento_licencia || undefined,
+              numeroLicencia: c.tipo_licencia || '',
               puntualidad: '5.0 / 5.0',
               serviciosMes: 0,
               vehiculoAsignadoId: undefined,
