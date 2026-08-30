@@ -45,12 +45,30 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const [pasajeros, setPasajeros] = useState(4);
   const [estado, setEstado] = useState<'operativo' | 'mantenimiento' | 'inactivo'>('operativo');
 
+  const normalizeDateToISO = (dateStr?: string | null): string => {
+    if (!dateStr || typeof dateStr !== 'string') return '2028-08-15';
+    const trimmed = dateStr.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    const dmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+    if (dmyMatch) {
+      const day = dmyMatch[1].padStart(2, '0');
+      const month = dmyMatch[2].padStart(2, '0');
+      const year = dmyMatch[3];
+      return `${year}-${month}-${day}`;
+    }
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split('T')[0];
+    }
+    return '2028-08-15';
+  };
+
   const handleOpenNewConductor = () => {
     setEditingConductor(null);
     setCondNombre('');
     setCondRut('');
     setCondLicencia('A3');
-    setCondVencimiento('15/08/2028');
+    setCondVencimiento('2028-08-15');
     setCondTelefono('+56 9 ');
     setCondEmail('');
     setCondFoto('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop');
@@ -62,7 +80,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     setCondNombre(c.nombreCompleto || '');
     setCondRut(c.rut || '');
     setCondLicencia((c.tipoLicencia as 'A1' | 'A2' | 'A3') || 'A3');
-    setCondVencimiento(c.vencimientoLicencia || '2028-08-15');
+    setCondVencimiento(normalizeDateToISO(c.vencimientoLicencia));
     setCondTelefono(c.telefono || '+56 9 ');
     setCondEmail(c.email || '');
     setCondFoto(c.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop');
@@ -71,6 +89,8 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
 
   const handleSaveConductor = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalVencimiento = normalizeDateToISO(condVencimiento);
+
     if (editingConductor) {
       actualizarConductor(editingConductor.id, {
         nombreCompleto: condNombre,
@@ -79,20 +99,19 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         telefono: condTelefono,
         avatarUrl: condFoto,
         tipoLicencia: condLicencia,
-        vencimientoLicencia: condVencimiento
+        vencimientoLicencia: finalVencimiento
       });
       setActionMsg(`Información del conductor "${condNombre}" actualizada correctamente en el sistema WFM.`);
     } else {
       const nuevo: ConductorWFM = {
         id: `cond-${Date.now()}`,
-        
         nombreCompleto: condNombre,
         rut: condRut,
         email: condEmail,
         telefono: condTelefono,
         avatarUrl: condFoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
         tipoLicencia: condLicencia,
-        vencimientoLicencia: condVencimiento,
+        vencimientoLicencia: finalVencimiento,
         puntualidad: '5.0 / 5.0',
         serviciosMes: 0,
         estadoWFM: 'disponible',
@@ -593,7 +612,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Vencimiento Licencia (*):</label>
-                  <input type="text" value={condVencimiento} onChange={(e) => setCondVencimiento(e.target.value)} placeholder="DD/MM/AAAA" required className="enterprise-input w-full text-xs font-mono" />
+                  <input type="date" value={condVencimiento} onChange={(e) => setCondVencimiento(e.target.value)} required className="enterprise-input w-full text-xs font-mono" />
                 </div>
               </div>
 

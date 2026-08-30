@@ -541,6 +541,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let perfilId: string | null = null;
       let finalId = cond.id;
 
+      // Helper para normalizar fechas al formato estándar ISO YYYY-MM-DD
+      const sanitizeDateToISO = (dateStr?: string | null): string => {
+        if (!dateStr || typeof dateStr !== 'string') {
+          return new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
+        }
+        const trimmed = dateStr.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+        const dmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+        if (dmyMatch) {
+          const day = dmyMatch[1].padStart(2, '0');
+          const month = dmyMatch[2].padStart(2, '0');
+          const year = dmyMatch[3];
+          return `${year}-${month}-${day}`;
+        }
+        const parsed = new Date(trimmed);
+        if (!isNaN(parsed.getTime())) {
+          return parsed.toISOString().split('T')[0];
+        }
+        return new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
+      };
+
+      const finalVencimiento = sanitizeDateToISO(cond.vencimientoLicencia);
+
       // 1. Invitar al conductor usando la Edge Function para crear auth.user y perfiles (si tiene email)
       if (cond.email) {
         try {
@@ -552,7 +575,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               rut: cond.rut,
               telefono: cond.telefono,
               tipoLicencia: cond.tipoLicencia,
-              vencimientoLicencia: cond.vencimientoLicencia,
+              vencimientoLicencia: finalVencimiento,
               redirectTo: window.location.origin + '/reset-password'
             }
           });
@@ -573,7 +596,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         nombre_completo: cond.nombreCompleto,
         telefono: cond.telefono || '+56900000000',
         tipo_licencia: cond.tipoLicencia || 'A2',
-        vencimiento_licencia: cond.vencimientoLicencia || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+        vencimiento_licencia: finalVencimiento,
         estado: 'activo'
       };
       if (perfilId) {
@@ -600,7 +623,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         finalId = insertedData.id;
       }
 
-      setConductores(prev => [{ ...cond, id: finalId }, ...prev]);
+      setConductores(prev => [{ ...cond, id: finalId, vencimientoLicencia: finalVencimiento }, ...prev]);
     } catch (err: any) {
       console.error('Error general agregando conductor:', err);
       alert('Error al agregar conductor: ' + (err?.message || err));
@@ -613,7 +636,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updates.rut) dbUpdates.rut = updates.rut;
     if (updates.telefono) dbUpdates.telefono = updates.telefono;
     if (updates.tipoLicencia) dbUpdates.tipo_licencia = updates.tipoLicencia;
-    if (updates.vencimientoLicencia) dbUpdates.vencimiento_licencia = updates.vencimientoLicencia;
+    if (updates.vencimientoLicencia) {
+      const trimmed = updates.vencimientoLicencia.trim();
+      const dmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+      dbUpdates.vencimiento_licencia = dmyMatch 
+        ? `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`
+        : trimmed;
+    }
     if (updates.estadoWFM) dbUpdates.estado = updates.estadoWFM === 'inactivo' ? 'inactivo' : 'activo';
 
     const { error } = await supabase.from('conductores').update(dbUpdates).eq('id', id);
