@@ -134,13 +134,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setAvisosOperativos(prev => [nuevo, ...prev]);
 
-    supabase.from('avisos_operativos').insert([{
-      id: nuevo.id,
+    supabase.from('avisos').insert([{
       viaje_id: nuevo.viajeId || null,
-      pasajero_nombre: nuevo.pasajeroNombre,
       mensaje: nuevo.mensaje,
-      leido: nuevo.leido,
-      tipo: nuevo.tipo
+      leido: nuevo.leido
     }]).then(({ error }) => {
       if (error) console.warn('📡 [WFM Fallback] Aviso registrado en caché local. (Pendiente sync nube)', error.message);
       else console.log('⚡ [Realtime Sync] Aviso transmitido al servidor de Supabase.');
@@ -188,7 +185,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { data: dbVehiculos, error: errVehiculos } = await supabase.from('vehiculos').select('*');
         if (errVehiculos) console.error('Error fetch vehiculos:', errVehiculos);
         
-        const { data: dbConductores, error: errConductores } = await supabase.from('conductores_wfm').select('*, perfiles(nombre_completo, email, telefono, avatar_url)');
+        const { data: dbConductores, error: errConductores } = await supabase.from('conductores').select('*, perfiles(nombre_completo, email, telefono, avatar_url)');
         if (errConductores) console.error('Error fetch conductores:', errConductores);
         
         const { data: dbClientes, error: errClientes } = await supabase.from('clientes_corporativos').select('*');
@@ -197,7 +194,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { data: dbViajes, error: errViajes } = await supabase.from('viajes').select('*');
         if (errViajes) console.error('Error fetch viajes:', errViajes);
         
-        const { data: dbAvisos, error: errAvisos } = await supabase.from('avisos_operativos').select('*');
+        const { data: dbAvisos, error: errAvisos } = await supabase.from('avisos').select('*');
         if (errAvisos) console.error('Error fetch avisos:', errAvisos);
 
         if (isSubscribed) {
@@ -220,21 +217,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (dbConductores && dbConductores.length > 0) {
             setConductores(dbConductores.map(c => ({
               id: c.id,
-              nombreCompleto: c.perfiles?.nombre_completo || c.nombre_completo,
-              email: c.perfiles?.email || c.email,
-              telefono: c.perfiles?.telefono || c.telefono,
-              avatarUrl: c.perfiles?.avatar_url || c.avatar_url || '',
-              rut: c.perfiles?.rut || c.rut,
-              tipoLicencia: c.tipo_licencia as any,
-              puntualidad: c.puntualidad,
-              serviciosMes: c.servicios_mes,
-              vehiculoAsignadoId: c.vehiculo_asignado_id,
-              estadoWFM: (c.estado_wfm as any) || 'disponible',
-              ultimaLatitud: c.ultima_latitud,
-              ultimaLongitud: c.ultima_longitud,
-              horasConducidasHoy: Number(c.horas_conducidas_hoy || 0),
-              enDescanso: c.en_descanso || false,
-              motivoBloqueo: c.motivo_bloqueo
+              nombreCompleto: c.nombre_completo || c.perfiles?.nombre_completo || 'Conductor',
+              email: c.perfiles?.email || '',
+              telefono: c.telefono || c.perfiles?.telefono || '',
+              avatarUrl: c.perfiles?.avatar_url || '',
+              rut: c.rut,
+              tipoLicencia: (c.tipo_licencia || 'A2') as any,
+              vencimientoLicencia: c.vencimiento_licencia || undefined,
+              puntualidad: '5.0 / 5.0',
+              serviciosMes: 0,
+              vehiculoAsignadoId: undefined,
+              estadoWFM: (c.estado === 'activo' ? 'disponible' : 'inactivo') as any,
+              ultimaLatitud: -36.8269,
+              ultimaLongitud: -73.0498,
+              horasConducidasHoy: 0,
+              enDescanso: false,
+              motivoBloqueo: undefined
             })));
           }
           if (dbClientes) {
@@ -280,11 +278,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setAvisosOperativos(dbAvisos.map(a => ({
               id: a.id,
               viajeId: a.viaje_id,
-              pasajeroNombre: a.pasajero_nombre,
+              pasajeroNombre: 'Colaborador',
               mensaje: a.mensaje,
-              timestamp: a.timestamp ? new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora',
+              timestamp: a.created_at ? new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora',
               leido: a.leido || false,
-              tipo: (a.tipo as any) || 'aviso_rapido'
+              tipo: 'aviso_rapido'
             })));
           }
         }
@@ -296,20 +294,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     syncFromSupabase();
 
     const realtimeChannel = supabase.channel('wfm-realtime-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos_operativos' }, payload => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos' }, payload => {
         const nuevo: AvisoOperativo = {
           id: payload.new.id,
           viajeId: payload.new.viaje_id,
-          pasajeroNombre: payload.new.pasajero_nombre || 'Pasajero PWA',
+          pasajeroNombre: 'Colaborador',
           mensaje: payload.new.mensaje,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           leido: payload.new.leido || false,
-          tipo: payload.new.tipo || 'aviso_rapido'
+          tipo: 'aviso_rapido'
         };
         setAvisosOperativos(prev => [nuevo, ...prev.filter(a => a.id !== nuevo.id)]);
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conductores_wfm' }, payload => {
-        setConductores(prev => prev.map(c => c.id === payload.new.id ? { ...c, estadoWFM: payload.new.estado_wfm || c.estadoWFM } : c));
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conductores' }, payload => {
+        const updated = payload.new as any;
+        setConductores(prev => prev.map(c => c.id === updated.id ? { 
+          ...c, 
+          nombreCompleto: updated.nombre_completo || c.nombreCompleto,
+          rut: updated.rut || c.rut,
+          telefono: updated.telefono || c.telefono,
+          tipoLicencia: updated.tipo_licencia || c.tipoLicencia,
+          estadoWFM: updated.estado === 'activo' ? 'disponible' : 'inactivo'
+        } : c));
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conductores' }, payload => {
+        const nuevo = payload.new as any;
+        setConductores(prev => {
+          if (prev.some(c => c.id === nuevo.id)) return prev;
+          return [{
+            id: nuevo.id,
+            nombreCompleto: nuevo.nombre_completo,
+            rut: nuevo.rut,
+            email: '',
+            telefono: nuevo.telefono,
+            avatarUrl: '',
+            tipoLicencia: (nuevo.tipo_licencia || 'A2') as any,
+            vencimientoLicencia: nuevo.vencimiento_licencia,
+            puntualidad: '5.0 / 5.0',
+            serviciosMes: 0,
+            estadoWFM: nuevo.estado === 'activo' ? 'disponible' : 'inactivo',
+            ultimaLatitud: -36.8269,
+            ultimaLongitud: -73.0498,
+            horasConducidasHoy: 0,
+            enDescanso: false
+          }, ...prev];
+        });
       })
       .subscribe();
 
@@ -508,45 +537,97 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const agregarConductor = async (cond: ConductorWFM) => {
-    // 1. Invitar al conductor usando la Edge Function para crear auth.user y perfiles
-    const { data: inviteRes, error: edgeError } = await supabase.functions.invoke('invite-b2b', {
-      body: { 
-        email: cond.email, 
-        fullName: cond.nombreCompleto, 
-        role: 'conductor',
-        redirectTo: window.location.origin + '/reset-password'
+    try {
+      let perfilId: string | null = null;
+      let finalId = cond.id;
+
+      // 1. Invitar al conductor usando la Edge Function para crear auth.user y perfiles (si tiene email)
+      if (cond.email) {
+        try {
+          const { data: inviteRes, error: edgeError } = await supabase.functions.invoke('invite-b2b', {
+            body: { 
+              email: cond.email, 
+              fullName: cond.nombreCompleto, 
+              role: 'CONDUCTOR',
+              rut: cond.rut,
+              telefono: cond.telefono,
+              tipoLicencia: cond.tipoLicencia,
+              vencimientoLicencia: cond.vencimientoLicencia,
+              redirectTo: window.location.origin + '/reset-password'
+            }
+          });
+
+          if (edgeError) {
+            console.warn("Aviso Auth conductor:", edgeError.message || edgeError);
+          } else if (inviteRes?.perfilId) {
+            perfilId = inviteRes.perfilId;
+          }
+        } catch (e) {
+          console.warn("Edge function no disponible para Auth de conductor:", e);
+        }
       }
-    });
 
-    if (edgeError) {
-      console.error("Error creando conductor en Auth/Perfiles:", edgeError);
-      alert('Error Auth/Perfiles: ' + edgeError.message);
-      return;
+      // 2. Insertar directamente en la tabla canónica 'conductores'
+      const dbObj: any = { 
+        rut: cond.rut || ('RUT-' + Date.now().toString().slice(-6)),
+        nombre_completo: cond.nombreCompleto,
+        telefono: cond.telefono || '+56900000000',
+        tipo_licencia: cond.tipoLicencia || 'A2',
+        vencimiento_licencia: cond.vencimientoLicencia || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+        estado: 'activo'
+      };
+      if (perfilId) {
+        dbObj.perfil_id = perfilId;
+      }
+      
+      const { data: insertedData, error: insertError } = await supabase
+        .from('conductores')
+        .insert([dbObj])
+        .select()
+        .single();
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          alert('Ya existe un conductor registrado con ese RUT.');
+          return;
+        }
+        console.error('Error insertando conductor:', insertError);
+        alert('Error al guardar conductor: ' + insertError.message);
+        return;
+      }
+
+      if (insertedData?.id) {
+        finalId = insertedData.id;
+      }
+
+      setConductores(prev => [{ ...cond, id: finalId }, ...prev]);
+    } catch (err: any) {
+      console.error('Error general agregando conductor:', err);
+      alert('Error al agregar conductor: ' + (err?.message || err));
     }
-
-    const newId = inviteRes?.user?.id || cond.id;
-
-    // 2. Insertar en la tabla operativa conductores_wfm
-    const dbObj = { 
-      id: newId, 
-      numero_licencia: cond.numeroLicencia || 'PENDIENTE',
-      vencimiento_licencia: cond.vencimientoLicencia || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-      estado_wfm: 'offline'
-    };
-    
-    const { error: insertError } = await supabase.from('conductores_wfm').insert([dbObj]);
-    if (insertError) {
-      console.error('Error insertando conductor_wfm:', insertError);
-      alert('Error guardando operativamente: ' + insertError.message);
-      return;
-    }
-    setConductores(prev => [{...cond, id: newId}, ...prev]);
   };
+
   const actualizarConductor = async (id: string, updates: Partial<ConductorWFM>) => {
+    const dbUpdates: any = {};
+    if (updates.nombreCompleto) dbUpdates.nombre_completo = updates.nombreCompleto;
+    if (updates.rut) dbUpdates.rut = updates.rut;
+    if (updates.telefono) dbUpdates.telefono = updates.telefono;
+    if (updates.tipoLicencia) dbUpdates.tipo_licencia = updates.tipoLicencia;
+    if (updates.vencimientoLicencia) dbUpdates.vencimiento_licencia = updates.vencimientoLicencia;
+    if (updates.estadoWFM) dbUpdates.estado = updates.estadoWFM === 'inactivo' ? 'inactivo' : 'activo';
+
+    const { error } = await supabase.from('conductores').update(dbUpdates).eq('id', id);
+    if (error) console.error('Error actualizando conductor:', error);
     setConductores(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   };
+
   const eliminarConductor = async (id: string) => {
-    await supabase.from('conductores_wfm').delete().eq('id', id);
+    const { error } = await supabase.from('conductores').delete().eq('id', id);
+    if (error) {
+      console.error('Error eliminando conductor:', error);
+      alert('Error eliminando conductor: ' + error.message);
+      return;
+    }
     setConductores(prev => prev.filter(c => c.id !== id));
   };
 

@@ -23,7 +23,7 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false }
     })
 
-    const { email, fullName, role, cliente_corporativo_id, redirectTo } = await req.json()
+    const { email, fullName, role, cliente_corporativo_id, redirectTo, rut, telefono, tipoLicencia, vencimientoLicencia } = await req.json()
 
     if (!email) {
       return new Response(JSON.stringify({ error: 'Email requerido' }), { 
@@ -31,8 +31,10 @@ serve(async (req) => {
       })
     }
 
-    // El rol por defecto es CLIENTE_B2B si no se especifica
-    const finalRole = role || 'CLIENTE_B2B'
+    // El rol canónico siempre en mayúsculas (ADMIN, OPERACIONES, DISPATCHER, CONDUCTOR, CLIENTE_B2B)
+    const normalizedRole = role ? role.toUpperCase() : 'CLIENTE_B2B'
+    const validRoles = ['ADMIN', 'OPERACIONES', 'DISPATCHER', 'CONDUCTOR', 'CLIENTE_B2B']
+    const finalRole = validRoles.includes(normalizedRole) ? normalizedRole : 'CLIENTE_B2B'
 
     // Invitar usuario mediante Admin API. Esto crea auth.users y lanza correo de reseteo.
     const { data: authData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
@@ -98,13 +100,37 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, user: authData.user }), {
+    // Si es conductor, registrar/enlazar en la tabla canónica 'conductores'
+    if (finalRole === 'CONDUCTOR') {
+      const { data: existingCond } = await supabase
+        .from('conductores')
+        .select('id')
+        .eq('perfil_id', perfilId)
+        .single()
+
+      if (!existingCond) {
+        await supabase
+          .from('conductores')
+          .insert([{
+            perfil_id: perfilId,
+            rut: rut || ('RUT-' + userId.slice(0, 8)),
+            nombre_completo: fullName || 'Conductor',
+            telefono: telefono || '+56900000000',
+            tipo_licencia: tipoLicencia || 'A2',
+            vencimiento_licencia: vencimientoLicencia || null,
+            estado: 'activo'
+          }])
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true, user: authData.user, perfilId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
-    console.error('Error en invite-b2b:', error instanceof Error ? error.message : error);
-    return new Response(JSON.stringify({ error: 'Ha ocurrido un error al procesar la solicitud. Por favor, intente nuevamente.' }), {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error('Error en invite-b2b:', errorMsg);
+    return new Response(JSON.stringify({ error: errorMsg }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
