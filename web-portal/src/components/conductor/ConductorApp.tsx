@@ -143,26 +143,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
     setTimeout(() => setVozActiva(null), 6000);
   };
 
-  const handleCambiarEstadoPasajero = async (id: string, nuevoEstado: 'abordo' | 'ausente') => {
-    setPasajerosRuta(prev => prev.map(p => {
-      if (p.id === id) {
-        mostrarNotificacion(`✓ Pasajero ${p.nombre} registrado como: ${nuevoEstado === 'abordo' ? 'A BORDO (PIN y Token Efímero verificados en tiempo real)' : 'AUSENTE (No se presentó)'}`);
-        return { ...p, estado: nuevoEstado };
-      }
-      return p;
-    }));
 
-    setSyncStatus('PENDIENTE');
-    try {
-      await queueAction({
-        type: 'board_passenger',
-        payload: { p_viaje_id: activeTripId, p_pasajero_id: id, p_estado: nuevoEstado === 'abordo' ? 'abordado' : 'no_show' }
-      });
-      setTimeout(() => setSyncStatus('SINCRONIZADO'), 2000); // Visual feedback
-    } catch (e) {
-      setSyncStatus('ERROR');
-    }
-  };
 
   const handleTransmitirInspeccion = () => {
     if (!checkExtintor || !checkFluidos || !checkNeumaticos || !checkLicencia) {
