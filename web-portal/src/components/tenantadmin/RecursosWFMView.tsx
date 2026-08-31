@@ -447,8 +447,8 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                         <td className="py-4 px-4 font-bold text-slate-900 dark:text-white">
                           {vh.marca} <span className="text-slate-500 dark:text-slate-400 font-normal">({vh.modelo})</span>
                         </td>
-                        <td className="py-4 px-4 text-slate-700 dark:text-slate-300 font-medium">{vh.color}</td>
-                        <td className="py-4 px-4 font-mono font-semibold text-slate-800 dark:text-slate-200">{vh.kilometraje?.toLocaleString()} km</td>
+                        <td className="py-4 px-4 text-slate-700 dark:text-slate-300 font-medium uppercase">{vh.color || 'Blanco'}</td>
+                        <td className="py-4 px-4 font-mono font-semibold text-slate-800 dark:text-slate-200">{(vh.kilometraje ?? 0).toLocaleString()} km</td>
                         <td className="py-4 px-4 font-mono text-slate-700 dark:text-slate-300 font-medium">{vh.capacidadPasajeros} pas.</td>
                         <td className="py-4 px-4">
                           <button

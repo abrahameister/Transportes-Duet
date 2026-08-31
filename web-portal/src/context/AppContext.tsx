@@ -228,9 +228,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               patente: v.patente,
               capacidadPasajeros: v.capacidad,
               capacidad: v.capacidad,
+              color: v.color || 'Blanco',
+              kilometraje: v.kilometraje ?? 0,
               estadoOperativo: v.estado || 'operativo',
-              estado: v.estado,
-              activo: v.estado === 'activo'
+              estado: v.estado || 'operativo',
+              activo: v.estado === 'operativo' || v.estado === 'activo'
             })));
           }
           if (dbConductores) {
@@ -375,6 +377,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             enDescanso: false
           }, ...prev];
         });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehiculos' }, payload => {
+        if (payload.eventType === 'INSERT') {
+          const v = payload.new as any;
+          setVehiculos(prev => {
+            if (prev.some(item => item.id === v.id)) return prev;
+            return [{
+              id: v.id,
+              marca: v.marca,
+              modelo: v.modelo,
+              anio: v.anio,
+              placa: v.patente,
+              patente: v.patente,
+              capacidadPasajeros: v.capacidad,
+              capacidad: v.capacidad,
+              color: v.color || 'Blanco',
+              kilometraje: v.kilometraje ?? 0,
+              estadoOperativo: v.estado || 'operativo',
+              estado: v.estado || 'operativo',
+              activo: v.estado === 'operativo' || v.estado === 'activo'
+            }, ...prev];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const v = payload.new as any;
+          setVehiculos(prev => prev.map(item => item.id === v.id ? {
+            ...item,
+            marca: v.marca,
+            modelo: v.modelo,
+            anio: v.anio,
+            placa: v.patente,
+            patente: v.patente,
+            capacidadPasajeros: v.capacidad,
+            capacidad: v.capacidad,
+            color: v.color || 'Blanco',
+            kilometraje: v.kilometraje ?? 0,
+            estadoOperativo: v.estado || 'operativo',
+            estado: v.estado || 'operativo'
+          } : item));
+        } else if (payload.eventType === 'DELETE') {
+          const v = payload.old as any;
+          setVehiculos(prev => prev.filter(item => item.id !== v.id));
+        }
       })
       .subscribe();
 
@@ -639,31 +683,99 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const agregarVehiculo = async (vehiculo: VehiculoFlota) => {
-    // Omitting ID so Supabase generates a real UUID
-    const dbObj = { 
-      marca: vehiculo.marca, 
-      modelo: vehiculo.modelo, 
-      patente: vehiculo.patente || vehiculo.placa || 'N/A',
-      anio: vehiculo.anio || new Date().getFullYear(),
-      capacidad: vehiculo.capacidad || vehiculo.capacidadPasajeros || 4,
-      estado: vehiculo.estado || vehiculo.estadoOperativo || 'operativo'
-    };
-    const { data, error } = await supabase.from('vehiculos').insert([dbObj]).select().single();
-    if (error) {
-      console.error('Error insertando vehiculo:', error);
-      alert('Error guardando vehiculo: ' + error.message);
-      return;
+    try {
+      const dbObj = { 
+        marca: vehiculo.marca, 
+        modelo: vehiculo.modelo, 
+        patente: (vehiculo.patente || vehiculo.placa || 'N/A').toUpperCase().trim(),
+        anio: vehiculo.anio || new Date().getFullYear(),
+        capacidad: Number(vehiculo.capacidad || vehiculo.capacidadPasajeros || 4),
+        color: vehiculo.color || 'Blanco',
+        kilometraje: Number(vehiculo.kilometraje || 0),
+        estado: vehiculo.estado || vehiculo.estadoOperativo || 'operativo'
+      };
+      const { data, error } = await supabase.from('vehiculos').insert([dbObj]).select().single();
+      if (error) {
+        console.error('Error insertando vehiculo:', error);
+        alert('Error guardando vehículo: ' + error.message);
+        return;
+      }
+      setVehiculos(prev => [{
+        ...vehiculo,
+        id: data.id,
+        placa: data.patente,
+        patente: data.patente,
+        capacidadPasajeros: data.capacidad,
+        color: data.color || 'Blanco',
+        kilometraje: data.kilometraje ?? 0,
+        estadoOperativo: data.estado || 'operativo'
+      }, ...prev]);
+    } catch (err: any) {
+      console.error('Error en agregarVehiculo:', err);
+      alert('Error al guardar vehiculo: ' + (err?.message || err));
     }
-    setVehiculos(prev => [{...vehiculo, id: data.id}, ...prev]);
   };
+
   const actualizarVehiculo = async (id: string, updates: Partial<VehiculoFlota>) => {
-    // Omitting full DB sync logic for brevity, but here is where it updates
-    setVehiculos(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
+    try {
+      const dbUpdates: any = { updated_at: new Date().toISOString() };
+      if (updates.marca !== undefined) dbUpdates.marca = updates.marca;
+      if (updates.modelo !== undefined) dbUpdates.modelo = updates.modelo;
+      if (updates.placa !== undefined || updates.patente !== undefined) {
+        dbUpdates.patente = (updates.patente || updates.placa)?.toUpperCase().trim();
+      }
+      if (updates.anio !== undefined) dbUpdates.anio = Number(updates.anio);
+      if (updates.capacidad !== undefined || updates.capacidadPasajeros !== undefined) {
+        dbUpdates.capacidad = Number(updates.capacidad || updates.capacidadPasajeros);
+      }
+      if (updates.color !== undefined) dbUpdates.color = updates.color;
+      if (updates.kilometraje !== undefined) dbUpdates.kilometraje = Number(updates.kilometraje);
+      if (updates.estado !== undefined || updates.estadoOperativo !== undefined) {
+        dbUpdates.estado = updates.estado || updates.estadoOperativo;
+      }
+
+      const { data, error } = await supabase
+        .from('vehiculos')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error actualizando vehiculo:', error);
+        alert('Error al actualizar vehículo en base de datos: ' + error.message);
+        return;
+      }
+
+      setVehiculos(prev => prev.map(v => v.id === id ? { 
+        ...v, 
+        ...updates,
+        placa: data.patente || v.placa,
+        patente: data.patente || v.patente,
+        color: data.color || v.color,
+        kilometraje: data.kilometraje ?? v.kilometraje,
+        capacidadPasajeros: data.capacidad || v.capacidadPasajeros,
+        estadoOperativo: data.estado || v.estadoOperativo
+      } : v));
+    } catch (err: any) {
+      console.error('Error en actualizarVehiculo:', err);
+      alert('Error al actualizar vehiculo: ' + (err?.message || err));
+    }
   };
+
   const eliminarVehiculo = async (id: string) => {
-    const { error } = await supabase.from('vehiculos').delete().eq('id', id);
-    if (error) console.error(error);
-    else setVehiculos(prev => prev.filter(v => v.id !== id));
+    try {
+      const { error } = await supabase.from('vehiculos').delete().eq('id', id);
+      if (error) {
+        console.error('Error eliminando vehiculo:', error);
+        alert('Error al eliminar vehículo: ' + error.message);
+      } else {
+        setVehiculos(prev => prev.filter(v => v.id !== id));
+      }
+    } catch (err: any) {
+      console.error('Error en eliminarVehiculo:', err);
+      alert('Error al eliminar vehículo: ' + (err?.message || err));
+    }
   };
 
   const agregarConductor = async (cond: ConductorWFM) => {
