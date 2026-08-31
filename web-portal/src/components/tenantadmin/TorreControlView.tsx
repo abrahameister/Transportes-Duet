@@ -189,7 +189,7 @@ export const TorreControlView: React.FC = () => {
                       )}
                     </td>
                     <td className="py-3.5 px-4 font-mono font-medium text-slate-900 dark:text-white">
-                      ${v.montoEstimado.toLocaleString('es-CL')} CLP
+                      {v.montoEstimado ? `$${Number(v.montoEstimado).toLocaleString('es-CL')} CLP` : '$0 CLP'}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       {isPendiente ? (
@@ -319,7 +319,7 @@ export const TorreControlView: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-500 dark:text-slate-400 font-semibold block">TARIFA ESTIMADA:</span>
-                  <strong className="text-slate-900 dark:text-white text-base font-mono">${selectedViajeForDispatch.montoEstimado.toLocaleString('es-CL')} CLP</strong>
+                  <strong className="text-slate-900 dark:text-white text-base font-mono">{selectedViajeForDispatch.montoEstimado ? `$${Number(selectedViajeForDispatch.montoEstimado).toLocaleString('es-CL')} CLP` : '$0 CLP'}</strong>
                   <div className="text-emerald-600 dark:text-emerald-400">Listo para despacho instantáneo</div>
                 </div>
               </div>

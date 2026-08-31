@@ -253,7 +253,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             destinoLng: v.destino_lng || -73.0480,
             fechaProgramada: v.fecha_programada ? new Date(v.fecha_programada).toLocaleString('es-CL') : 'Inmediato',
             estado: v.estado || 'solicitado',
-            timestampDespacho: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined
+            timestampDespacho: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined,
+            montoEstimado: parsedObs.montoEstimado || 0
           };
         }));
       }

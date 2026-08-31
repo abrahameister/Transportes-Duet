@@ -238,11 +238,11 @@ export const ClientesTarifacionView: React.FC = () => {
                   <div className="text-slate-500 dark:text-slate-400 text-[11px]">{cl.contactoEmail}</div>
                 </td>
                 <td className="py-3.5 px-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                  ${cl.tarifario.tarifaPorKm.toLocaleString('es-CL')} CLP / km
+                  {cl.tarifario?.tarifaPorKm ? `$${cl.tarifario.tarifaPorKm.toLocaleString('es-CL')} CLP / km` : 'Tarifa base'}
                 </td>
                 <td className="py-3.5 px-4 font-mono">
                   <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-[#212A38] text-slate-800 dark:text-gray-300 text-[11px] font-semibold">
-                    {cl.tarifario.rutasFijas.length} rutas configuradas
+                    {cl.tarifario?.rutasFijas?.length || 0} rutas configuradas
                   </span>
                 </td>
                 <td className="py-3.5 px-4 text-right flex items-center justify-end space-x-2">
