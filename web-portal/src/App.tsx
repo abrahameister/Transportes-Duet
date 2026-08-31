@@ -4,7 +4,6 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { AdminPortal } from './components/tenantadmin/AdminPortal';
 import { ClientPortalB2B } from './components/b2b/ClientPortalB2B';
-import { PasajeroPWA } from './components/pasajero/PasajeroPWA';
 import { ConductorApp } from './components/conductor/ConductorApp';
 import { LoginView } from './components/auth/LoginView';
 import { ForgotPasswordView } from './components/auth/ForgotPasswordView';
@@ -44,8 +43,6 @@ const AppRouter = () => {
     renderedView = <ClientPortalB2B />;
   } else if (currentRoleView === 'app_conductor' && (userRole === 'admin' || userRole === 'app_conductor')) {
     renderedView = <ConductorApp />;
-  } else if (currentRoleView === 'pwa_pasajero') {
-    renderedView = <PasajeroPWA />;
   } else {
     // Fallback de seguridad en caso de que intenten forzar una vista prohibida
     if (userRole === 'cliente_b2b') renderedView = <ClientPortalB2B />;

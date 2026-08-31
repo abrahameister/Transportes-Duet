@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import type { ViajeOperativa, ConductorWFM, FuncionarioB2B, DemandaTurnoB2B } from '../../types';
@@ -21,95 +21,14 @@ const SUGGERENCIAS_MAPS_BIOBIO = [
   'San Pedro del Valle 120, San Pedro de la Paz'
 ];
 
-const FUNCIONARIOS_MOCK_INITIAL: FuncionarioB2B[] = [
-  {
-    id: 'f-001',
-    clienteCorporativoId: 'all',
-    nombreCompleto: 'Dra. María Paz Solar',
-    rut: '17.890.123-4',
-    telefono: '+56 9 8111 2233',
-    email: 'msolar@clinicasanatorio.cl',
-    area: 'Urgencias Médicas',
-    direccionRecogida: 'Av. Chacabuco 1400, Depto 504',
-    comuna: 'Concepción',
-    centroCosto: 'Urgencias',
-    preferenciaTurno: 'Turno Diurno',
-    estadoGeo: 'activo'
-  },
-  {
-    id: 'f-002',
-    clienteCorporativoId: 'all',
-    nombreCompleto: 'Ing. Rodrigo Sepúlveda Alarcón',
-    rut: '14.502.880-K',
-    telefono: '+56 9 7222 3344',
-    email: 'rsepulveda@arauco.cl',
-    area: 'Operaciones y Planta',
-    direccionRecogida: 'San Pedro del Valle 120, Villa El Rosario',
-    comuna: 'San Pedro de la Paz',
-    centroCosto: 'Operaciones',
-    preferenciaTurno: 'Turno Noche',
-    estadoGeo: 'activo'
-  },
-  {
-    id: 'f-003',
-    clienteCorporativoId: 'all',
-    nombreCompleto: 'Lic. Carla Morales Peñaranda',
-    rut: '16.711.902-1',
-    telefono: '+56 9 9333 4455',
-    email: 'cmorales@huachipato.cl',
-    area: 'Laboratorio de Control',
-    direccionRecogida: 'Camino a Coronel Km 14, Condominio Olas',
-    comuna: 'Coronel',
-    centroCosto: 'Laboratorio',
-    preferenciaTurno: 'Rotativo',
-    estadoGeo: 'revision'
-  },
-  {
-    id: 'f-004',
-    clienteCorporativoId: 'all',
-    nombreCompleto: 'Esteban Miranda Valdés',
-    rut: '15.204.110-8',
-    telefono: '+56 9 6444 8899',
-    email: 'emiranda@enap.cl',
-    area: 'Mantenimiento Mecánico',
-    direccionRecogida: 'Calle Los Tilos 450, Sector Colón',
-    comuna: 'Talcahuano',
-    centroCosto: 'Mantenimiento',
-    preferenciaTurno: 'Turno Diurno',
-    estadoGeo: 'activo'
-  },
-  {
-    id: 'f-005',
-    clienteCorporativoId: 'all',
-    nombreCompleto: 'Andrea Navarrete Bustos',
-    rut: '18.102.304-5',
-    telefono: '+56 9 5555 1122',
-    email: 'anavarrete@arauco.cl',
-    area: 'Recursos Humanos',
-    direccionRecogida: 'Av. O\'Higgins 890, Piso 12',
-    comuna: 'Concepción',
-    centroCosto: 'Gerencia',
-    preferenciaTurno: 'Horario Administrativo',
-    estadoGeo: 'inactivo'
-  }
-];
-
-const TURNOS_MOCK: DemandaTurnoB2B[] = [
-  { id: 't-1', clienteId: 'all', nombreTurno: 'Turno Diurno (Apertura Planta)', horaIngreso: '07:00 AM', horaSalida: '15:30 PM', cantidadEntrando: 42, cantidadSaliendo: 12, estadoSincronizacion: 'sincronizado' },
-  { id: 't-2', clienteId: 'all', nombreTurno: 'Cambio Turno Tarde (Relevo Operativo)', horaIngreso: '15:30 PM', horaSalida: '23:30 PM', cantidadEntrando: 38, cantidadSaliendo: 40, estadoSincronizacion: 'sincronizado' },
-  { id: 't-3', clienteId: 'all', nombreTurno: 'Turno Noche (Mina & Calderas)', horaIngreso: '23:30 PM', horaSalida: '07:00 AM', cantidadEntrando: 22, cantidadSaliendo: 38, estadoSincronizacion: 'pendiente_wfm' },
-  { id: 't-4', clienteId: 'all', nombreTurno: 'Horario Administrativo Central', horaIngreso: '08:30 AM', horaSalida: '18:00 PM', cantidadEntrando: 15, cantidadSaliendo: 15, estadoSincronizacion: 'sincronizado' }
-];
 
 export const ClientPortalB2B: React.FC = () => {
-  const {  clientes, viajesB2B, crearViaje, conductores, setActiveClienteB2BId } = useApp();
+  const { clientes = [], viajesB2B = [], crearViaje, conductores = [], activeClienteB2BId } = useApp() || {};
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileTurnosInputRef = useRef<HTMLInputElement>(null);
 
-  // Selector de Empresa Contratante (con aislamiento de datos por ID)
-  const clientesTenant = clientes;
-  const [selectedClientId, setSelectedClientId] = useState<string>(clientesTenant[0]?.id || 'client-gen');
-  const activeClient = clientesTenant.find(c => c.id === selectedClientId) || clientesTenant[0];
+  // Aislamiento de datos por ID (Enterprise)
+  const activeClient = clientes.find(c => c.id === activeClienteB2BId) || clientes[0];
   
   const [b2bStats, setB2bStats] = useState({
     total_viajes_mes: 0,
@@ -120,7 +39,7 @@ export const ClientPortalB2B: React.FC = () => {
 
   React.useEffect(() => {
     const fetchKPIs = async () => {
-      const activeId = activeClient?.id || clientesTenant[0]?.id;
+      const activeId = activeClient?.id;
       if (!activeId) return;
 
       let { data, error } = await supabase.rpc('get_b2b_kpis');
@@ -137,13 +56,6 @@ export const ClientPortalB2B: React.FC = () => {
     fetchKPIs();
     const interval = setInterval(fetchKPIs, 30000);
     return () => clearInterval(interval);
-  }, [activeClient?.id]);
-
-  // Sincronizar sesión activa al montar o cambiar empresa seleccionada
-  React.useEffect(() => {
-    const idToUse = activeClient?.id || clientesTenant[0]?.id || null;
-    setActiveClienteB2BId(idToUse);
-    return () => setActiveClienteB2BId(null); // Limpiar al desmontar
   }, [activeClient?.id]);
 
   // Las 8 Vistas Habilitadas
@@ -190,10 +102,7 @@ export const ClientPortalB2B: React.FC = () => {
   const [showDestinoSug, setShowDestinoSug] = useState(false);
 
   // Tickets Soporte
-  const [tickets, setTickets] = useState([
-    { id: 'TKT-0812', asunto: 'Solicitud aumento móviles turno noche Talcahuano', estado: 'Inmediato / En Atención', fecha: 'Hoy 14:20 hrs', ejecutivo: 'Matías Vergara (Central)' },
-    { id: 'TKT-0799', asunto: 'Consulta por facturation y estado de pago Julio', estado: 'Resuelto por Contabilidad', fecha: '28 Jul 2026', ejecutivo: 'Mesa Ayuda 24/7' }
-  ]);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [newTicketAsunto, setNewTicketAsunto] = useState('');
   const [newTicketDesc, setNewTicketDesc] = useState('');
 
@@ -219,7 +128,7 @@ export const ClientPortalB2B: React.FC = () => {
 
     try {
       const { data, error } = await supabase.from('pasajeros').insert({
-        cliente_corporativo_id: selectedClientId,
+        cliente_corporativo_id: activeClient?.id,
         nombre_completo: newNombre,
         rut: newRut,
         telefono: newTelefono,
@@ -251,31 +160,43 @@ export const ClientPortalB2B: React.FC = () => {
     setTimeout(() => setActionMsg(null), 5000);
   };
 
-  const handleUploadExcelNomina = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadExcelNomina = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const added: FuncionarioB2B = {
-      id: `f-${Date.now().toString().slice(-3)}`,
-      clienteCorporativoId: selectedClientId,
-      nombreCompleto: 'Ing. Mateo Valdebenito (Importado Excel)',
-      rut: '18.411.200-9',
-      telefono: '+56 9 8333 9090',
-      email: 'mvaldebenito@biobio.cl',
-      area: 'Proyectos Neira Transportes',
-      direccionRecogida: 'Aníbal Pinto 340, Depto 801',
-      comuna: 'Concepción Centro',
-      centroCosto: 'Proyectos',
-      preferenciaTurno: 'Turno Diurno',
-      estadoGeo: 'activo'
-    };
-    setFuncionarios([added, ...funcionarios]);
-    setActionMsg(`✓ ¡Archivo Excel "${file.name}" importado! Colaboradores añadidos a la nómina con validación GPS en proceso.`);
+    try {
+      setActionMsg('Procesando archivo...');
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+      
+      if (json.length > 0) {
+        const newPasajeros = json.map((row: any) => ({
+          cliente_corporativo_id: activeClient?.id,
+          nombre_completo: row.nombre || row.nombre_completo || 'Sin Nombre',
+          rut: row.rut || `RUT-${Date.now().toString().slice(-6)}`,
+          direccion_defecto: row.direccion || row.direccion_recogida || 'Sin Dirección',
+          estado: 'activo'
+        }));
+
+        const { error } = await supabase.from('pasajeros').insert(newPasajeros);
+        if (error) throw error;
+
+        // Refresh list
+        const { data: dbData } = await supabase.from('pasajeros').select('*').eq('cliente_corporativo_id', activeClient?.id);
+        if (dbData) setFuncionarios(dbData);
+
+        setActionMsg(`✓ ¡Archivo Excel "${file.name}" importado exitosamente! Se añadieron ${json.length} colaboradores.`);
+      } else {
+        setActionMsg('El archivo Excel está vacío o no tiene el formato correcto.');
+      }
+    } catch (err: any) {
+      setActionMsg(`⚠️ Error importando: ${err.message}`);
+    }
     if (fileInputRef.current) fileInputRef.current.value = '';
-    setTimeout(() => setActionMsg(null), 6000);
   };
 
   // Crear Reserva Manual Excepcional
-  const handleCrearReservaManual = (e: React.FormEvent) => {
+  const handleCrearReservaManual = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reservaPasajero || !reservaOrigen || !reservaDestino) {
       setActionMsg('⚠️ Indique el pasajero, punto de origen y destino para procesar el despacho excepcional.');
@@ -283,31 +204,29 @@ export const ClientPortalB2B: React.FC = () => {
       return;
     }
 
+    setActionMsg('Procesando solicitud...');
+
     const newViaje: Partial<ViajeOperativa> = {
-      
-      clienteCorporativoId: activeClient?.id || 'client-gen',
+      clienteCorporativoId: activeClient?.id,
       clienteNombre: activeClient?.nombreCorporativo || 'Corporativo B2B Chile',
       pasajeroNombre: `${reservaPasajero} [${reservaTipo}]`,
-      pasajeroTelefono: reservaTelefono || '+56 9 8111 2233',
+      pasajeroTelefono: reservaTelefono,
       origenDireccion: reservaOrigen,
-      origenLat: -36.8269,
-      origenLng: -73.0498,
       destinoDireccion: reservaDestino,
-      destinoLat: -36.7241,
-      destinoLng: -73.1162,
       fechaProgramada: `${reservaFecha} ${reservaHora}`,
-      estado: 'asignado',
-      conductorNombre: 'Carlos Espinoza Valdes (Móvil Urgencias)',
-      vehiculoPlaca: 'TX-4099',
-      montoEstimado: 22000,
-      secureTrackingToken: `trk-${Date.now().toString(36)}`
+      estado: 'solicitado', // Changed from asignado to reflect real DB state
+      montoEstimado: 22000
     };
 
-    crearViaje(newViaje);
-    setActionMsg(`🚀 ¡CONFIRMACIÓN INSTANTÁNEA DE ASIGNACIÓN! Requerimiento transmitido en línea a la central de ${'Neira Transportes'}. Móvil asignado al servicio excepcional.`);
-    setReservaPasajero('');
-    setReservaOrigen('');
-    setReservaDestino('');
+    try {
+      await crearViaje(newViaje);
+      setActionMsg(`🚀 ¡CONFIRMACIÓN INSTANTÁNEA DE ASIGNACIÓN! Requerimiento transmitido en línea a la central de Neira Transportes.`);
+      setReservaPasajero('');
+      setReservaOrigen('');
+      setReservaDestino('');
+    } catch (err: any) {
+      setActionMsg('⚠️ Error: ' + err.message);
+    }
     setTimeout(() => setActionMsg(null), 6500);
   };
 
@@ -385,22 +304,12 @@ export const ClientPortalB2B: React.FC = () => {
               <Building2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
               <span>Empresa Contratante B2B:</span>
             </label>
-            <select
-              value={selectedClientId}
-              onChange={(e) => setSelectedClientId(e.target.value)}
-              className="enterprise-input w-full text-xs font-semibold bg-white dark:bg-[#161D27] text-slate-900 dark:text-white border-slate-300 dark:border-[#303B4E] py-1.5"
-            >
-              {clientesTenant.length > 0 ? (
-                clientesTenant.map(c => (
-                  <option key={c.id} value={c.id}>{c.nombreCorporativo} ({c.rutIdentificador || '96.536.000-5'})</option>
-                ))
-              ) : (
-                <option value="client-gen">Celulosa y Forestal Arauco Neira Transportes S.A. (96.536.000-5)</option>
-              )}
-            </select>
+            <div className="w-full text-sm font-bold bg-white dark:bg-[#161D27] text-slate-900 dark:text-white border border-slate-300 dark:border-[#303B4E] py-1.5 px-3 rounded-md">
+              {activeClient?.nombreCorporativo || 'Corporativo B2B'}
+            </div>
             <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
               <span>RUT: <strong className="font-mono text-slate-700 dark:text-gray-300">{activeClient?.rutIdentificador || '96.536.000-5'}</strong></span>
-              <span>Tarifa Base: <strong className="font-mono text-emerald-600 dark:text-emerald-400">$ {activeClient?.tarifario.tarifaMinima || '18.500'} CLP</strong></span>
+              <span>Tarifa Base: <strong className="font-mono text-emerald-600 dark:text-emerald-400">$ {activeClient?.tarifario?.tarifaMinima || '18.500'} CLP</strong></span>
             </div>
           </div>
         </div>
@@ -686,7 +595,7 @@ export const ClientPortalB2B: React.FC = () => {
       
       setActionMsg(`✓ ¡Planilla procesada con éxito! Se importaron turnos.`);
       
-      const { data: tData } = await supabase.from('turnos_pasajeros').select('*, pasajero:pasajero_id(nombre_completo, rut)').eq('cliente_corporativo_id', selectedClientId).order('fecha', {ascending: false});
+      const { data: tData } = await supabase.from('turnos_pasajeros').select('*, pasajero:pasajero_id(nombre_completo, rut)').eq('cliente_corporativo_id', activeClient?.id).order('fecha', {ascending: false});
       if (tData) setTurnos(tData);
       
       if (fileTurnosInputRef.current) fileTurnosInputRef.current.value = '';
@@ -979,12 +888,12 @@ export const ClientPortalB2B: React.FC = () => {
                             )}
                           </td>
                           <td className="py-3.5 px-4">
-                            {v.estado === 'en_camino' || v.estado === 'en_transito' ? (
+                            {v.estado === 'en_camino' || v.estado === 'en_ruta' ? (
                               <span className="text-amber-500 font-bold flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                                 En Recorrido
                               </span>
-                            ) : v.estado === 'completado' ? (
+                            ) : v.estado === 'finalizado' ? (
                               <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                                 Finalizado
@@ -1206,16 +1115,22 @@ export const ClientPortalB2B: React.FC = () => {
             <div className="pt-4 border-t border-slate-200 dark:border-[#212A38] space-y-3">
               <h4 className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Historial de Tickets B2B</h4>
               <div className="space-y-2">
-                {tickets.map(tk => (
-                  <div key={tk.id} className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-200 dark:border-[#212A38] flex items-center justify-between text-xs">
-                    <div>
-                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400 mr-2">[{tk.id}]</span>
-                      <span className="font-bold text-slate-800 dark:text-gray-200">{tk.asunto}</span>
-                      <span className="text-[11px] text-slate-400 block mt-0.5">Asignado a: {tk.ejecutivo} ({tk.fecha})</span>
-                    </div>
-                    <span className="px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px]">{tk.estado}</span>
+                {tickets.length === 0 ? (
+                  <div className="p-4 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-200 dark:border-[#212A38]">
+                    No hay tickets de soporte.
                   </div>
-                ))}
+                ) : (
+                  tickets.map(tk => (
+                    <div key={tk.id} className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-200 dark:border-[#212A38] flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-mono font-bold text-blue-600 dark:text-blue-400 mr-2">[{tk.id}]</span>
+                        <span className="font-bold text-slate-800 dark:text-gray-200">{tk.asunto}</span>
+                        <span className="text-[11px] text-slate-400 block mt-0.5">Asignado a: {tk.ejecutivo} ({tk.fecha})</span>
+                      </div>
+                      <span className="px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px]">{tk.estado}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

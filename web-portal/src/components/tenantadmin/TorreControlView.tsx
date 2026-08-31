@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../ui/Toast';
@@ -18,8 +17,8 @@ export const TorreControlView: React.FC = () => {
 
   const filteredViajes = viajesTenant.filter(v => {
     if (filterEstado === 'todos') return true;
-    if (filterEstado === 'solicitado' || filterEstado === 'pendiente') {
-      return v.estado === 'solicitado' || v.estado === 'pendiente' || v.estado === 'validado';
+    if (filterEstado === 'solicitado' || filterEstado === 'validado') {
+      return v.estado === 'solicitado' || v.estado === 'validado';
     }
     return v.estado === filterEstado;
   });
@@ -121,7 +120,7 @@ export const TorreControlView: React.FC = () => {
               className="enterprise-input py-1 px-2 text-xs bg-white dark:bg-[#161D27]"
             >
               <option value="todos">Todos los viajes ({viajesTenant.length})</option>
-              <option value="solicitado">Pendientes / Solicitados ({viajesTenant.filter(v => v.estado === 'solicitado' || v.estado === 'pendiente' || v.estado === 'validado').length})</option>
+              <option value="solicitado">Pendientes / Solicitados ({viajesTenant.filter(v => v.estado === 'solicitado' || v.estado === 'validado').length})</option>
               <option value="asignado">Asignados ({viajesTenant.filter(v => v.estado === 'asignado').length})</option>
               <option value="despachado">Despachados ({viajesTenant.filter(v => v.estado === 'despachado').length})</option>
               <option value="en_camino">En Camino / Ruta ({viajesTenant.filter(v => v.estado === 'en_camino' || v.estado === 'en_ruta').length})</option>
@@ -146,8 +145,8 @@ export const TorreControlView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-[#212A38] text-slate-700 dark:text-gray-300">
               {filteredViajes.map((v) => {
-                const isPendiente = v.estado === 'pendiente' || v.estado === 'solicitado' || v.estado === 'validado';
-                const isExcepcion = v.estado === 'excepcion' || v.estado === 'incidencia' || v.estado === 'rescate_solicitado';
+                const isPendiente = v.estado === 'solicitado' || v.estado === 'validado';
+                const isExcepcion = v.estado === 'incidencia' || v.estado === 'rescate_solicitado';
                 return (
                   <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-[#1C2533] transition-colors">
                     <td className="py-3.5 px-4">

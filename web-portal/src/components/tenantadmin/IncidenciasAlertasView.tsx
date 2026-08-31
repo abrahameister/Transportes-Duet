@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AlertTriangle, ShieldAlert, Wrench, CheckCircle2 } from 'lucide-react';
@@ -9,7 +8,7 @@ export const IncidenciasAlertasView: React.FC = () => {
   const [selectedIncidenciaForRescate, setSelectedIncidenciaForRescate] = useState<ViajeOperativa | null>(null);
   const [rescateSuccess, setRescateSuccess] = useState<string | null>(null);
 
-  const viajesConExcepcion = viajes.filter(v => v.estado === 'excepcion' || (v.incidencia && !v.incidencia.resuelta));
+  const viajesConExcepcion = viajes.filter(v => v.estado === 'incidencia' || (v.incidencia && !v.incidencia.resuelta));
   const choferesRescate = conductores.filter(c => c.estadoWFM === 'disponible' && !c.enDescanso && c.vehiculo?.estadoOperativo === 'operativo');
 
   const handleExecuteRescate = (nuevoConductorId: string) => {

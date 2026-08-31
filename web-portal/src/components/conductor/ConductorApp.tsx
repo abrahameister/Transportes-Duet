@@ -1,5 +1,5 @@
-// @ts-nocheck
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useApp } from '../../context/AppContext';
 import type { PasajeroRutaCheck } from '../../types';
 import { useDriverGPS } from '../../hooks/useDriverGPS';
@@ -12,106 +12,116 @@ import {
 } from 'lucide-react';
 
 export const ConductorApp: React.FC = () => {
-  const {  conductores, avisosOperativos, marcarAvisoLeido, actualizarConductor, enviarAvisoOperativo, perfil } = useApp();
+  const { conductores, avisosOperativos, marcarAvisoLeido, actualizarConductor, enviarAvisoOperativo, authUser } = useApp();
   
-  // Sincronizar cola al montar y cuando hay internet
-  useEffect(() => {
-    const handleOnline = () => syncQueue();
-    window.addEventListener('online', handleOnline);
-    syncQueue();
-    return () => window.removeEventListener('online', handleOnline);
-  }, []);
-
-  // Conductor activo para demostración (Carlos Muñoz o primero disponible)
-  const conductor = conductores.find(c => c.id === 'C-BIO-001') || conductores[0] || {
-    id: 'C-BIO-001',
-    nombreCompleto: 'Carlos Muñoz Valenzuela',
-    rut: '12.489.102-K',
-    telefono: '+56 9 8222 3344',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    estadoWFM: 'en_ruta',
-    tipoLicencia: 'A3',
-    puntualidad: '4.9',
-    serviciosMes: 48,
-    vehiculo: {
-      marca: 'Mercedes-Benz',
-      modelo: 'Sprinter 516 CDI',
-      placa: 'VIP-100',
-      color: 'Blanco / Corporativo',
-      capacidadPasajeros: 19
+  const conductor = conductores.find(c => c.id === authUser?.user_metadata?.perfil_id) || conductores[0];
+  const isOnline = conductor?.estadoWFM === 'en_ruta' || conductor?.estadoWFM === 'disponible';
+  
+  const [syncStatus, setSyncStatus] = useState<'SINCRONIZADO' | 'PENDIENTE' | 'ERROR'>('SINCRONIZADO');
+  const [myTrips, setMyTrips] = useState<any[]>([]);
+  const [activeTrip, setActiveTrip] = useState<any>(null);
+  
+  // Realtime and data fetching
+  const fetchTrips = async () => {
+    if (!conductor?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('viajes')
+        .select(`
+          *,
+          viaje_pasajeros(*, pasajero:pasajeros(id, nombre_completo, telefono, rut)),
+          asignaciones!inner(id, conductor_id, vehiculo_id, estado,
+            vehiculo:vehiculos(id, patente, marca, modelo, color)
+          )
+        `)
+        .in('estado', ['despachado','en_camino','en_punto','abordando','en_ruta'])
+        .eq('asignaciones.estado', 'activa')
+        .eq('asignaciones.conductor_id', conductor.id)
+        .order('fecha_programada', { ascending: true });
+        
+      if (!error && data) {
+        setMyTrips(data);
+        setActiveTrip(data.length > 0 ? data[0] : null);
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const isOnline = conductor.estadoWFM === 'en_ruta' || conductor.estadoWFM === 'disponible';
-  
-  const [syncStatus, setSyncStatus] = useState<'SINCRONIZADO' | 'PENDIENTE' | 'ERROR'>('SINCRONIZADO');
+  useEffect(() => {
+    fetchTrips();
+    const handleOnline = () => syncQueue();
+    window.addEventListener('online', handleOnline);
+    syncQueue();
+    
+    // Realtime
+    const channel = supabase.channel('viajes_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'viajes' }, () => {
+        fetchTrips();
+      })
+      .subscribe();
+      
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      supabase.removeChannel(channel);
+    };
+  }, [conductor?.id]);
 
-  // GPS integration (dummy trip id for now, uses active tracking)
-  const activeTripId = isOnline ? 't1000000-0000-0000-0000-000000000000' : null;
-  const { lastPosition, gpsError } = useDriverGPS(activeTripId, isOnline);
+  const activeTripId = activeTrip?.id || null;
+  const { lastPosition, gpsError } = useDriverGPS(activeTripId, isOnline && !!activeTripId);
 
-
-  // Estados del terminal
   const [activeTab, setActiveTab] = useState<'ruta_inm' | 'bitacora' | 'inspeccion' | 'emergencia'>('ruta_inm');
   const [isMobileFrame, setIsMobileFrame] = useState<boolean>(true);
   const [notificacion, setNotificacion] = useState<string | null>(null);
   const [vozActiva, setVozActiva] = useState<string | null>(null);
   const [rutaCompletada, setRutaCompletada] = useState<boolean>(false);
-  const [showApkModal, setShowApkModal] = useState<boolean>(false);
 
-  const handleDownloadAPK = () => {
-    const fakeApkContent = "PK\x03\x04--- MANIFIESTO APK EXPO WFM TERRENO --- Transportes Duet Solutions (v2026.8 Android Production Build)";
-    const blob = new Blob([fakeApkContent], { type: 'application/vnd.android.package-archive' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `App_Conductor_${'Neira Transportes'.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    mostrarNotificacion("✓ Paquete APK (v2026.8 - Android/Expo) descargado correctamente. Listo para instalar en dispositivos del conductor.");
+  // Map backend pasajeros to UI state
+  const pasajerosRuta = activeTrip?.viaje_pasajeros?.map(vp => ({
+    id: vp.id,
+    nombre: vp.pasajero?.nombre_completo,
+    rut: vp.pasajero?.rut,
+    direccion: vp.direccion_origen || vp.direccion_destino,
+    telefono: vp.pasajero?.telefono,
+    estado: vp.estado === 'abordado' ? 'abordo' : vp.estado === 'no_show' ? 'ausente' : 'pendiente',
+    notaAviso: vp.notas || undefined
+  })) || [];
+
+  const handleCambiarEstadoPasajero = async (id: string, nuevoEstado: 'abordo' | 'ausente') => {
+    setSyncStatus('PENDIENTE');
+    try {
+      const backendEstado = nuevoEstado === 'abordo' ? 'abordado' : 'no_show';
+      const { error } = await supabase.rpc('board_passenger', { p_viaje_pasajero_id: id, p_estado: backendEstado });
+      if (error) throw error;
+      
+      mostrarNotificacion(`✓ Pasajero registrado como: ${nuevoEstado === 'abordo' ? 'A BORDO' : 'AUSENTE'}`);
+      await fetchTrips();
+      setSyncStatus('SINCRONIZADO');
+    } catch (e) {
+      console.error(e);
+      setSyncStatus('ERROR');
+      mostrarNotificacion('Error al registrar pasajero');
+    }
   };
 
-  // Checklist de Pasajeros en Ruta actual
-  const [pasajerosRuta, setPasajerosRuta] = useState<PasajeroRutaCheck[]>([
-    {
-      id: 'p-1',
-      nombre: 'Dra. María Paz Solar',
-      rut: '17.890.123-4',
-      direccion: 'Av. Chacabuco 1400, Depto 504, Concepción',
-      telefono: '+56 9 8111 2233',
-      estado: 'pendiente',
-      notaAviso: 'Bajo en 2 minutos, por favor esperarme en la portería'
-    },
-    {
-      id: 'p-2',
-      nombre: 'Ing. Rodrigo Sepúlveda',
-      rut: '15.432.987-1',
-      direccion: 'Av. Pedro de Valdivia 850, Concepción',
-      telefono: '+56 9 7444 5566',
-      estado: 'abordo'
-    },
-    {
-      id: 'p-3',
-      nombre: 'Téc. Sebastián Lepe',
-      rut: '18.234.567-8',
-      direccion: 'Camino a Coronel 4500, San Pedro del Valle',
-      telefono: '+56 9 6333 4455',
-      estado: 'pendiente'
-    },
-    {
-      id: 'p-4',
-      nombre: 'Enfermera Camila Arriagada',
-      rut: '16.789.012-3',
-      direccion: 'Barrio Universitario, Concepción',
-      telefono: '+56 9 9112 2334',
-      estado: 'pendiente'
+  const handleFinalizarRuta = async () => {
+    if (totalPendientes > 0) return;
+    setSyncStatus('PENDIENTE');
+    try {
+      const { error } = await supabase.rpc('trip_finish', { p_viaje_id: activeTripId });
+      if (error) throw error;
+      setRutaCompletada(true);
+      mostrarNotificacion('🏁 ¡Recorrido finalizado!');
+      await fetchTrips();
+      setSyncStatus('SINCRONIZADO');
+    } catch (e) {
+      console.error(e);
+      setSyncStatus('ERROR');
+      mostrarNotificacion('Error al finalizar ruta');
     }
-  ]);
-
-  // Inspección Pre-Viaje (Checklist de Seguridad)
-  const [checkFluidos, setCheckFluidos] = useState(true);
+  };
+  
+const [checkFluidos, setCheckFluidos] = useState(true);
   const [checkNeumaticos, setCheckNeumaticos] = useState(true);
   const [checkLicencia, setCheckLicencia] = useState(true);
   const [checkExtintor, setCheckExtintor] = useState(false);
@@ -179,6 +189,15 @@ export const ConductorApp: React.FC = () => {
   // Paradero dinámico: Busca la dirección y datos del primer pasajero pendiente
   const proximoPasajero = pasajerosRuta.find(p => p.estado === 'pendiente');
 
+  
+  if (!activeTrip && myTrips.length === 0) {
+    return (
+      <div className="py-10 px-4 text-center">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white">No tienes viajes asignados en este momento.</h2>
+      </div>
+    );
+  }
+
   return (
     <div className="py-6 px-3 sm:px-6 max-w-5xl mx-auto transition-all">
       
@@ -214,15 +233,7 @@ export const ConductorApp: React.FC = () => {
               <MapPin className="w-3 h-3" /> GPS ON
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => setShowApkModal(true)}
-            className="flex items-center px-3 py-1.5 rounded-md text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all cursor-pointer"
-            title="Descargar instalador para Android (Expo Native)"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5 shrink-0" />
-            Descargar APK (Expo/Android)
-          </button>
+          
           <button
             type="button"
             onClick={() => setIsMobileFrame(true)}
@@ -572,7 +583,13 @@ export const ConductorApp: React.FC = () => {
 
                               {p.estado !== 'ausente' && p.estado !== 'abordo' && (
                                 <button
-                                  onClick={() => handleCambiarEstadoPasajero(p.id, 'ausente')}
+                                  onClick={async () => {
+                                    const { error } = await supabase.rpc('passenger_update_status', { 
+                                      p_pasajero_viaje_id: p.id, 
+                                      p_estado: 'ausente' 
+                                    });
+                                    if (!error) mostrarNotificacion(`Pasajero ${p.nombre} marcado como ausente.`);
+                                  }}
                                   className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 rounded-lg transition-all"
                                   title="Marcar ausente"
                                 >
@@ -582,9 +599,12 @@ export const ConductorApp: React.FC = () => {
 
                               {(p.estado === 'abordo' || p.estado === 'ausente') && (
                                 <button
-                                  onClick={() => {
-                                    setPasajerosRuta(prev => prev.map(item => item.id === p.id ? { ...item, estado: 'pendiente' } : item));
-                                    mostrarNotificacion(`Estado de ${p.nombre} reiniciado a pendiente.`);
+                                  onClick={async () => {
+                                    const { error } = await supabase.rpc('passenger_update_status', { 
+                                      p_pasajero_viaje_id: p.id, 
+                                      p_estado: 'pendiente' 
+                                    });
+                                    if (!error) mostrarNotificacion(`Estado de ${p.nombre} reiniciado a pendiente.`);
                                   }}
                                   className="p-1.5 text-xs text-slate-400 underline"
                                 >
@@ -625,20 +645,7 @@ export const ConductorApp: React.FC = () => {
 
                   <button
                     disabled={totalPendientes > 0}
-                    onClick={async () => {
-                      if (totalPendientes > 0) return;
-                      setRutaCompletada(true);
-                      actualizarConductor(conductor.id, { estadoWFM: 'disponible', serviciosMes: (conductor.serviciosMes || 0) + 1 });
-                      mostrarNotificacion(`🏁 ¡Recorrido finalizado! Manifiesto de asistencia y kilometraje transmitidos al Centro Operativo de ${'Neira Transportes'}.`);
-                      
-                      setSyncStatus('PENDIENTE');
-                      try {
-                        await queueAction({ type: 'trip_finish', payload: { p_viaje_id: activeTripId } });
-                        setTimeout(() => setSyncStatus('SINCRONIZADO'), 2000);
-                      } catch (e) {
-                        setSyncStatus('ERROR');
-                      }
-                    }}
+                    onClick={handleFinalizarRuta}
                     className={`w-full mt-2.5 py-3.5 rounded-xl font-black text-sm shadow-md transition-all flex items-center justify-center space-x-2 ${
                       totalPendientes > 0
                         ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-85'

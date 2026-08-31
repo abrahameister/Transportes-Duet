@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { enqueueGPS, syncGPSQueue } from '../lib/offlineQueue';
+import { supabase } from '../lib/supabase';
 
 export function useDriverGPS(viajeId: string | null, isTripActive: boolean) {
   const [lastPosition, setLastPosition] = useState<{lat: number, lng: number} | null>(null);

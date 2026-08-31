@@ -1,7 +1,5 @@
-// @ts-nocheck
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import type { ConductorWFM, ViajeOperativa, VehiculoFlota, ClienteCorporativo, RutaRecurrente, AvisoOperativo } from '../types';
-import { mockRutasRecurentes } from '../lib/mockData';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import type { ConductorWFM, ViajeOperativa, VehiculoFlota, ClienteCorporativo, AvisoOperativo } from '../types';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 
@@ -10,7 +8,6 @@ interface AppContextType {
   vehiculos: VehiculoFlota[];
   clientes: ClienteCorporativo[];
   viajes: ViajeOperativa[];
-  rutasRecurentes: RutaRecurrente[];
   currentRoleView: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor';
   setCurrentRoleView: (role: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor') => void;
   isDarkMode: boolean;
@@ -26,8 +23,6 @@ interface AppContextType {
   
   toggleConductorEstado: (conductorId: string) => void;
   crearViaje: (nuevo: Partial<ViajeOperativa>) => void;
-  importarViajesCSV: (cantidad: number) => void;
-  importarViajesDesdeCSV: (viajes: ViajeOperativa[]) => void;
   
   agregarVehiculo: (vehiculo: VehiculoFlota) => void;
   actualizarVehiculo: (id: string, updates: Partial<VehiculoFlota>) => void;
@@ -55,7 +50,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [vehiculos, setVehiculos] = useState<VehiculoFlota[]>([]);
   const [clientes, setClientes] = useState<ClienteCorporativo[]>([]);
   const [viajes, setViajes] = useState<ViajeOperativa[]>([]);
-  const [rutasRecurentes] = useState<RutaRecurrente[]>(mockRutasRecurentes);
   const [currentRoleView, setCurrentRoleViewInternal] = useState<'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor'>('admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
@@ -65,64 +59,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const userRole = useMemo(() => userProfile?.rol || authUser?.user_metadata?.rol || 'admin', [userProfile, authUser]);
 
-  const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>('cl-b2b-04');
+  const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>(null);
 
 
-  useEffect(() => {
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      handleAuthChange(session);
-      setAuthLoading(false);
-    };
-
-    const handleAuthChange = async (session: any) => {
-      if (session?.user) {
-        setAuthUser(session.user);
-        // Fetch profile
-        const { data: profile } = await supabase.from('perfiles').select('*').eq('id', session.user.id).single();
-        if (profile) {
-          setUserProfile(profile);
-          if (profile.rol === 'admin') setCurrentRoleViewInternal('admin');
-          if (profile.rol === 'cliente_corporativo') setCurrentRoleViewInternal('cliente_b2b');
-          if (profile.rol === 'conductor') setCurrentRoleViewInternal('app_conductor');
-          if (profile.cliente_corporativo_id) setActiveClienteB2BId(profile.cliente_corporativo_id);
-        }
-      } else {
-        setAuthUser(null);
-        setUserProfile(null);
-      }
-    };
-
-    initAuth();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      handleAuthChange(session);
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
 
 
-  const [avisosOperativos, setAvisosOperativos] = useState<AvisoOperativo[]>([
-    {
-      id: 'aviso-init-1',
-      pasajeroNombre: 'Dra. María Paz Solar',
-      mensaje: 'Bajo en 2 minutos, por favor esperarme en la portería',
-      timestamp: '06:42 AM',
-      leido: false,
-      tipo: 'aviso_rapido'
-    },
-    {
-      id: 'aviso-init-2',
-      pasajeroNombre: 'Ing. Rodrigo Sepúlveda',
-      mensaje: 'Ya me encuentro en el punto de parada (San Pedro del Valle)',
-      timestamp: '06:40 AM',
-      leido: true,
-      tipo: 'aviso_rapido'
-    }
-  ]);
+  const [avisosOperativos, setAvisosOperativos] = useState<AvisoOperativo[]>([]);
 
   const enviarAvisoOperativo = (data: Partial<AvisoOperativo>) => {
     const id = `aviso-${Date.now()}`;
@@ -147,8 +89,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const marcarAvisoLeido = (id: string) => {
+  const marcarAvisoLeido = async (id: string) => {
     setAvisosOperativos(prev => prev.map(a => a.id === id ? { ...a, leido: true } : a));
+    await supabase.from('avisos').update({ leido: true }).eq('id', id);
   };
 
   const setCurrentRoleView = (role: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor') => {
@@ -310,8 +253,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             destinoLng: v.destino_lng || -73.0480,
             fechaProgramada: v.fecha_programada ? new Date(v.fecha_programada).toLocaleString('es-CL') : 'Inmediato',
             estado: v.estado || 'solicitado',
-            secureTrackingToken: `token-${v.id}`,
-            montoEstimado: parsedObs.montoEstimado || 18000,
             timestampDespacho: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined
           };
         }));
@@ -449,15 +390,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const toggleDarkMode = () => setIsDarkMode(prev => !prev);
 
-  const toggleConductorEstado = (conductorId: string) => {
+  const toggleConductorEstado = async (conductorId: string) => {
+    let nextState = 'disponible';
     setConductores(prev => prev.map(cond => {
       if (cond.id !== conductorId) return cond;
       if (cond.enDescanso) {
+        nextState = 'disponible';
         return { ...cond, enDescanso: false, estadoWFM: 'disponible', motivoBloqueo: undefined, horasConducidasHoy: 0 };
       }
-      const nextState = cond.estadoWFM === 'disponible' ? 'offline' : cond.estadoWFM === 'offline' ? 'disponible' : 'disponible';
-      return { ...cond, estadoWFM: nextState, ultimaActualizacionGps: 'Ahora mismo' };
+      nextState = cond.estadoWFM === 'disponible' ? 'offline' : cond.estadoWFM === 'offline' ? 'disponible' : 'disponible';
+      return { ...cond, estadoWFM: nextState as any, ultimaActualizacionGps: 'Ahora mismo' };
     }));
+    const newDbEstado = nextState === 'disponible' ? 'activo' : 'inactivo';
+    await supabase.from('conductores').update({ estado: newDbEstado }).eq('id', conductorId);
   };
 
   // The trip engine RPCs should be called directly by components instead of AppContext
@@ -566,8 +511,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         destinoLng: dbViaje.destino_lng,
         fechaProgramada: new Date(fechaIso).toLocaleString('es-CL'),
         estado: 'solicitado',
-        secureTrackingToken: `token-${insertedViaje.id}`,
-        montoEstimado: data.montoEstimado || 18500,
         timestampDespacho: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
@@ -578,30 +521,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const importarViajesCSV = (cantidad: number) => {
-    const generados: ViajeOperativa[] = Array.from({ length: cantidad }).map((_, i) => ({
-      id: `viaje-csv-${Date.now()}-${i}`,
-      clienteCorporativoId: clientes[0]?.id || 'cl-biobio-001',
-      clienteNombre: clientes[0]?.nombreCorporativo || 'Forestal Arauco Neira Transportes S.A.',
-      pasajeroNombre: `Colaborador Turno Lote #${i + 1}`,
-      pasajeroTelefono: `+56 9 ${Math.floor(6000 + Math.random() * 3999)} ${Math.floor(1000 + Math.random() * 8999)}`,
-      origenDireccion: 'Planta Industrial Huachipato / Coronel',
-      origenLat: -36.7554,
-      origenLng: -73.1118,
-      destinoDireccion: `Sector Residencial Concepción / San Pedro de la Paz (Ruta ${String.fromCharCode(65 + (i % 5))})`,
-      destinoLat: -36.8432,
-      destinoLng: -73.1021,
-      fechaProgramada: 'Hoy, 22:00 (Cambio Turno Noche)',
-      estado: 'pendiente',
-      secureTrackingToken: `token-csv-${i}-${Date.now()}`,
-      montoEstimado: 22500
-    }));
-    setViajes(prev => [...generados, ...prev]);
-  };
 
-  const importarViajesDesdeCSV = (nuevos: ViajeOperativa[]) => {
-    setViajes(prev => [...nuevos, ...prev]);
-  };
 
   const agregarVehiculo = async (vehiculo: VehiculoFlota) => {
     try {
@@ -828,6 +748,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setClientes(prev => [cl, ...prev]);
   };
   const actualizarCliente = async (id: string, updates: Partial<ClienteCorporativo>) => {
+    const dbUpdates: any = { updated_at: new Date().toISOString() };
+    if (updates.nombre_corporativo !== undefined) dbUpdates.nombre_corporativo = updates.nombre_corporativo;
+    if (updates.nombreCorporativo !== undefined) dbUpdates.nombre_corporativo = updates.nombreCorporativo;
+    if (updates.rut_identificador !== undefined) dbUpdates.rut_identificador = updates.rut_identificador;
+    if (updates.rutIdentificador !== undefined) dbUpdates.rut_identificador = updates.rutIdentificador;
+    if (updates.direccion_fiscal !== undefined) dbUpdates.direccion_fiscal = updates.direccion_fiscal;
+    if (updates.direccionFiscal !== undefined) dbUpdates.direccion_fiscal = updates.direccionFiscal;
+    if (updates.contacto_nombre !== undefined) dbUpdates.contacto_nombre = updates.contacto_nombre;
+    if (updates.contactoNombre !== undefined) dbUpdates.contacto_nombre = updates.contactoNombre;
+    if (updates.contacto_email !== undefined) dbUpdates.contacto_email = updates.contacto_email;
+    if (updates.contactoEmail !== undefined) dbUpdates.contacto_email = updates.contactoEmail;
+    if (updates.contacto_telefono !== undefined) dbUpdates.contacto_telefono = updates.contacto_telefono;
+    if (updates.contactoTelefono !== undefined) dbUpdates.contacto_telefono = updates.contactoTelefono;
+    
+    const { error } = await supabase.from('clientes_corporativos').update(dbUpdates).eq('id', id);
+    if (error) { console.error('Error updating client:', error); return; }
     setClientes(prev => prev.map(cl => cl.id === id ? { ...cl, ...updates } : cl));
   };
 
@@ -838,7 +774,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         vehiculos,
         clientes,
         viajes,
-        rutasRecurentes,
         currentRoleView,
         setCurrentRoleView,
         isDarkMode,
@@ -852,8 +787,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleConductorEstado,
 
         crearViaje,
-        importarViajesCSV,
-        importarViajesDesdeCSV,
         agregarVehiculo,
         actualizarVehiculo,
         eliminarVehiculo,

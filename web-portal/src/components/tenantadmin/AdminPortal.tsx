@@ -1,8 +1,6 @@
-// @ts-nocheck
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
-import { useEffect } from 'react';
 import { TorreControlView } from './TorreControlView';
 import { ProgramacionServiciosView } from './ProgramacionServiciosView';
 import { IncidenciasAlertasView } from './IncidenciasAlertasView';
@@ -11,7 +9,7 @@ import { RecursosWFMView } from './RecursosWFMView';
 import { Radio, Calendar, AlertTriangle, Building2, Users, Car, CheckCircle, Upload, Plus } from 'lucide-react';
 
 export const AdminPortal: React.FC = () => {
-  const {  conductores, vehiculos, viajes } = useApp();
+  const { conductores, vehiculos, viajes } = useApp();
   const [activeEje, setActiveEje] = useState<'torre' | 'conductores' | 'vehiculos' | 'programacion' | 'incidencias' | 'clientes' | 'recursos'>('torre');
   const [stats, setStats] = useState({
     viajes_hoy: 0,
