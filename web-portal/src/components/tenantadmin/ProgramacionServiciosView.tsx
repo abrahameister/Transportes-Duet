@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../ui/Toast';
 import { supabase } from '../../lib/supabase';
 import { RoutePlanner, NominatimGeocoder } from '../../lib/routePlanner';
 import { UploadCloud, PlusCircle, Calendar, CheckCircle, ArrowRight, MapPin, Download, FileText, Sparkles, Users } from 'lucide-react';
@@ -26,6 +27,7 @@ const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
 
 export const ProgramacionServiciosView: React.FC = () => {
   const { clientes, crearViaje, importarViajesCSV, rutasRecurentes, activeClienteB2BId } = useApp();
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeClientObj = clientes.find(c => c.id === activeClienteB2BId) || clientes[0];
   const currentDateTime = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' hrs';
@@ -127,7 +129,7 @@ export const ProgramacionServiciosView: React.FC = () => {
       setConductoresDb(condData || []);
 
       if (!turnosData || turnosData.length === 0) {
-        alert('No hay turnos B2B programados para planificar.');
+        toast.warning('No hay turnos B2B programados para planificar.', 'Sin Turnos');
         setIsPlanning(false);
         return;
       }
@@ -137,8 +139,10 @@ export const ProgramacionServiciosView: React.FC = () => {
       const planner = new RoutePlanner(geocoder);
       const propuestas = await planner.plan(turnosData, vehData, condData);
       setRutasPropuestas(propuestas);
+      toast.info(`Se han propuesto ${propuestas.length} rutas operacionales.`, 'Planificación Generada');
     } catch (e: any) {
-      alert('Error planificando turnos: ' + e.message);
+      console.error(e);
+      toast.error('Error planificando turnos: ' + e.message, 'Fallo de Planificación');
     } finally {
       setIsPlanning(false);
     }
@@ -148,11 +152,11 @@ export const ProgramacionServiciosView: React.FC = () => {
     try {
       const { data, error } = await supabase.rpc('create_planned_trips', { p_rutas: rutasPropuestas });
       if (error) throw error;
-      setSaveSuccess(`¡${data.rutas_creadas} rutas confirmadas y viajes creados exitosamente!`);
+      toast.success(`¡${data.rutas_creadas} rutas confirmadas y viajes creados exitosamente!`, 'Planificación Confirmada');
       setRutasPropuestas([]);
-      setTimeout(() => setSaveSuccess(null), 5000);
     } catch (e: any) {
-      alert('Error confirmando planificación: ' + e.message);
+      console.error(e);
+      toast.error('Error confirmando planificación: ' + e.message, 'Error de Confirmación');
     }
   };
 
@@ -166,9 +170,8 @@ export const ProgramacionServiciosView: React.FC = () => {
 
     // Procesa el archivo y añade el lote real a la cola operativa
     importarViajesCSV(3);
-    setSaveSuccess(`✓ ¡Archivo Excel "${file.name}" importado con éxito! 3 servicios operacionales cargados y despachados en tiempo real.`);
+    toast.success(`Archivo Excel "${file.name}" importado con éxito (3 servicios cargados).`, 'Importación CSV/Excel');
     if (fileInputRef.current) fileInputRef.current.value = '';
-    setTimeout(() => setSaveSuccess(null), 6000);
   };
 
   const filteredOrigenSuggestions = GOOGLE_MAPS_CHILE_SUGGESTIONS.filter(s =>
@@ -179,10 +182,10 @@ export const ProgramacionServiciosView: React.FC = () => {
     !destino || s.toLowerCase().includes(destino.toLowerCase())
   ).slice(0, 5);
 
-  const handleSubmitManual = (e: React.FormEvent) => {
+  const handleSubmitManual = async (e: React.FormEvent) => {
     e.preventDefault();
     const clienteSeleccionado = clientes.find(c => c.id === clienteId);
-    crearViaje({
+    await crearViaje({
       clienteCorporativoId: clienteId,
       clienteNombre: clienteSeleccionado?.nombreCorporativo || 'Cuenta B2B',
       pasajeroNombre,
@@ -193,12 +196,11 @@ export const ProgramacionServiciosView: React.FC = () => {
       fechaProgramada: 'Inmediato (Hoy)'
     });
 
-    setSaveSuccess('Viaje individual cargado exitosamente al tablero de Torre de Control.');
+    toast.success('Viaje cargado exitosamente en el tablero de Torre de Control.', 'Viaje Programado');
     setPasajeroNombre('');
     setPasajeroTelefono('');
     setOrigen('');
     setDestino('');
-    setTimeout(() => setSaveSuccess(null), 4000);
   };
 
   return (

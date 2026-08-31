@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import type { ConductorWFM, ViajeOperativa, VehiculoFlota, ClienteCorporativo, RutaRecurrente, AvisoOperativo } from '../types';
 import { mockRutasRecurentes } from '../lib/mockData';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../components/ui/Toast';
 
 interface AppContextType {
   conductores: ConductorWFM[];
@@ -48,6 +49,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const toast = useToast();
   const [conductores, setConductores] = useState<ConductorWFM[]>([]);
   const [vehiculos, setVehiculos] = useState<VehiculoFlota[]>([]);
   const [clientes, setClientes] = useState<ClienteCorporativo[]>([]);
@@ -556,7 +558,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (!clienteCorpId) {
-        alert('Debe existir al menos un Cliente Corporativo registrado en el sistema para programar viajes.');
+        toast.warning('Debe existir al menos un Cliente Corporativo registrado en el sistema para programar viajes.', 'Cliente Requerido');
         return;
       }
 
@@ -598,7 +600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (insertError) {
         console.error('Error insertando viaje:', insertError);
-        alert('Error al guardar viaje en base de datos: ' + insertError.message);
+        toast.error('Error al guardar viaje en base de datos: ' + insertError.message, 'Fallo de Registro');
         return;
       }
 
@@ -653,7 +655,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setViajes(prev => [nuevoViajeState, ...prev]);
     } catch (err: any) {
       console.error('Error en crearViaje:', err);
-      alert('Error al registrar viaje: ' + (err?.message || err));
+      toast.error('Error al registrar viaje: ' + (err?.message || err), 'Error');
     }
   };
 
@@ -697,7 +699,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { data, error } = await supabase.from('vehiculos').insert([dbObj]).select().single();
       if (error) {
         console.error('Error insertando vehiculo:', error);
-        alert('Error guardando vehículo: ' + error.message);
+        toast.error('Error guardando vehículo: ' + error.message, 'Fallo de Guardado');
         return;
       }
       setVehiculos(prev => [{
@@ -712,7 +714,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, ...prev]);
     } catch (err: any) {
       console.error('Error en agregarVehiculo:', err);
-      alert('Error al guardar vehiculo: ' + (err?.message || err));
+      toast.error('Error al guardar vehículo: ' + (err?.message || err), 'Error');
     }
   };
 
@@ -743,7 +745,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (error) {
         console.error('Error actualizando vehiculo:', error);
-        alert('Error al actualizar vehículo en base de datos: ' + error.message);
+        toast.error('Error al actualizar vehículo: ' + error.message, 'Fallo de Actualización');
         return;
       }
 
@@ -759,7 +761,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } : v));
     } catch (err: any) {
       console.error('Error en actualizarVehiculo:', err);
-      alert('Error al actualizar vehiculo: ' + (err?.message || err));
+      toast.error('Error al actualizar vehículo: ' + (err?.message || err), 'Error');
     }
   };
 
@@ -768,13 +770,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { error } = await supabase.from('vehiculos').delete().eq('id', id);
       if (error) {
         console.error('Error eliminando vehiculo:', error);
-        alert('Error al eliminar vehículo: ' + error.message);
+        toast.error('Error al eliminar vehículo: ' + error.message, 'Fallo de Eliminación');
       } else {
         setVehiculos(prev => prev.filter(v => v.id !== id));
       }
     } catch (err: any) {
       console.error('Error en eliminarVehiculo:', err);
-      alert('Error al eliminar vehículo: ' + (err?.message || err));
+      toast.error('Error al eliminar vehículo: ' + (err?.message || err), 'Error');
     }
   };
 
@@ -853,11 +855,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (insertError) {
         if (insertError.code === '23505') {
-          alert('Ya existe un conductor registrado con ese RUT.');
+          toast.warning('Ya existe un conductor registrado con ese RUT.', 'RUT Duplicado');
           return;
         }
         console.error('Error insertando conductor:', insertError);
-        alert('Error al guardar conductor: ' + insertError.message);
+        toast.error('Error al guardar conductor: ' + insertError.message, 'Fallo de Registro');
         return;
       }
 
@@ -868,7 +870,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setConductores(prev => [{ ...cond, id: finalId, vencimientoLicencia: finalVencimiento }, ...prev]);
     } catch (err: any) {
       console.error('Error general agregando conductor:', err);
-      alert('Error al agregar conductor: ' + (err?.message || err));
+      toast.error('Error al agregar conductor: ' + (err?.message || err), 'Error');
     }
   };
 
@@ -896,7 +898,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { error } = await supabase.from('conductores').delete().eq('id', id);
     if (error) {
       console.error('Error eliminando conductor:', error);
-      alert('Error eliminando conductor: ' + error.message);
+      toast.error('Error eliminando conductor: ' + error.message, 'Fallo de Eliminación');
       return;
     }
     setConductores(prev => prev.filter(c => c.id !== id));

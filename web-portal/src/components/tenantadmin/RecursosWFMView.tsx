@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../ui/Toast';
 import type { VehiculoFlota, ConductorWFM } from '../../types';
 import { Car, User, Plus, Edit3, Trash2, ShieldCheck, Wrench, X, Search, Image as ImageIcon, Download } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal';
@@ -10,7 +11,8 @@ interface RecursosWFMViewProps {
 }
 
 export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) => {
-  const { vehiculos, conductores,  agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor } = useApp();
+  const { vehiculos, conductores, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor } = useApp();
+  const toast = useToast();
   const [subTab, setSubTab] = useState<'conductores' | 'flota'>(initialTab || 'conductores');
   const [searchQuery, setSearchQuery] = useState('');
   const [vehiculoToDelete, setVehiculoToDelete] = useState<VehiculoFlota | null>(null);
@@ -101,7 +103,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         tipoLicencia: condLicencia,
         vencimientoLicencia: finalVencimiento
       });
-      setActionMsg(`Información del conductor "${condNombre}" actualizada correctamente en el sistema WFM.`);
+      toast.success(`Información del conductor "${condNombre}" actualizada correctamente.`, 'Conductor Actualizado');
     } else {
       const nuevo: ConductorWFM = {
         id: `cond-${Date.now()}`,
@@ -121,11 +123,10 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         enDescanso: false
       };
       agregarConductor(nuevo);
-      setActionMsg(`Conductor profesional "${condNombre}" (Licencia ${condLicencia}) dado de alta con éxito en el sistema WFM.`);
+      toast.success(`Conductor profesional "${condNombre}" dado de alta con éxito en el sistema.`, 'Conductor Registrado');
     }
     setShowConductorModal(false);
     setEditingConductor(null);
-    setTimeout(() => setActionMsg(null), 4500);
   };
 
   const vehiculosTenant = vehiculos;
@@ -171,7 +172,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
       actualizarVehiculo(editingVehiculo.id, {
         placa, marca, modelo, color, kilometraje: Number(km), capacidadPasajeros: Number(pasajeros), estadoOperativo: estado
       });
-      setActionMsg(`Unidad vehicular (${placa}) actualizada correctamente.`);
+      toast.success(`Unidad vehicular (${placa}) actualizada correctamente.`, 'Flota Actualizada');
     } else {
       const nuevo: VehiculoFlota = {
         id: `veh-${Date.now()}`,
@@ -179,17 +180,15 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         placa, marca, modelo, anio: 2024, color, kilometraje: Number(km), capacidadPasajeros: Number(pasajeros), estadoOperativo: estado, activo: true
       };
       agregarVehiculo(nuevo);
-      setActionMsg(`Nueva unidad (${placa} - ${marca} ${modelo}) dada de alta en flota.`);
+      toast.success(`Nueva unidad (${placa} - ${marca} ${modelo}) dada de alta en flota.`, 'Vehículo Creado');
     }
     setShowVehiculoModal(false);
-    setTimeout(() => setActionMsg(null), 4000);
   };
 
   const handleToggleEstadoMantenimiento = (v: VehiculoFlota) => {
     const next = v.estadoOperativo === 'operativo' ? 'mantenimiento' : 'operativo';
     actualizarVehiculo(v.id, { estadoOperativo: next });
-    setActionMsg(`Unidad ${v.placa} transmutó a estado: ${next.toUpperCase()}`);
-    setTimeout(() => setActionMsg(null), 3500);
+    toast.info(`Unidad ${v.placa} cambió a estado: ${next.toUpperCase()}`, 'Estado Técnico');
   };
 
   return (

@@ -74,30 +74,34 @@ const AppLayout = () => {
   );
 };
 
+import { ToastProvider } from './components/ui/Toast';
+
 export default function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <Routes>
-          {/* Rutas Públicas */}
-          <Route path="/login" element={<LoginView />} />
-          <Route path="/forgot-password" element={<ForgotPasswordView />} />
-          <Route path="/reset-password" element={<ResetPasswordView />} />
-          <Route path="/invite/accept" element={<ResetPasswordView />} />
-          <Route path="/live-track/:token" element={<LiveTrackView />} />
+      <ToastProvider>
+        <AppProvider>
+          <Routes>
+            {/* Rutas Públicas */}
+            <Route path="/login" element={<LoginView />} />
+            <Route path="/forgot-password" element={<ForgotPasswordView />} />
+            <Route path="/reset-password" element={<ResetPasswordView />} />
+            <Route path="/invite/accept" element={<ResetPasswordView />} />
+            <Route path="/live-track/:token" element={<LiveTrackView />} />
 
-          {/* Rutas Protegidas */}
-          <Route path="/app/*" element={
-            <AuthGuard>
-              <AppLayout />
-            </AuthGuard>
-          } />
+            {/* Rutas Protegidas */}
+            <Route path="/app/*" element={
+              <AuthGuard>
+                <AppLayout />
+              </AuthGuard>
+            } />
 
-          {/* Redirect Default */}
-          <Route path="/" element={<Navigate to="/app" replace />} />
-          <Route path="*" element={<Navigate to="/app" replace />} />
-        </Routes>
-      </AppProvider>
+            {/* Redirect Default */}
+            <Route path="/" element={<Navigate to="/app" replace />} />
+            <Route path="*" element={<Navigate to="/app" replace />} />
+          </Routes>
+        </AppProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

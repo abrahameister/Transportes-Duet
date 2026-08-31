@@ -2,11 +2,13 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../ui/Toast';
 import type { ClienteCorporativo } from '../../types';
 import { Building2, DollarSign, Plus, X, CheckCircle2, Mail, Loader2 } from 'lucide-react';
 
 export const ClientesTarifacionView: React.FC = () => {
-  const { clientes,   agregarCliente, actualizarCliente } = useApp();
+  const { clientes, agregarCliente, actualizarCliente } = useApp();
+  const toast = useToast();
   const [selectedClienteForTariffs, setSelectedClienteForTariffs] = useState<ClienteCorporativo | null>(null);
   const [showClienteModal, setShowClienteModal] = useState<boolean>(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
@@ -109,7 +111,7 @@ export const ClientesTarifacionView: React.FC = () => {
   const handleSaveNuevoCliente = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactoEmail) {
-      alert('Debes proporcionar un email de contacto para enviar la invitación B2B.');
+      toast.warning('Debes proporcionar un email de contacto para enviar la invitación B2B.', 'Email Requerido');
       return;
     }
     
@@ -125,11 +127,11 @@ export const ClientesTarifacionView: React.FC = () => {
 
     if (clienteError) {
       console.error(clienteError);
-      alert('Error creando empresa en DB: ' + clienteError.message);
+      toast.error('Error creando empresa en base de datos: ' + clienteError.message, 'Fallo de Registro');
       return;
     }
 
-    setActionMsg(`Empresa ${nombreCorporativo} creada exitosamente en base de datos.`);
+    toast.success(`Empresa ${nombreCorporativo} creada exitosamente.`, 'Cliente Registrado');
 
     // Actualizamos la UI local
     agregarCliente({
@@ -146,12 +148,11 @@ export const ClientesTarifacionView: React.FC = () => {
     });
     
     setShowClienteModal(false);
-    setTimeout(() => setActionMsg(null), 4000);
   };
 
   const handleInviteClient = async (cl: ClienteCorporativo) => {
     if (!cl.contactoEmail) {
-      alert('Esta empresa no tiene un correo electrónico configurado.');
+      toast.warning('Esta empresa no tiene un correo electrónico configurado.', 'Email No Configurado');
       return;
     }
     
@@ -179,11 +180,10 @@ export const ClientesTarifacionView: React.FC = () => {
           }
         }
       } catch (e) {}
-      alert('Error al enviar invitación: ' + realErrorMessage);
+      toast.error('Error al enviar invitación: ' + realErrorMessage, 'Fallo de Invitación');
     } else {
       actualizarCliente(cl.id, { invitacionEnviada: true });
-      setActionMsg(`¡Invitación enviada con éxito a ${cl.contactoEmail}!`);
-      setTimeout(() => setActionMsg(null), 4000);
+      toast.success(`¡Invitación enviada con éxito a ${cl.contactoEmail}!`, 'Invitación Enviada');
     }
   };
 

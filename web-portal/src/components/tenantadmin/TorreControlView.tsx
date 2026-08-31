@@ -1,12 +1,14 @@
 // @ts-nocheck
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../ui/Toast';
 import type { ViajeOperativa } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { MapPin, Navigation, Clock, CheckCircle, AlertTriangle, ShieldAlert, X, Link as LinkIcon } from 'lucide-react';
 
 export const TorreControlView: React.FC = () => {
   const { viajes, conductores } = useApp();
+  const toast = useToast();
   const [activeSubView, setActiveSubView] = useState<'tablero' | 'radar'>('tablero');
   const [selectedViajeForDispatch, setSelectedViajeForDispatch] = useState<ViajeOperativa | null>(null);
   const [filterEstado, setFilterEstado] = useState<string>('todos');
@@ -29,7 +31,7 @@ export const TorreControlView: React.FC = () => {
   const handleGenerarEnlace = async (viaje: ViajeOperativa) => {
     try {
       const viajeId = viaje.id.startsWith('v-') ? 't1000000-0000-0000-0000-000000000000' : viaje.id;
-      const pasajeroId = 'ps100000-0000-0000-0000-000000000000'; // ID pasajero test
+      const pasajeroId = 'ps100000-0000-0000-0000-000000000000';
 
       const { data, error } = await supabase.rpc('generate_tracking_token', {
         p_viaje_id: viajeId,
@@ -40,10 +42,10 @@ export const TorreControlView: React.FC = () => {
       
       const link = `${window.location.origin}/live-track/${data}`;
       await navigator.clipboard.writeText(link);
-      alert(`Enlace copiado al portapapeles:\n\n${link}`);
+      toast.success(`Enlace de seguimiento copiado al portapapeles.`, 'Enlace Generado');
     } catch (err: any) {
       console.error(err);
-      alert('Error al generar el enlace de seguimiento: ' + err.message);
+      toast.error('Error al generar el enlace: ' + err.message, 'Seguimiento GPS');
     }
   };
 
@@ -58,7 +60,7 @@ export const TorreControlView: React.FC = () => {
       }
 
       if (!vehiculoId) {
-        alert('Debe existir al menos un vehículo registrado en la flota para asignar el viaje.');
+        toast.warning('Debe existir al menos un vehículo registrado en la flota para asignar el viaje.', 'Vehículo Requerido');
         return;
       }
       
@@ -74,10 +76,10 @@ export const TorreControlView: React.FC = () => {
       });
       if (dispatchError) throw dispatchError;
       
-      alert('Viaje asignado y despachado con éxito.');
+      toast.success('Viaje asignado y despachado con éxito a la unidad móvil.', 'Despacho Operativo');
     } catch (err: any) {
       console.error(err);
-      alert('Error despachando viaje: ' + err.message);
+      toast.error('Error al despachar viaje: ' + err.message, 'Fallo de Despacho');
     }
     setSelectedViajeForDispatch(null);
   };
