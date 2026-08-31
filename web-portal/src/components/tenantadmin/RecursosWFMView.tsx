@@ -461,7 +461,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                             title="Clic para cambiar estado técnico"
                           >
                             {isOperativo ? <ShieldCheck className="w-3.5 h-3.5 mr-1 text-emerald-500" /> : <Wrench className="w-3.5 h-3.5 mr-1 text-red-500" />}
-                            <span>{vh.estadoOperativo.toUpperCase()}</span>
+                            <span>{(vh.estadoOperativo || vh.estado || 'operativo').toUpperCase()}</span>
                           </button>
                         </td>
                         <td className="py-4 px-4 text-right">

@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase';
 import { MapPin, Navigation, Clock, CheckCircle, AlertTriangle, ShieldAlert, X, Link as LinkIcon } from 'lucide-react';
 
 export const TorreControlView: React.FC = () => {
-  const { viajes, conductores } = useApp();
+  const { viajes, conductores, vehiculos, refrescarDatos } = useApp();
   const toast = useToast();
   const [activeSubView, setActiveSubView] = useState<'tablero' | 'radar'>('tablero');
   const [selectedViajeForDispatch, setSelectedViajeForDispatch] = useState<ViajeOperativa | null>(null);
@@ -30,12 +30,8 @@ export const TorreControlView: React.FC = () => {
 
   const handleGenerarEnlace = async (viaje: ViajeOperativa) => {
     try {
-      const viajeId = viaje.id.startsWith('v-') ? 't1000000-0000-0000-0000-000000000000' : viaje.id;
-      const pasajeroId = 'ps100000-0000-0000-0000-000000000000';
-
       const { data, error } = await supabase.rpc('generate_tracking_token', {
-        p_viaje_id: viajeId,
-        p_pasajero_id: pasajeroId
+        p_viaje_id: viaje.id
       });
 
       if (error) throw error;
@@ -56,7 +52,7 @@ export const TorreControlView: React.FC = () => {
       let vehiculoId = conductor?.vehiculoAsignadoId;
       if (!vehiculoId) {
         const { data: vehList } = await supabase.from('vehiculos').select('id').limit(1);
-        vehiculoId = vehList?.[0]?.id;
+        vehiculoId = vehList?.[0]?.id || vehiculos?.[0]?.id;
       }
 
       if (!vehiculoId) {
@@ -77,6 +73,10 @@ export const TorreControlView: React.FC = () => {
       if (dispatchError) throw dispatchError;
       
       toast.success('Viaje asignado y despachado con éxito a la unidad móvil.', 'Despacho Operativo');
+
+      if (refrescarDatos) {
+        await refrescarDatos();
+      }
     } catch (err: any) {
       console.error(err);
       toast.error('Error al despachar viaje: ' + err.message, 'Fallo de Despacho');

@@ -39,6 +39,7 @@ interface AppContextType {
   
   agregarCliente: (cliente: ClienteCorporativo) => void;
   actualizarCliente: (id: string, updates: Partial<ClienteCorporativo>) => void;
+  refrescarDatos: () => Promise<void>;
 
   userRole: string;
   authUser: any | null;
@@ -176,259 +177,177 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [isDarkMode]);
 
+  const syncFromSupabase = useCallback(async () => {
+    try {
+      const { data: dbVehiculos } = await supabase.from('vehiculos').select('*');
+      const { data: dbConductores } = await supabase.from('conductores').select('*');
+      const { data: dbClientes } = await supabase.from('clientes_corporativos').select('*');
+      const { data: dbAsignaciones } = await supabase.from('asignaciones').select('*').order('created_at', { ascending: false });
+      
+      let { data: dbViajes, error: errViajes } = await supabase
+        .from('viajes')
+        .select(`
+          *,
+          viaje_pasajeros(
+            estado,
+            pasajero:pasajeros(nombre_completo, telefono)
+          ),
+          asignaciones(
+            estado,
+            conductor_id,
+            vehiculo_id,
+            conductor:conductores(id, nombre_completo),
+            vehiculo:vehiculos(id, patente)
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (errViajes) {
+        const simpleRes = await supabase.from('viajes').select('*').order('created_at', { ascending: false });
+        dbViajes = simpleRes.data;
+      }
+      
+      const { data: dbAvisos } = await supabase.from('avisos').select('*');
+
+      if (dbVehiculos) {
+        setVehiculos(dbVehiculos.map(v => ({
+          ...v,
+          id: v.id,
+          marca: v.marca,
+          modelo: v.modelo,
+          anio: v.anio,
+          placa: v.patente,
+          patente: v.patente,
+          capacidadPasajeros: v.capacidad,
+          capacidad: v.capacidad,
+          color: v.color || 'Blanco',
+          kilometraje: v.kilometraje ?? 0,
+          estadoOperativo: v.estado || 'operativo',
+          estado: v.estado || 'operativo',
+          activo: v.estado === 'operativo' || v.estado === 'activo'
+        })));
+      }
+      if (dbConductores) {
+        setConductores(dbConductores.map(c => ({
+          id: c.id,
+          nombreCompleto: c.nombre_completo || 'Conductor',
+          email: '',
+          telefono: c.telefono || '',
+          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
+          rut: c.rut || '',
+          tipoLicencia: (c.tipo_licencia || 'A2') as any,
+          vencimientoLicencia: c.vencimiento_licencia || undefined,
+          numeroLicencia: c.tipo_licencia || '',
+          puntualidad: '5.0 / 5.0',
+          serviciosMes: 0,
+          vehiculoAsignadoId: undefined,
+          estadoWFM: (c.estado === 'activo' ? 'disponible' : 'inactivo') as any,
+          ultimaLatitud: -36.8269,
+          ultimaLongitud: -73.0498,
+          horasConducidasHoy: 0,
+          enDescanso: false,
+          motivoBloqueo: undefined
+        })));
+      }
+      if (dbClientes) {
+        setClientes(dbClientes.map(cl => ({
+          id: cl.id,
+          nombreCorporativo: cl.nombre_corporativo,
+          rutIdentificador: cl.rut_identificador,
+          direccionFiscal: cl.direccion_fiscal,
+          contactoNombre: cl.contacto_nombre,
+          contactoEmail: cl.contacto_email,
+          contactoTelefono: cl.contacto_telefono,
+          invitacionEnviada: cl.invitacion_enviada,
+          tarifario: {
+            tarifaPorKm: Number(cl.tarifa_por_km || 1300),
+            tarifaMinima: Number(cl.tarifa_minima || 7000),
+            tiempoEsperaPorHora: Number(cl.tiempo_espera_por_hora || 8500),
+            rutasFijas: []
+          }
+        })));
+      }
+      if (dbViajes) {
+        setViajes(dbViajes.map(v => {
+          let parsedObs: any = {};
+          try {
+            if (v.observaciones && v.observaciones.startsWith('{')) {
+              parsedObs = JSON.parse(v.observaciones);
+            }
+          } catch (_) {}
+
+          const activeAsignacion = v.asignaciones?.find((a: any) => a.estado === 'activa') || 
+                                   dbAsignaciones?.find(a => a.viaje_id === v.id && a.estado === 'activa') ||
+                                   v.asignaciones?.[0] ||
+                                   dbAsignaciones?.find(a => a.viaje_id === v.id);
+
+          const condId = activeAsignacion?.conductor_id || activeAsignacion?.conductor?.id;
+          const condObj = dbConductores?.find(c => c.id === condId);
+          const condNombre = activeAsignacion?.conductor?.nombre_completo || condObj?.nombre_completo;
+
+          const vehId = activeAsignacion?.vehiculo_id || activeAsignacion?.vehiculo?.id;
+          const vehObj = dbVehiculos?.find(vh => vh.id === vehId);
+          const vehPlaca = activeAsignacion?.vehiculo?.patente || vehObj?.patente;
+
+          const primerPasajero = v.viaje_pasajeros?.[0]?.pasajero;
+          const clNombre = dbClientes?.find(c => c.id === v.cliente_corporativo_id)?.nombre_corporativo;
+
+          return {
+            id: v.id,
+            clienteCorporativoId: v.cliente_corporativo_id,
+            clienteNombre: clNombre || parsedObs.clienteNombre || 'Cuenta B2B',
+            conductorId: condId,
+            conductorNombre: condNombre,
+            vehiculoId: vehId,
+            vehiculoPlaca: vehPlaca,
+            pasajeroNombre: primerPasajero?.nombre_completo || parsedObs.pasajeroNombre || 'Pasajero',
+            pasajeroTelefono: primerPasajero?.telefono || parsedObs.pasajeroTelefono || '',
+            origenDireccion: v.origen_direccion || '',
+            origenLat: v.origen_lat || -36.8200,
+            origenLng: v.origen_lng || -73.0440,
+            destinoDireccion: v.destino_direccion || '',
+            destinoLat: v.destino_lat || -36.8290,
+            destinoLng: v.destino_lng || -73.0480,
+            fechaProgramada: v.fecha_programada ? new Date(v.fecha_programada).toLocaleString('es-CL') : 'Inmediato',
+            estado: v.estado || 'solicitado',
+            secureTrackingToken: `token-${v.id}`,
+            montoEstimado: parsedObs.montoEstimado || 18000,
+            timestampDespacho: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined
+          };
+        }));
+      }
+      if (dbAvisos && dbAvisos.length > 0) {
+        setAvisosOperativos(dbAvisos.map(a => ({
+          id: a.id,
+          viajeId: a.viaje_id,
+          pasajeroNombre: 'Colaborador',
+          mensaje: a.mensaje,
+          timestamp: a.created_at ? new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora',
+          leido: a.leido || false,
+          tipo: 'aviso_rapido'
+        })));
+      }
+    } catch (err) {
+      console.warn('⚡ [Supabase Live Sync] Error:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!authUser) return;
-    let isSubscribed = true;
-
-    async function syncFromSupabase() {
-      if (!isSubscribed) return;
-
-      try {
-        const { data: dbVehiculos, error: errVehiculos } = await supabase.from('vehiculos').select('*');
-        if (errVehiculos) console.error('Error fetch vehiculos:', errVehiculos);
-        
-        const { data: dbConductores, error: errConductores } = await supabase.from('conductores').select('*');
-        if (errConductores) console.error('Error fetch conductores:', errConductores);
-        
-        const { data: dbClientes, error: errClientes } = await supabase.from('clientes_corporativos').select('*');
-        if (errClientes) console.error('Error fetch clientes:', errClientes);
-        
-        let { data: dbViajes, error: errViajes } = await supabase
-          .from('viajes')
-          .select(`
-            *,
-            viaje_pasajeros(
-              estado,
-              pasajero:pasajeros(nombre_completo, telefono)
-            ),
-            asignaciones(
-              estado,
-              conductor:conductores(id, nombre_completo),
-              vehiculo:vehiculos(id, patente)
-            )
-          `)
-          .order('created_at', { ascending: false });
-
-        if (errViajes) {
-          console.warn('Sync viajes fallback simple:', errViajes.message);
-          const simpleRes = await supabase.from('viajes').select('*').order('created_at', { ascending: false });
-          dbViajes = simpleRes.data;
-        }
-        
-        const { data: dbAvisos, error: errAvisos } = await supabase.from('avisos').select('*');
-        if (errAvisos) console.error('Error fetch avisos:', errAvisos);
-
-        if (isSubscribed) {
-          if (dbVehiculos) {
-            setVehiculos(dbVehiculos.map(v => ({
-              ...v,
-              id: v.id,
-              marca: v.marca,
-              modelo: v.modelo,
-              anio: v.anio,
-              placa: v.patente,
-              patente: v.patente,
-              capacidadPasajeros: v.capacidad,
-              capacidad: v.capacidad,
-              color: v.color || 'Blanco',
-              kilometraje: v.kilometraje ?? 0,
-              estadoOperativo: v.estado || 'operativo',
-              estado: v.estado || 'operativo',
-              activo: v.estado === 'operativo' || v.estado === 'activo'
-            })));
-          }
-          if (dbConductores) {
-            setConductores(dbConductores.map(c => ({
-              id: c.id,
-              nombreCompleto: c.nombre_completo || 'Conductor',
-              email: '',
-              telefono: c.telefono || '',
-              avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
-              rut: c.rut || '',
-              tipoLicencia: (c.tipo_licencia || 'A2') as any,
-              vencimientoLicencia: c.vencimiento_licencia || undefined,
-              numeroLicencia: c.tipo_licencia || '',
-              puntualidad: '5.0 / 5.0',
-              serviciosMes: 0,
-              vehiculoAsignadoId: undefined,
-              estadoWFM: (c.estado === 'activo' ? 'disponible' : 'inactivo') as any,
-              ultimaLatitud: -36.8269,
-              ultimaLongitud: -73.0498,
-              horasConducidasHoy: 0,
-              enDescanso: false,
-              motivoBloqueo: undefined
-            })));
-          }
-          if (dbClientes) {
-            setClientes(dbClientes.map(cl => ({
-              id: cl.id,
-              nombreCorporativo: cl.nombre_corporativo,
-              rutIdentificador: cl.rut_identificador,
-              direccionFiscal: cl.direccion_fiscal,
-              contactoNombre: cl.contacto_nombre,
-              contactoEmail: cl.contacto_email,
-              contactoTelefono: cl.contacto_telefono,
-              invitacionEnviada: cl.invitacion_enviada,
-              tarifario: {
-                tarifaPorKm: Number(cl.tarifa_por_km || 1300),
-                tarifaMinima: Number(cl.tarifa_minima || 7000),
-                tiempoEsperaPorHora: Number(cl.tiempo_espera_por_hora || 8500),
-                rutasFijas: []
-              }
-            })));
-          }
-          if (dbViajes) {
-            setViajes(dbViajes.map(v => {
-              let parsedObs: any = {};
-              try {
-                if (v.observaciones && v.observaciones.startsWith('{')) {
-                  parsedObs = JSON.parse(v.observaciones);
-                }
-              } catch (_) {}
-
-              const activeAsignacion = v.asignaciones?.find((a: any) => a.estado === 'activa') || v.asignaciones?.[0];
-              const primerPasajero = v.viaje_pasajeros?.[0]?.pasajero;
-              const clNombre = dbClientes?.find(c => c.id === v.cliente_corporativo_id)?.nombre_corporativo;
-
-              return {
-                id: v.id,
-                clienteCorporativoId: v.cliente_corporativo_id,
-                clienteNombre: clNombre || parsedObs.clienteNombre || 'Cuenta B2B',
-                conductorId: activeAsignacion?.conductor?.id,
-                conductorNombre: activeAsignacion?.conductor?.nombre_completo,
-                vehiculoId: activeAsignacion?.vehiculo?.id,
-                vehiculoPlaca: activeAsignacion?.vehiculo?.patente,
-                pasajeroNombre: primerPasajero?.nombre_completo || parsedObs.pasajeroNombre || 'Pasajero',
-                pasajeroTelefono: primerPasajero?.telefono || parsedObs.pasajeroTelefono || '',
-                origenDireccion: v.origen_direccion || '',
-                origenLat: v.origen_lat || -36.8200,
-                origenLng: v.origen_lng || -73.0440,
-                destinoDireccion: v.destino_direccion || '',
-                destinoLat: v.destino_lat || -36.8290,
-                destinoLng: v.destino_lng || -73.0480,
-                fechaProgramada: v.fecha_programada ? new Date(v.fecha_programada).toLocaleString('es-CL') : 'Inmediato',
-                estado: v.estado || 'solicitado',
-                secureTrackingToken: `token-${v.id}`,
-                montoEstimado: parsedObs.montoEstimado || 18000,
-                timestampDespacho: v.created_at ? new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined
-              };
-            }));
-          }
-          if (dbAvisos && dbAvisos.length > 0) {
-            setAvisosOperativos(dbAvisos.map(a => ({
-              id: a.id,
-              viajeId: a.viaje_id,
-              pasajeroNombre: 'Colaborador',
-              mensaje: a.mensaje,
-              timestamp: a.created_at ? new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora',
-              leido: a.leido || false,
-              tipo: 'aviso_rapido'
-            })));
-          }
-        }
-      } catch (err) {
-        console.warn('⚡ [Supabase Live Sync] Conmuta a Offline Fallback debido a error:', err);
-      }
-    }
-
     syncFromSupabase();
 
     const realtimeChannel = supabase.channel('wfm-realtime-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos' }, payload => {
-        const nuevo: AvisoOperativo = {
-          id: payload.new.id,
-          viajeId: payload.new.viaje_id,
-          pasajeroNombre: 'Colaborador',
-          mensaje: payload.new.mensaje,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          leido: payload.new.leido || false,
-          tipo: 'aviso_rapido'
-        };
-        setAvisosOperativos(prev => [nuevo, ...prev.filter(a => a.id !== nuevo.id)]);
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conductores' }, payload => {
-        const updated = payload.new as any;
-        setConductores(prev => prev.map(c => c.id === updated.id ? { 
-          ...c, 
-          nombreCompleto: updated.nombre_completo || c.nombreCompleto,
-          rut: updated.rut || c.rut,
-          telefono: updated.telefono || c.telefono,
-          tipoLicencia: updated.tipo_licencia || c.tipoLicencia,
-          estadoWFM: updated.estado === 'activo' ? 'disponible' : 'inactivo'
-        } : c));
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conductores' }, payload => {
-        const nuevo = payload.new as any;
-        setConductores(prev => {
-          if (prev.some(c => c.id === nuevo.id)) return prev;
-          return [{
-            id: nuevo.id,
-            nombreCompleto: nuevo.nombre_completo,
-            rut: nuevo.rut,
-            email: '',
-            telefono: nuevo.telefono,
-            avatarUrl: '',
-            tipoLicencia: (nuevo.tipo_licencia || 'A2') as any,
-            vencimientoLicencia: nuevo.vencimiento_licencia,
-            puntualidad: '5.0 / 5.0',
-            serviciosMes: 0,
-            estadoWFM: nuevo.estado === 'activo' ? 'disponible' : 'inactivo',
-            ultimaLatitud: -36.8269,
-            ultimaLongitud: -73.0498,
-            horasConducidasHoy: 0,
-            enDescanso: false
-          }, ...prev];
-        });
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehiculos' }, payload => {
-        if (payload.eventType === 'INSERT') {
-          const v = payload.new as any;
-          setVehiculos(prev => {
-            if (prev.some(item => item.id === v.id)) return prev;
-            return [{
-              id: v.id,
-              marca: v.marca,
-              modelo: v.modelo,
-              anio: v.anio,
-              placa: v.patente,
-              patente: v.patente,
-              capacidadPasajeros: v.capacidad,
-              capacidad: v.capacidad,
-              color: v.color || 'Blanco',
-              kilometraje: v.kilometraje ?? 0,
-              estadoOperativo: v.estado || 'operativo',
-              estado: v.estado || 'operativo',
-              activo: v.estado === 'operativo' || v.estado === 'activo'
-            }, ...prev];
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          const v = payload.new as any;
-          setVehiculos(prev => prev.map(item => item.id === v.id ? {
-            ...item,
-            marca: v.marca,
-            modelo: v.modelo,
-            anio: v.anio,
-            placa: v.patente,
-            patente: v.patente,
-            capacidadPasajeros: v.capacidad,
-            capacidad: v.capacidad,
-            color: v.color || 'Blanco',
-            kilometraje: v.kilometraje ?? 0,
-            estadoOperativo: v.estado || 'operativo',
-            estado: v.estado || 'operativo'
-          } : item));
-        } else if (payload.eventType === 'DELETE') {
-          const v = payload.old as any;
-          setVehiculos(prev => prev.filter(item => item.id !== v.id));
-        }
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'avisos' }, () => syncFromSupabase())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conductores' }, () => syncFromSupabase())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehiculos' }, () => syncFromSupabase())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'viajes' }, () => syncFromSupabase())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'asignaciones' }, () => syncFromSupabase())
       .subscribe();
 
     return () => {
-      isSubscribed = false;
       supabase.removeChannel(realtimeChannel);
     };
-  }, [authUser]);
+  }, [authUser, syncFromSupabase]);
 
   useEffect(() => {
     let mounted = true;
@@ -943,6 +862,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eliminarConductor,
         agregarCliente,
         actualizarCliente,
+        refrescarDatos: syncFromSupabase,
         userRole,
         authUser,
         authLoading,
