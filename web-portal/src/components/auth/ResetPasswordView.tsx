@@ -40,8 +40,14 @@ export const ResetPasswordView: React.FC = () => {
     });
 
     if (resetError) {
-      setError('Hubo un problema al actualizar la contraseña. Intenta nuevamente.');
+      setError(resetError.message || 'Hubo un problema al actualizar la contraseña. Intenta nuevamente.');
     } else {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('perfiles').update({ estado: 'activo' }).eq('auth_user_id', user.id);
+        }
+      } catch (_) {}
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');

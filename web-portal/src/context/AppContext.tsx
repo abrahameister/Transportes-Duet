@@ -308,18 +308,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .eq('auth_user_id', rawUser.id)
           .single();
 
+        const isRecoveryPath = typeof window !== 'undefined' && 
+          (window.location.pathname.includes('reset-password') || window.location.pathname.includes('invite') || window.location.hash.includes('type=recovery'));
+
         if (error || !perfil) {
           console.error("Perfil no encontrado", error);
           if (mounted) setAuthUser(null);
-          await supabase.auth.signOut();
+          if (!isRecoveryPath) {
+            await supabase.auth.signOut();
+          }
           return;
         }
 
         if (perfil.estado !== 'activo') {
-          console.warn("Usuario inactivo bloqueado.");
+          console.warn("Usuario inactivo en espera de activación o restablecimiento.");
           if (mounted) setAuthUser(null);
-          await supabase.auth.signOut();
-          // We could set an error state here if we had one
+          if (!isRecoveryPath) {
+            await supabase.auth.signOut();
+          }
           return;
         }
 
