@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -812,9 +812,11 @@ export type Database = {
         Row: {
           anio: number
           capacidad: number
+          color: string | null
           created_at: string
           estado: string
           id: string
+          kilometraje: number | null
           marca: string
           modelo: string
           patente: string
@@ -823,9 +825,11 @@ export type Database = {
         Insert: {
           anio: number
           capacidad: number
+          color?: string | null
           created_at?: string
           estado?: string
           id?: string
+          kilometraje?: number | null
           marca: string
           modelo: string
           patente: string
@@ -834,9 +838,11 @@ export type Database = {
         Update: {
           anio?: number
           capacidad?: number
+          color?: string | null
           created_at?: string
           estado?: string
           id?: string
+          kilometraje?: number | null
           marca?: string
           modelo?: string
           patente?: string
