@@ -10,6 +10,57 @@ import { ForgotPasswordView } from './components/auth/ForgotPasswordView';
 import { ResetPasswordView } from './components/auth/ResetPasswordView';
 import { LiveTrackView } from './components/pasajero/LiveTrackView';
 
+// Error Boundary to prevent full application crash
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+          <div className="w-16 h-16 bg-red-500/20 border border-red-500/50 rounded-2xl flex items-center justify-center mb-4 text-red-400 text-2xl font-bold">
+            !
+          </div>
+          <h1 className="text-xl font-bold text-slate-100 mb-2">Error de Ejecución en la Plataforma</h1>
+          <p className="text-xs text-slate-400 max-w-md mb-4">
+            {this.state.error?.message || 'Ocurrió un error inesperado al renderizar este módulo.'}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/login';
+              }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-lg transition-all cursor-pointer"
+            >
+              Reiniciar Sesión
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg transition-all cursor-pointer text-slate-300"
+            >
+              Recargar Página
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Auth Guard: Only authenticated users can access children
 const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   const { authUser, authLoading } = useApp();
@@ -75,30 +126,34 @@ import { ToastProvider } from './components/ui/Toast';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ToastProvider>
-        <AppProvider>
-          <Routes>
-            {/* Rutas Públicas */}
-            <Route path="/login" element={<LoginView />} />
-            <Route path="/forgot-password" element={<ForgotPasswordView />} />
-            <Route path="/reset-password" element={<ResetPasswordView />} />
-            <Route path="/invite/accept" element={<ResetPasswordView />} />
-            <Route path="/live-track/:token" element={<LiveTrackView />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ToastProvider>
+          <AppProvider>
+            <Routes>
+              {/* Rutas Públicas */}
+              <Route path="/login" element={<LoginView />} />
+              <Route path="/forgot-password" element={<ForgotPasswordView />} />
+              <Route path="/reset-password" element={<ResetPasswordView />} />
+              <Route path="/invite/accept" element={<ResetPasswordView />} />
+              <Route path="/live-track/:token" element={<LiveTrackView />} />
 
-            {/* Rutas Protegidas */}
-            <Route path="/app/*" element={
-              <AuthGuard>
-                <AppLayout />
-              </AuthGuard>
-            } />
+              {/* Rutas Protegidas */}
+              <Route path="/app/*" element={
+                <AuthGuard>
+                  <ErrorBoundary>
+                    <AppLayout />
+                  </ErrorBoundary>
+                </AuthGuard>
+              } />
 
-            {/* Redirect Default */}
-            <Route path="/" element={<Navigate to="/app" replace />} />
-            <Route path="*" element={<Navigate to="/app" replace />} />
-          </Routes>
-        </AppProvider>
-      </ToastProvider>
-    </BrowserRouter>
+              {/* Redirect Default */}
+              <Route path="/" element={<Navigate to="/app" replace />} />
+              <Route path="*" element={<Navigate to="/app" replace />} />
+            </Routes>
+          </AppProvider>
+        </ToastProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

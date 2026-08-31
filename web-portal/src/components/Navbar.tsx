@@ -98,7 +98,7 @@ export const Navbar: React.FC = () => {
                 <option value="" disabled>Seleccione Cliente</option>
                 {clientes.map((c) => (
                   <option key={c.id} value={c.id} className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">
-                    🤝 {c.nombreCorporativo.split(' ')[0]} {c.nombreCorporativo.split(' ')[1] || ''}
+                    🤝 {((c.nombreCorporativo || (c as any).nombre_corporativo || 'Cliente')).split(' ')[0]} {((c.nombreCorporativo || (c as any).nombre_corporativo || '')).split(' ')[1] || ''}
                   </option>
                 ))}
               </select>
