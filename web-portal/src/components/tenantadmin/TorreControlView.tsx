@@ -344,16 +344,30 @@ export const TorreControlView: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                {conductoresTenant.map((c) => {
-                  const vhId = (c as any).vehiculoHabitualId || (c as any).vehiculoAsignadoId;
+                {[...conductoresTenant].sort((a, b) => {
+                  const todayIso = new Date().toISOString().split('T')[0];
+                  const shiftA = turnosConductores.find(t => t.conductor_id === a.id && t.fecha === todayIso);
+                  const shiftB = turnosConductores.find(t => t.conductor_id === b.id && t.fecha === todayIso);
+                  
+                  const isReadyA = shiftA && shiftA.tipo_jornada !== 'descanso' && !a.enDescanso && a.estadoWFM !== 'en_ruta';
+                  const isReadyB = shiftB && shiftB.tipo_jornada !== 'descanso' && !b.enDescanso && b.estadoWFM !== 'en_ruta';
+                  
+                  if (isReadyA && !isReadyB) return -1;
+                  if (!isReadyA && isReadyB) return 1;
+                  return 0;
+                }).map((c) => {
+                  const todayIso = new Date().toISOString().split('T')[0];
+                  const driverShift = turnosConductores.find(t => t.conductor_id === c.id && t.fecha === todayIso);
+                  
+                  const vhId = driverShift?.vehiculo_id || (c as any).vehiculoHabitualId || (c as any).vehiculoAsignadoId;
                   const vh = vehiculos.find(v => v.id === vhId);
                   const isVehTaller = vh && (vh.estadoOperativo === 'mantenimiento' || vh.estado === 'taller');
                   
-                  const todayIso = new Date().toISOString().split('T')[0];
-                  const driverShift = turnosConductores.find(t => t.conductor_id === c.id && t.fecha === todayIso);
                   const isDescanso = driverShift?.tipo_jornada === 'descanso';
+                  const noShiftToday = !driverShift;
+                  const noVehicle = !vh || isVehTaller;
                   
-                  const isBlocked = c.enDescanso || isDescanso;
+                  const isBlocked = c.enDescanso || isDescanso || noShiftToday || noVehicle;
                   const isBusy = c.estadoWFM === 'en_ruta';
                   const isAvailable = !isBlocked && !isBusy;
 
@@ -400,11 +414,10 @@ export const TorreControlView: React.FC = () => {
                           <span className="text-slate-400 font-mono text-[11px]">RUT: {c.rut || 'N/A'}</span>
                         </div>
 
-                        {/* Estado y Causa del bloqueo si lo hay */}
                         {isBlocked && (
                           <div className="text-xs text-red-600 dark:text-red-400 font-semibold flex items-center mt-1">
                             <AlertTriangle className="w-3.5 h-3.5 mr-1 shrink-0" />
-                            <span>Bloqueado por WFM: {isDescanso ? 'Jornada de descanso legal' : (c.motivoBloqueo || 'Chofer en descanso')}</span>
+                            <span>Bloqueado por WFM: {noShiftToday ? 'Sin turno asignado hoy' : isDescanso ? 'Jornada de descanso legal' : noVehicle ? 'Sin vehículo operativo' : (c.motivoBloqueo || 'Chofer inhabilitado')}</span>
                           </div>
                         )}
                         {isBusy && !isBlocked && (

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../ui/Toast';
 import type { VehiculoFlota, ConductorWFM } from '../../types';
-import { Car, User, Plus, Edit3, Trash2, ShieldCheck, Wrench, X, Search, Image as ImageIcon, Download, Calendar, Clock } from 'lucide-react';
+import { Car, User, Plus, Edit3, Trash2, ShieldCheck, Wrench, X, Search, Image as ImageIcon, Download, Calendar, Clock, UploadCloud, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { ConfirmModal } from '../common/ConfirmModal';
 
 interface RecursosWFMViewProps {
@@ -13,9 +14,51 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const { vehiculos, conductores, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor, turnosConductores, crearTurnoConductor, eliminarTurnoConductor } = useApp();
   const toast = useToast();
   const [subTab, setSubTab] = useState<'conductores' | 'flota' | 'turnos'>(initialTab || 'conductores');
+  const [viewModeTurnos, setViewModeTurnos] = useState<'lista' | 'matriz'>('lista');
   const [searchQuery, setSearchQuery] = useState('');
   const [vehiculoToDelete, setVehiculoToDelete] = useState<VehiculoFlota | null>(null);
   const [conductorToDelete, setConductorToDelete] = useState<ConductorWFM | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        let successCount = 0;
+        for (const row of data as any[]) {
+          const rut = row['RUT'] || row['RUT Conductor'];
+          const cond = conductores.find(c => c.rut === rut);
+          if (cond) {
+            await crearTurnoConductor({
+              conductor_id: cond.id,
+              fecha: row['Fecha (DD-MM-YYYY)'] || new Date().toISOString().split('T')[0],
+              hora_inicio: row['Hora Inicio'] || '08:00',
+              hora_fin: row['Hora Fin'] || '18:00',
+              tipo_jornada: row['Jornada']?.toLowerCase() || 'manana',
+              estado: 'planificado',
+            });
+            successCount++;
+          }
+        }
+        toast.success(`Se importaron ${successCount} turnos correctamente.`, 'Importación Exitosa');
+      } catch (error) {
+        console.error(error);
+        toast.error('Error al procesar el archivo Excel.', 'Fallo de Lectura');
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsBinaryString(file);
+  };
 
   useEffect(() => {
     if (initialTab) {
@@ -41,6 +84,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   // Form states para Turnos de Conductores
   const [showShiftModal, setShowShiftModal] = useState(false);
   const [shiftConductorId, setShiftConductorId] = useState('');
+  const [shiftVehiculoId, setShiftVehiculoId] = useState('');
   const [shiftFecha, setShiftFecha] = useState(new Date().toISOString().split('T')[0]);
   const [shiftHoraInicio, setShiftHoraInicio] = useState('06:00');
   const [shiftHoraFin, setShiftHoraFin] = useState('14:00');
@@ -150,8 +194,19 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
       toast.warning('Debe seleccionar un conductor para el turno.', 'Conductor Requerido');
       return;
     }
+    
+    if (shiftVehiculoId) {
+      // Validate collision
+      const collision = turnosConductores.find(t => t.vehiculo_id === shiftVehiculoId && t.fecha === shiftFecha && t.conductor_id !== shiftConductorId);
+      if (collision) {
+        toast.warning('Este vehículo ya está asignado a otro conductor en esta fecha. Seleccione otro móvil.', 'Colisión de Vehículo');
+        return;
+      }
+    }
+
     await crearTurnoConductor({
       conductor_id: shiftConductorId,
+      vehiculo_id: shiftVehiculoId || undefined,
       fecha: shiftFecha,
       hora_inicio: shiftHoraInicio,
       hora_fin: shiftHoraFin,
@@ -161,6 +216,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     });
     setShowShiftModal(false);
     setShiftNotas('');
+    setShiftVehiculoId('');
   };
 
   const vehiculosTenant = vehiculos;
@@ -546,15 +602,44 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 Valida las horas laborales de la nómina y previene despachos de choferes fuera de jornada en la Torre de Control.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowShiftModal(true)}
-              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              <span>Programar Turno</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <input type="file" ref={fileInputRef} onChange={handleExcelUpload} accept=".xlsx, .xls, .csv" className="hidden" />
+              <button
+                type="button"
+                onClick={() => setViewModeTurnos(viewModeTurnos === 'lista' ? 'matriz' : 'lista')}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-[#212A38] text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors flex items-center space-x-1.5"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Ver como {viewModeTurnos === 'lista' ? 'Matriz Semanal' : 'Lista Detallada'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-1.5"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Cargar Excel</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowShiftModal(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-1.5"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                <span>Programar Turno</span>
+              </button>
+            </div>
           </div>
+          {viewModeTurnos === 'matriz' ? (
+            <div className="p-4 bg-slate-50 dark:bg-[#161D27] min-h-[300px]">
+              <div className="text-center py-10 space-y-3">
+                <Calendar className="w-12 h-12 text-blue-500 mx-auto opacity-50" />
+                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Vista Matriz Semanal (Próximamente)</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">La vista de calendario interactiva se está desplegando. Por ahora, puedes gestionar los turnos usando la vista de lista o la carga masiva por Excel.</p>
+                <button onClick={() => setViewModeTurnos('lista')} className="text-blue-600 font-bold text-xs hover:underline mt-4">Volver a Lista</button>
+              </div>
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-[#0D1117] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-[#212A38]">
@@ -840,7 +925,15 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Conductor (*):</label>
                 <select
                   value={shiftConductorId}
-                  onChange={(e) => setShiftConductorId(e.target.value)}
+                  onChange={(e) => {
+                    setShiftConductorId(e.target.value);
+                    const cond = conductoresTenant.find(c => c.id === e.target.value);
+                    if (cond && ((cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId)) {
+                      setShiftVehiculoId((cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId);
+                    } else {
+                      setShiftVehiculoId('');
+                    }
+                  }}
                   required
                   className="enterprise-input w-full text-xs font-semibold cursor-pointer"
                 >
@@ -851,6 +944,23 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Vehículo Asignado para Turno:</label>
+                <select
+                  value={shiftVehiculoId}
+                  onChange={(e) => setShiftVehiculoId(e.target.value)}
+                  className="enterprise-input w-full text-xs font-semibold cursor-pointer"
+                >
+                  <option value="">-- Sin Vehículo (Pool) --</option>
+                  {vehiculosTenant.map(v => (
+                    <option key={v.id} value={v.id} disabled={v.estadoOperativo === 'mantenimiento'}>
+                      🚗 {v.placa || (v as any).patente} - {v.marca} {v.estadoOperativo === 'mantenimiento' ? '(En Taller)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Se precarga con el móvil habitual si el conductor lo tiene asociado.</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

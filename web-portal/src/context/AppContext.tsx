@@ -697,7 +697,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         telefono: cond.telefono || '+56900000000',
         tipo_licencia: cond.tipoLicencia || 'A2',
         vencimiento_licencia: finalVencimiento,
-        estado: 'activo'
+        estado: 'activo',
+        email: cond.email || null
       };
       if (perfilId) {
         dbObj.perfil_id = perfilId;
@@ -727,7 +728,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         finalId = insertedData.id;
       }
 
-      setConductores(prev => [{ ...cond, id: finalId, vencimientoLicencia: finalVencimiento, vehiculoHabitualId: dbObj.vehiculo_habitual_id, vehiculoAsignadoId: dbObj.vehiculo_habitual_id }, ...prev]);
+      setConductores(prev => [{ ...cond, id: finalId, vencimientoLicencia: finalVencimiento, vehiculoHabitualId: dbObj.vehiculo_habitual_id, vehiculoAsignadoId: dbObj.vehiculo_habitual_id, email: dbObj.email }, ...prev]);
     } catch (err: any) {
       console.error('Error general agregando conductor:', err);
       toast.error('Error al agregar conductor: ' + (err?.message || err), 'Error');
@@ -737,6 +738,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const actualizarConductor = async (id: string, updates: Partial<ConductorWFM>) => {
     const dbUpdates: any = {};
     if (updates.nombreCompleto) dbUpdates.nombre_completo = updates.nombreCompleto;
+    if (updates.email !== undefined) dbUpdates.email = updates.email;
     if (updates.rut) dbUpdates.rut = updates.rut;
     if (updates.telefono) dbUpdates.telefono = updates.telefono;
     if (updates.tipoLicencia) dbUpdates.tipo_licencia = updates.tipoLicencia;
@@ -768,6 +770,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .from('turnos_conductores')
         .insert([{
           conductor_id: turno.conductor_id,
+          vehiculo_id: turno.vehiculo_id || null,
           fecha: turno.fecha,
           hora_inicio: turno.hora_inicio,
           hora_fin: turno.hora_fin,
@@ -775,7 +778,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           estado: turno.estado || 'planificado',
           notas: turno.notas || null
         }])
-        .select('*, conductor:conductores(id, nombre_completo, rut)')
+        .select('*, conductor:conductores(id, nombre_completo, rut, email), vehiculo:vehiculos(id, patente, marca, placa)')
         .single();
 
       if (error) {

@@ -60,6 +60,7 @@ export type PasajeroRutaCheck = any;
 export interface TurnoConductor {
   id: string;
   conductor_id: string;
+  vehiculo_id?: string;
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
@@ -67,6 +68,7 @@ export interface TurnoConductor {
   estado: 'planificado' | 'en_turno' | 'completado' | 'ausente' | 'licencia';
   notas?: string | null;
   conductor?: Conductor;
+  vehiculo?: Vehiculo;
   created_at?: string;
   updated_at?: string;
 }
