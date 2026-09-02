@@ -724,6 +724,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
 
