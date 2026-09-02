@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { MapPin, Navigation, Clock, CheckCircle, AlertTriangle, ShieldAlert, X, Link as LinkIcon } from 'lucide-react';
 
 export const TorreControlView: React.FC = () => {
-  const { viajes, conductores, vehiculos, refrescarDatos } = useApp();
+  const { viajes, conductores, vehiculos, refrescarDatos, turnosConductores } = useApp();
   const toast = useToast();
   const [activeSubView, setActiveSubView] = useState<'tablero' | 'radar'>('tablero');
   const [selectedViajeForDispatch, setSelectedViajeForDispatch] = useState<ViajeOperativa | null>(null);
@@ -48,10 +48,12 @@ export const TorreControlView: React.FC = () => {
     if (!selectedViajeForDispatch) return;
     try {
       const conductor = conductores.find(c => c.id === conductorId);
-      let vehiculoId = conductor?.vehiculoAsignadoId;
-      if (!vehiculoId) {
-        const { data: vehList } = await supabase.from('vehiculos').select('id').limit(1);
-        vehiculoId = vehList?.[0]?.id || vehiculos?.[0]?.id;
+      let vehiculoId = (conductor as any)?.vehiculoHabitualId || (conductor as any)?.vehiculoAsignadoId;
+      
+      const currentVeh = vehiculos.find(v => v.id === vehiculoId);
+      if (!vehiculoId || currentVeh?.estado === 'taller' || currentVeh?.estadoOperativo === 'mantenimiento') {
+        const operativeVeh = vehiculos.find(v => (v.estadoOperativo || v.estado) === 'operativo');
+        vehiculoId = operativeVeh?.id || vehiculos?.[0]?.id;
       }
 
       if (!vehiculoId) {
@@ -71,7 +73,8 @@ export const TorreControlView: React.FC = () => {
       });
       if (dispatchError) throw dispatchError;
       
-      toast.success('Viaje asignado y despachado con éxito a la unidad móvil.', 'Despacho Operativo');
+      const assignedVeh = vehiculos.find(v => v.id === vehiculoId);
+      toast.success(`Viaje asignado a ${conductor?.nombreCompleto || 'Conductor'} con móvil ${assignedVeh?.placa || (assignedVeh as any)?.patente || 'VIP'} y despachado con éxito.`, 'Despacho Operativo');
 
       if (refrescarDatos) {
         await refrescarDatos();
@@ -342,8 +345,15 @@ export const TorreControlView: React.FC = () => {
 
               <div className="space-y-3">
                 {conductoresTenant.map((c) => {
-                  const isInMantenimiento = c.vehiculo?.estadoOperativo === 'mantenimiento';
-                  const isBlocked = c.enDescanso || isInMantenimiento;
+                  const vhId = (c as any).vehiculoHabitualId || (c as any).vehiculoAsignadoId;
+                  const vh = vehiculos.find(v => v.id === vhId);
+                  const isVehTaller = vh && (vh.estadoOperativo === 'mantenimiento' || vh.estado === 'taller');
+                  
+                  const todayIso = new Date().toISOString().split('T')[0];
+                  const driverShift = turnosConductores.find(t => t.conductor_id === c.id && t.fecha === todayIso);
+                  const isDescanso = driverShift?.tipo_jornada === 'descanso';
+                  
+                  const isBlocked = c.enDescanso || isDescanso;
                   const isBusy = c.estadoWFM === 'en_ruta';
                   const isAvailable = !isBlocked && !isBusy;
 
@@ -353,49 +363,71 @@ export const TorreControlView: React.FC = () => {
                       className={`p-4 rounded-lg border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         isAvailable
                           ? 'border-slate-200 dark:border-[#212A38] bg-white dark:bg-[#161D27] hover:border-blue-500/80 shadow-xs'
-                          : 'border-slate-200 dark:border-[#212A38] bg-slate-100/80 dark:bg-[#0D1117]/60 opacity-65'
+                          : 'border-slate-200 dark:border-[#212A38] bg-slate-100/80 dark:bg-[#0D1117]/60 opacity-75'
                       }`}
                     >
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold text-slate-900 dark:text-white text-sm">{c.nombreCompleto}</span>
-                          <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-[#212A38] text-slate-800 dark:text-gray-300">
-                            {c.vehiculo?.placa} ({c.vehiculo?.marca})
-                          </span>
+                          {vh ? (
+                            <span className={`text-xs font-mono px-2 py-0.5 rounded font-semibold ${
+                              isVehTaller
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-300'
+                                : 'bg-slate-200 dark:bg-[#212A38] text-slate-800 dark:text-gray-300'
+                            }`}>
+                              🚗 {vh.placa || (vh as any).patente} ({vh.marca}) {isVehTaller ? '⚠️ En Taller' : ''}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">Sin móvil habitual (Pool rotativo)</span>
+                          )}
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-3 font-mono">
-                          <span>Horas turno hoy: <strong>{c.horasConducidasHoy}h / 8h</strong></span>
-                          <span>Ping: {c.ultimaActualizacionGps}</span>
+
+                        {/* Shift Badge & Info */}
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          {driverShift && !isDescanso ? (
+                            <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 font-semibold font-mono border border-blue-200/60 text-[11px]">
+                              🕒 Turno: {driverShift.hora_inicio?.slice(0,5)} - {driverShift.hora_fin?.slice(0,5)} ({driverShift.tipo_jornada.toUpperCase()})
+                            </span>
+                          ) : isDescanso ? (
+                            <span className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-semibold text-[11px] border border-rose-200">
+                              ⛔ En Descanso Legal / Día Libre
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 font-medium text-[11px] border border-amber-200">
+                              ⚠️ Sin turno asignado hoy
+                            </span>
+                          )}
+                          <span className="text-slate-400 font-mono text-[11px]">RUT: {c.rut || 'N/A'}</span>
                         </div>
 
                         {/* Estado y Causa del bloqueo si lo hay */}
                         {isBlocked && (
                           <div className="text-xs text-red-600 dark:text-red-400 font-semibold flex items-center mt-1">
                             <AlertTriangle className="w-3.5 h-3.5 mr-1 shrink-0" />
-                            <span>Bloqueado por WFM: {c.motivoBloqueo || 'Unidad en Taller / Chofer en descanso'}</span>
+                            <span>Bloqueado por WFM: {isDescanso ? 'Jornada de descanso legal' : (c.motivoBloqueo || 'Chofer en descanso')}</span>
                           </div>
                         )}
                         {isBusy && !isBlocked && (
-                          <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                            ● Actualmente en ruta atendiendo otro servicio corporativa.
+                          <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                            ● Actualmente en ruta atendiendo otro servicio corporativo.
                           </div>
                         )}
                       </div>
 
-                      <div className="shrink-0">
+                      <div className="shrink-0 flex items-center">
                         {isAvailable ? (
                           <button
                             onClick={() => handleConfirmDispatch(c.id)}
-                            className="w-full sm:w-auto px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors shadow"
+                            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow cursor-pointer"
                           >
-                            Confirmar Asignación ✓
+                            Despachar Unidad ✓
                           </button>
                         ) : (
                           <button
                             disabled
-                            className="w-full sm:w-auto px-3 py-1.5 rounded bg-slate-200 dark:bg-[#212A38] text-slate-500 dark:text-slate-500 font-semibold text-xs cursor-not-allowed border border-slate-300 dark:border-slate-700"
+                            className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-[#212A38] text-slate-500 dark:text-slate-500 font-semibold text-xs cursor-not-allowed border border-slate-300 dark:border-slate-700"
                           >
-                            Inhabilitada por Sistema
+                            Inhabilitado WFM
                           </button>
                         )}
                       </div>

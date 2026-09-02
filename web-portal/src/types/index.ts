@@ -55,6 +55,19 @@ export type ConductorWFM = Conductor;
 export type VehiculoFlota = Vehiculo;
 export type ViajeOperativa = ViajeOperativo;
 export type EmpresaTenant = ClienteCorporativo;
-export type FuncionarioB2B = any;
-export type DemandaTurnoB2B = any;
 export type PasajeroRutaCheck = any;
+
+export interface TurnoConductor {
+  id: string;
+  conductor_id: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  tipo_jornada: 'manana' | 'tarde' | 'noche' | 'partida' | 'descanso';
+  estado: 'planificado' | 'en_turno' | 'completado' | 'ausente' | 'licencia';
+  notas?: string | null;
+  conductor?: Conductor;
+  created_at?: string;
+  updated_at?: string;
+}
+

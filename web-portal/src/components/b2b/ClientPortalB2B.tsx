@@ -558,20 +558,63 @@ export const ClientPortalB2B: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    const ws = XLSX.utils.json_to_sheet([
-      { rut: "11111111-1", nombre: "Ejemplo Pasajero", direccion: "Av Siempre Viva 123", fecha: "2026-10-15", hora_entrada: "08:00", hora_salida: "18:00", sede_id: "s0000000-0000-0000-0000-000000000000" }
-    ]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Turnos");
-    XLSX.writeFile(wb, "Plantilla_Turnos.xlsx");
-                    setActionMsg('✓ Plantilla de turnos descargada con éxito. Completar en Excel y subirla para realizar el cruce automático.');
+                  onClick={async () => {
+                    try {
+                      const { data: sedesList } = await supabase
+                        .from('sedes')
+                        .select('nombre, direccion')
+                        .eq('cliente_corporativo_id', activeClient?.id);
+
+                      const sedeNombreDefault = sedesList?.[0]?.nombre || 'Planta Principal';
+
+                      const plantillaData = [
+                        {
+                          "RUT": "16482110-3",
+                          "Nombre Completo": "Gonzalo Sepúlveda Maza",
+                          "Teléfono": "+56 9 8111 2233",
+                          "Dirección Recogida": "Av. Los Carrera 1230, Concepción",
+                          "Fecha (DD-MM-AAAA)": "15-10-2026",
+                          "Hora Entrada (HH:MM)": "08:00",
+                          "Hora Salida (HH:MM)": "18:00",
+                          "Sede Destino": sedeNombreDefault
+                        },
+                        {
+                          "RUT": "18942331-K",
+                          "Nombre Completo": "Andrea Morales Valenzuela",
+                          "Teléfono": "+56 9 9222 3344",
+                          "Dirección Recogida": "San Martín 450, Talcahuano",
+                          "Fecha (DD-MM-AAAA)": "15-10-2026",
+                          "Hora Entrada (HH:MM)": "08:00",
+                          "Hora Salida (HH:MM)": "18:00",
+                          "Sede Destino": sedeNombreDefault
+                        }
+                      ];
+
+                      const ws = XLSX.utils.json_to_sheet(plantillaData);
+                      const wb = XLSX.utils.book_new();
+                      XLSX.utils.book_append_sheet(wb, ws, "Nómina_Turnos");
+
+                      if (sedesList && sedesList.length > 0) {
+                        const wsSedes = XLSX.utils.json_to_sheet(sedesList.map(s => ({
+                          "Sede Autorizada": s.nombre,
+                          "Dirección Oficial": s.direccion
+                        })));
+                        XLSX.utils.book_append_sheet(wb, wsSedes, "Sedes_Autorizadas");
+                      }
+
+                      const cleanClientName = (activeClient?.nombre_corporativo || 'Cliente_B2B').replace(/[^a-zA-Z0-9]/g, '_');
+                      XLSX.writeFile(wb, `Plantilla_Turnos_${cleanClientName}.xlsx`);
+                      setActionMsg('✓ Plantilla oficial generada con las sedes corporativas de su empresa.');
+                    } catch (err: any) {
+                      console.error(err);
+                      setActionMsg('⚠️ Error generando plantilla Excel: ' + err.message);
+                    }
                     setTimeout(() => setActionMsg(null), 6500);
                   }}
                   className="px-3.5 py-2 rounded-lg border border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs cursor-pointer"
                 >
                   <Download className="w-4 h-4 shrink-0" />
-                  <span>Descargar Plantilla Excel (.XLS)</span>
+                  <span>Descargar Plantilla Excel (.XLSX)</span>
                 </button>
 
                 <button
@@ -583,32 +626,60 @@ export const ClientPortalB2B: React.FC = () => {
                   <span>Subir Planilla de Turnos (.XLSX)</span>
                 </button>
                 <input type="file" ref={fileTurnosInputRef} accept=".xls,.xlsx,.csv" onChange={async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-      
-      const { data: res, error } = await supabase.rpc('import_b2b_shifts', { p_shifts: json });
-      if (error) throw error;
-      
-      setActionMsg(`✓ ¡Planilla procesada con éxito! Se importaron turnos.`);
-      
-      const { data: tData } = await supabase.from('turnos_pasajeros').select('*, pasajero:pasajero_id(nombre_completo, rut)').eq('cliente_corporativo_id', activeClient?.id).order('fecha', {ascending: false});
-      if (tData) setTurnos(tData);
-      
-      if (fileTurnosInputRef.current) fileTurnosInputRef.current.value = '';
-    } catch (err: any) {
-      console.error(err);
-      setActionMsg(`⚠️ Error importando: ${err.message}`);
-    }
-    setTimeout(() => setActionMsg(null), 6500);
-  }} className="hidden" />
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data);
+                    const rawJson: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                    
+                    const parseExcelDate = (val: any): string => {
+                      if (typeof val === 'number') {
+                        const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+                        return `${date.getUTCDate().toString().padStart(2, '0')}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}-${date.getUTCFullYear()}`;
+                      }
+                      return String(val || '').trim();
+                    };
+
+                    const parseExcelTime = (val: any): string => {
+                      if (typeof val === 'number') {
+                        const totalSeconds = Math.round(val * 86400);
+                        const hours = Math.floor(totalSeconds / 3600);
+                        const minutes = Math.floor((totalSeconds % 3600) / 60);
+                        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                      }
+                      return String(val || '').trim();
+                    };
+
+                    const normalizedShifts = rawJson.map(row => ({
+                      rut: row.rut || row.RUT || row.Rut,
+                      nombre: row.nombre || row['Nombre Completo'] || row.Nombre,
+                      telefono: row.telefono || row['Teléfono'] || row.Telefono,
+                      direccion: row.direccion || row['Dirección Recogida'] || row['Dirección'] || row.Direccion,
+                      fecha: parseExcelDate(row.fecha || row['Fecha (DD-MM-AAAA)'] || row.Fecha),
+                      hora_entrada: parseExcelTime(row.hora_entrada || row['Hora Entrada (HH:MM)'] || row['Hora Entrada']),
+                      hora_salida: parseExcelTime(row.hora_salida || row['Hora Salida (HH:MM)'] || row['Hora Salida']),
+                      sede: row.sede || row['Sede Destino'] || row.Sede || row.sede_id
+                    }));
+
+                    const { data: res, error } = await supabase.rpc('import_b2b_shifts', { p_shifts: normalizedShifts });
+                    if (error) throw error;
+                    
+                    const count = (res as any)?.turnos_creados ?? rawJson.length;
+                    setActionMsg(`✓ ¡Planilla procesada con éxito! Se importaron ${count} turnos corporativos.`);
+                    
+                    const { data: tData } = await supabase.from('turnos_pasajeros').select('*, pasajero:pasajero_id(nombre_completo, rut)').eq('cliente_corporativo_id', activeClient?.id).order('fecha', {ascending: false});
+                    if (tData) setTurnos(tData);
+                    
+                    if (fileTurnosInputRef.current) fileTurnosInputRef.current.value = '';
+                  } catch (err: any) {
+                    console.error(err);
+                    setActionMsg(`⚠️ Error importando planilla: ${err.message}`);
+                  }
+                  setTimeout(() => setActionMsg(null), 6500);
+                }} className="hidden" />
               </div>
             </div>
-
-            {/* Cruce de Horarios (Ingreso / Salida) */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-slate-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
                 <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0" />

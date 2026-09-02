@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import type { ConductorWFM, ViajeOperativa, VehiculoFlota, ClienteCorporativo, AvisoOperativo } from '../types';
+import type { ConductorWFM, ViajeOperativa, VehiculoFlota, ClienteCorporativo, AvisoOperativo, TurnoConductor } from '../types';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 
@@ -8,6 +8,9 @@ interface AppContextType {
   vehiculos: VehiculoFlota[];
   clientes: ClienteCorporativo[];
   viajes: ViajeOperativa[];
+  turnosConductores: TurnoConductor[];
+  crearTurnoConductor: (turno: Partial<TurnoConductor>) => Promise<void>;
+  eliminarTurnoConductor: (id: string) => Promise<void>;
   currentRoleView: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor';
   setCurrentRoleView: (role: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor') => void;
   isDarkMode: boolean;
@@ -50,6 +53,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [vehiculos, setVehiculos] = useState<VehiculoFlota[]>([]);
   const [clientes, setClientes] = useState<ClienteCorporativo[]>([]);
   const [viajes, setViajes] = useState<ViajeOperativa[]>([]);
+  const [turnosConductores, setTurnosConductores] = useState<TurnoConductor[]>([]);
   const [currentRoleView, setCurrentRoleViewInternal] = useState<'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor'>('admin');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
@@ -183,7 +187,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           numeroLicencia: c.tipo_licencia || '',
           puntualidad: '5.0 / 5.0',
           serviciosMes: 0,
-          vehiculoAsignadoId: undefined,
+          vehiculoAsignadoId: c.vehiculo_habitual_id || undefined,
+          vehiculoHabitualId: c.vehiculo_habitual_id || undefined,
           estadoWFM: (c.estado === 'activo' ? 'disponible' : 'inactivo') as any,
           ultimaLatitud: -36.8269,
           ultimaLongitud: -73.0498,
@@ -191,6 +196,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           enDescanso: false,
           motivoBloqueo: undefined
         })));
+      }
+
+      const { data: dbTurnosCond } = await supabase.from('turnos_conductores').select('*, conductor:conductores(id, nombre_completo, rut)').order('fecha', { ascending: false });
+      if (dbTurnosCond) {
+        setTurnosConductores(dbTurnosCond as any);
       }
       if (dbClientes) {
         setClientes(dbClientes.map(cl => ({
@@ -693,6 +703,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dbObj.perfil_id = perfilId;
       }
       
+      if ((cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId) {
+        dbObj.vehiculo_habitual_id = (cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId;
+      }
+      
       const { data: insertedData, error: insertError } = await supabase
         .from('conductores')
         .insert([dbObj])
@@ -713,7 +727,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         finalId = insertedData.id;
       }
 
-      setConductores(prev => [{ ...cond, id: finalId, vencimientoLicencia: finalVencimiento }, ...prev]);
+      setConductores(prev => [{ ...cond, id: finalId, vencimientoLicencia: finalVencimiento, vehiculoHabitualId: dbObj.vehiculo_habitual_id, vehiculoAsignadoId: dbObj.vehiculo_habitual_id }, ...prev]);
     } catch (err: any) {
       console.error('Error general agregando conductor:', err);
       toast.error('Error al agregar conductor: ' + (err?.message || err), 'Error');
@@ -734,10 +748,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         : trimmed;
     }
     if (updates.estadoWFM) dbUpdates.estado = updates.estadoWFM === 'inactivo' ? 'inactivo' : 'activo';
+    if ((updates as any).vehiculoHabitualId !== undefined || (updates as any).vehiculoAsignadoId !== undefined) {
+      dbUpdates.vehiculo_habitual_id = (updates as any).vehiculoHabitualId || (updates as any).vehiculoAsignadoId || null;
+    }
 
     const { error } = await supabase.from('conductores').update(dbUpdates).eq('id', id);
     if (error) console.error('Error actualizando conductor:', error);
-    setConductores(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    setConductores(prev => prev.map(c => c.id === id ? { 
+      ...c, 
+      ...updates, 
+      vehiculoHabitualId: dbUpdates.vehiculo_habitual_id !== undefined ? dbUpdates.vehiculo_habitual_id : (c as any).vehiculoHabitualId,
+      vehiculoAsignadoId: dbUpdates.vehiculo_habitual_id !== undefined ? dbUpdates.vehiculo_habitual_id : (c as any).vehiculoAsignadoId
+    } : c));
+  };
+
+  const crearTurnoConductor = async (turno: Partial<TurnoConductor>) => {
+    try {
+      const { data, error } = await supabase
+        .from('turnos_conductores')
+        .insert([{
+          conductor_id: turno.conductor_id,
+          fecha: turno.fecha,
+          hora_inicio: turno.hora_inicio,
+          hora_fin: turno.hora_fin,
+          tipo_jornada: turno.tipo_jornada || 'manana',
+          estado: turno.estado || 'planificado',
+          notas: turno.notas || null
+        }])
+        .select('*, conductor:conductores(id, nombre_completo, rut)')
+        .single();
+
+      if (error) {
+        console.error('Error creando turno conductor:', error);
+        toast.error('Error al guardar turno: ' + error.message, 'Turno Conductor');
+        return;
+      }
+
+      if (data) {
+        setTurnosConductores(prev => [data as any, ...prev]);
+        toast.success('Turno de conductor asignado con éxito.', 'Turno Asignado');
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Fallo creando turno: ' + e.message, 'Error');
+    }
+  };
+
+  const eliminarTurnoConductor = async (id: string) => {
+    try {
+      const { error } = await supabase.from('turnos_conductores').delete().eq('id', id);
+      if (error) throw error;
+      setTurnosConductores(prev => prev.filter(t => t.id !== id));
+      toast.info('Turno removido del calendario.', 'Turno Eliminado');
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Error eliminando turno: ' + e.message, 'Error');
+    }
   };
 
   const eliminarConductor = async (id: string) => {
@@ -800,6 +866,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         agregarConductor,
         actualizarConductor,
         eliminarConductor,
+        turnosConductores,
+        crearTurnoConductor,
+        eliminarTurnoConductor,
         agregarCliente,
         actualizarCliente,
         refrescarDatos: syncFromSupabase,

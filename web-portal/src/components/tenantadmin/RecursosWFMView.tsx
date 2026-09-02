@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../ui/Toast';
 import type { VehiculoFlota, ConductorWFM } from '../../types';
-import { Car, User, Plus, Edit3, Trash2, ShieldCheck, Wrench, X, Search, Image as ImageIcon, Download } from 'lucide-react';
+import { Car, User, Plus, Edit3, Trash2, ShieldCheck, Wrench, X, Search, Image as ImageIcon, Download, Calendar, Clock } from 'lucide-react';
 import { ConfirmModal } from '../common/ConfirmModal';
 
 interface RecursosWFMViewProps {
-  initialTab?: 'conductores' | 'flota';
+  initialTab?: 'conductores' | 'flota' | 'turnos';
 }
 
 export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) => {
-  const { vehiculos, conductores, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor } = useApp();
+  const { vehiculos, conductores, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor, turnosConductores, crearTurnoConductor, eliminarTurnoConductor } = useApp();
   const toast = useToast();
-  const [subTab, setSubTab] = useState<'conductores' | 'flota'>(initialTab || 'conductores');
+  const [subTab, setSubTab] = useState<'conductores' | 'flota' | 'turnos'>(initialTab || 'conductores');
   const [searchQuery, setSearchQuery] = useState('');
   const [vehiculoToDelete, setVehiculoToDelete] = useState<VehiculoFlota | null>(null);
   const [conductorToDelete, setConductorToDelete] = useState<ConductorWFM | null>(null);
@@ -36,6 +36,16 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const [condTelefono, setCondTelefono] = useState('');
   const [condEmail, setCondEmail] = useState('');
   const [condFoto, setCondFoto] = useState('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop');
+  const [condVehiculoHabitualId, setCondVehiculoHabitualId] = useState('');
+
+  // Form states para Turnos de Conductores
+  const [showShiftModal, setShowShiftModal] = useState(false);
+  const [shiftConductorId, setShiftConductorId] = useState('');
+  const [shiftFecha, setShiftFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [shiftHoraInicio, setShiftHoraInicio] = useState('06:00');
+  const [shiftHoraFin, setShiftHoraFin] = useState('14:00');
+  const [shiftTipo, setShiftTipo] = useState<'manana' | 'tarde' | 'noche' | 'partida' | 'descanso'>('manana');
+  const [shiftNotas, setShiftNotas] = useState('');
 
   // Form states para Vehículo (Patente, Marca, Modelo, Color, Kilometraje, Pasajeros)
   const [placa, setPlaca] = useState('');
@@ -73,6 +83,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     setCondTelefono('+56 9 ');
     setCondEmail('');
     setCondFoto('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop');
+    setCondVehiculoHabitualId('');
     setShowConductorModal(true);
   };
 
@@ -85,6 +96,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     setCondTelefono(c.telefono || '+56 9 ');
     setCondEmail(c.email || '');
     setCondFoto(c.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop');
+    setCondVehiculoHabitualId((c as any).vehiculoHabitualId || (c as any).vehiculoAsignadoId || '');
     setShowConductorModal(true);
   };
 
@@ -100,11 +112,13 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         telefono: condTelefono,
         avatarUrl: condFoto,
         tipoLicencia: condLicencia,
-        vencimientoLicencia: finalVencimiento
-      });
+        vencimientoLicencia: finalVencimiento,
+        vehiculoHabitualId: condVehiculoHabitualId || undefined,
+        vehiculoAsignadoId: condVehiculoHabitualId || undefined
+      } as any);
       toast.success(`Información del conductor "${condNombre}" actualizada correctamente.`, 'Conductor Actualizado');
     } else {
-      const nuevo: ConductorWFM = {
+      const nuevo: any = {
         id: `cond-${Date.now()}`,
         nombreCompleto: condNombre,
         rut: condRut,
@@ -113,6 +127,8 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         avatarUrl: condFoto || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
         tipoLicencia: condLicencia,
         vencimientoLicencia: finalVencimiento,
+        vehiculoHabitualId: condVehiculoHabitualId || undefined,
+        vehiculoAsignadoId: condVehiculoHabitualId || undefined,
         puntualidad: '5.0 / 5.0',
         serviciosMes: 0,
         estadoWFM: 'disponible',
@@ -126,6 +142,25 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     }
     setShowConductorModal(false);
     setEditingConductor(null);
+  };
+
+  const handleSaveShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shiftConductorId) {
+      toast.warning('Debe seleccionar un conductor para el turno.', 'Conductor Requerido');
+      return;
+    }
+    await crearTurnoConductor({
+      conductor_id: shiftConductorId,
+      fecha: shiftFecha,
+      hora_inicio: shiftHoraInicio,
+      hora_fin: shiftHoraFin,
+      tipo_jornada: shiftTipo,
+      estado: 'planificado',
+      notas: shiftNotas || null
+    });
+    setShowShiftModal(false);
+    setShiftNotas('');
   };
 
   const vehiculosTenant = vehiculos;
@@ -240,32 +275,22 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 <Car className="w-3.5 h-3.5 mr-1" />
                 <span>Vehículos ({vehiculosTenant.length})</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setSubTab('turnos')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center space-x-1.5 ${
+                  subTab === 'turnos'
+                    ? 'bg-[#0F172A] text-white dark:bg-white dark:text-slate-900 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#212A38]'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 mr-1" />
+                <span>Pauta de Turnos ({turnosConductores.length})</span>
+              </button>
             </div>
 
             {subTab === 'conductores' ? (
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fakeApk = "PK\x03\x04--- EXPO NATIVE CONDUC APK FOR TENANT DISTRIBUTION ---";
-                    const blob = new Blob([fakeApk], { type: 'application/vnd.android.package-archive' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `App_Conductor_${'Neira Transportes'.replace(/[^a-zA-Z0-9]/g, '_')}_v2026.8.apk`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    setActionMsg("✓ Paquete APK para Android descargado (Expo/React Native). Listo para distribución en su nómina de conductores.");
-                    setTimeout(() => setActionMsg(null), 5000);
-                  }}
-                  className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center shadow-sm cursor-pointer"
-                  title="Descargar instalador APK v2026.8 optimizado en Expo (Sin Capacitor)"
-                >
-                  <Download className="w-3.5 h-3.5 mr-1.5 shrink-0" />
-                  <span>Descargar APK Conductor (.apk)</span>
-                </button>
                 <button
                   type="button"
                   onClick={handleOpenNewConductor}
@@ -275,14 +300,23 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                   <span>Crear Conductor</span>
                 </button>
               </div>
-            ) : (
+            ) : subTab === 'flota' ? (
               <button
                 type="button"
                 onClick={handleOpenNewVehiculo}
-                className="px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-semibold text-xs transition-colors flex items-center shadow-sm"
+                className="px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-semibold text-xs transition-colors flex items-center shadow-sm cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
                 <span>Crear Vehículo</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowShiftModal(true)}
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center shadow-sm cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                <span>Asignar Turno Conductor</span>
               </button>
             )}
           </div>
@@ -339,6 +373,13 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                         <div>
                           <div className="font-bold text-slate-900 dark:text-white text-sm">{c.nombreCompleto}</div>
                           <div className="text-slate-500 dark:text-slate-400 font-mono text-[11px] mt-0.5">RUT: {c.rut || '12.489.102-K'}</div>
+                          {((c as any).vehiculoHabitualId || (c as any).vehiculoAsignadoId) ? (
+                            <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] mt-0.5 flex items-center">
+                              🚗 Móvil: {vehiculos.find(v => v.id === ((c as any).vehiculoHabitualId || (c as any).vehiculoAsignadoId))?.placa || (vehiculos.find(v => v.id === ((c as any).vehiculoHabitualId || (c as any).vehiculoAsignadoId)) as any)?.patente || 'Asignado'}
+                            </div>
+                          ) : (
+                            <div className="text-slate-400 italic text-[11px] mt-0.5">Sin móvil habitual (Pool rotativo)</div>
+                          )}
                         </div>
                       </td>
                       <td className="py-4 px-4">
@@ -492,6 +533,115 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         </div>
       )}
 
+      {/* VISTA 3: GESTIÓN DE TURNOS & JORNADAS DE CONDUCTORES (WFM) */}
+      {subTab === 'turnos' && (
+        <div className="enterprise-card overflow-hidden bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] shadow-xs">
+          <div className="p-4 border-b border-slate-200 dark:border-[#212A38] bg-slate-50/50 dark:bg-[#0D1117]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-500" />
+                <span>Pauta y Calendario de Turnos de Conductores</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Valida las horas laborales de la nómina y previene despachos de choferes fuera de jornada en la Torre de Control.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowShiftModal(true)}
+              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              <span>Programar Turno</span>
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 dark:bg-[#0D1117] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-[#212A38]">
+                <tr>
+                  <th className="py-3.5 px-4">CONDUCTOR</th>
+                  <th className="py-3.5 px-4">FECHA (DD-MM-AAAA)</th>
+                  <th className="py-3.5 px-4">HORARIO JORNADA</th>
+                  <th className="py-3.5 px-4">TIPO DE TURNO</th>
+                  <th className="py-3.5 px-4">ESTADO</th>
+                  <th className="py-3.5 px-4">OBSERVACIONES</th>
+                  <th className="py-3.5 px-4 text-right">ACCIÓN</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-[#212A38] text-slate-700 dark:text-gray-300">
+                {turnosConductores.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
+                      <div className="max-w-sm mx-auto space-y-2">
+                        <Clock className="w-8 h-8 text-slate-400 mx-auto" />
+                        <div className="font-semibold text-sm text-slate-700 dark:text-slate-300">No hay turnos de choferes asignados</div>
+                        <p className="text-xs text-slate-400">Programa las jornadas de tus conductores para que la central operativa valide la disponibilidad en tiempo real.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  turnosConductores.map(t => {
+                    const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
+                    let fechaChile = t.fecha;
+                    if (t.fecha && t.fecha.includes('-')) {
+                      const parts = t.fecha.split('-');
+                      if (parts.length === 3 && parts[0].length === 4) {
+                        fechaChile = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                      }
+                    }
+
+                    return (
+                      <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-[#1C2533]/80 transition-colors">
+                        <td className="py-4 px-4 font-bold text-slate-900 dark:text-white">
+                          {cond?.nombre_completo || cond?.nombreCompleto || 'Conductor'}
+                          <span className="text-slate-400 font-mono text-[11px] block font-normal">RUT: {cond?.rut || 'N/A'}</span>
+                        </td>
+                        <td className="py-4 px-4 font-mono font-semibold text-slate-800 dark:text-slate-200">
+                          📅 {fechaChile}
+                        </td>
+                        <td className="py-4 px-4 font-mono font-bold text-blue-600 dark:text-blue-400">
+                          {t.hora_inicio?.slice(0, 5)} - {t.hora_fin?.slice(0, 5)} hrs
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase ${
+                            t.tipo_jornada === 'manana' ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' :
+                            t.tipo_jornada === 'tarde' ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800' :
+                            t.tipo_jornada === 'noche' ? 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800' :
+                            t.tipo_jornada === 'descanso' ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800' :
+                            'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                          }`}>
+                            {t.tipo_jornada}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-xs flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            {t.estado.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-slate-500 dark:text-slate-400 text-xs">
+                          {t.notas || 'Sin observaciones'}
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => eliminarTurnoConductor(t.id)}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
+                            title="Eliminar turno"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* DRAWER MODAL PARA ALTA / EDICIÓN DE VEHÍCULOS */}
       {showVehiculoModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
@@ -632,6 +782,23 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 </div>
               </div>
 
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Móvil Habitual Asignado:</label>
+                <select
+                  value={condVehiculoHabitualId}
+                  onChange={(e) => setCondVehiculoHabitualId(e.target.value)}
+                  className="enterprise-input w-full text-xs font-semibold"
+                >
+                  <option value="">-- Sin vehículo habitual (Pool rotativo dinámico) --</option>
+                  {vehiculosTenant.map(v => (
+                    <option key={v.id} value={v.id}>
+                      🚗 {v.placa || (v as any).patente} — {v.marca} {v.modelo} (Capacidad: {v.capacidad || (v as any).capacidadPasajeros} pas. | {(v.estadoOperativo || v.estado || 'operativo').toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-slate-400 block mt-1">Este móvil se auto-asignará de forma inmediata al despachar viajes en la Torre de Control.</span>
+              </div>
+
               <div className="p-3.5 rounded-lg bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-slate-700 dark:text-slate-300 text-xs flex items-center space-x-2">
                 <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
                 <span>Al guardar, el conductor quedará en estado <strong>DISPONIBLE</strong> en la Torre de Control WFM.</span>
@@ -644,6 +811,130 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 <button type="submit" className="px-6 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all flex items-center space-x-1.5">
                   <User className="w-3.5 h-3.5 mr-1" />
                   <span>{editingConductor ? 'Guardar Cambios ✓' : 'Registrar Conductor en WFM ✓'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PROGRAMAR TURNO DE CONDUCTOR */}
+      {showShiftModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="enterprise-card p-6 max-w-md w-full space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#212A38] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-blue-500" />
+                  <span>Programar Turno de Conductor</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Establece la jornada para control horario y validación en despacho.
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowShiftModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+
+            <form onSubmit={handleSaveShift} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Conductor (*):</label>
+                <select
+                  value={shiftConductorId}
+                  onChange={(e) => setShiftConductorId(e.target.value)}
+                  required
+                  className="enterprise-input w-full text-xs font-semibold cursor-pointer"
+                >
+                  <option value="">-- Seleccione Conductor --</option>
+                  {conductoresTenant.map(c => (
+                    <option key={c.id} value={c.id}>
+                      👤 {c.nombreCompleto} (RUT: {c.rut || 'N/A'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Fecha Turno (*):</label>
+                  <input
+                    type="date"
+                    value={shiftFecha}
+                    onChange={(e) => setShiftFecha(e.target.value)}
+                    required
+                    className="enterprise-input w-full text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Tipo de Jornada (*):</label>
+                  <select
+                    value={shiftTipo}
+                    onChange={(e: any) => {
+                      setShiftTipo(e.target.value);
+                      if (e.target.value === 'manana') { setShiftHoraInicio('06:00'); setShiftHoraFin('14:00'); }
+                      else if (e.target.value === 'tarde') { setShiftHoraInicio('14:00'); setShiftHoraFin('22:00'); }
+                      else if (e.target.value === 'noche') { setShiftHoraInicio('22:00'); setShiftHoraFin('06:00'); }
+                      else if (e.target.value === 'partida') { setShiftHoraInicio('07:00'); setShiftHoraFin('19:00'); }
+                      else if (e.target.value === 'descanso') { setShiftHoraInicio('00:00'); setShiftHoraFin('23:59'); }
+                    }}
+                    className="enterprise-input w-full text-xs font-bold text-blue-600 dark:text-blue-400 cursor-pointer"
+                  >
+                    <option value="manana">Mañana (06:00 - 14:00)</option>
+                    <option value="tarde">Tarde (14:00 - 22:00)</option>
+                    <option value="noche">Noche (22:00 - 06:00)</option>
+                    <option value="partida">Jornada Partida / Completa</option>
+                    <option value="descanso">Día Libre / Descanso Legal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Hora Inicio (*):</label>
+                  <input
+                    type="time"
+                    value={shiftHoraInicio}
+                    onChange={(e) => setShiftHoraInicio(e.target.value)}
+                    required
+                    className="enterprise-input w-full text-xs font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Hora Término (*):</label>
+                  <input
+                    type="time"
+                    value={shiftHoraFin}
+                    onChange={(e) => setShiftHoraFin(e.target.value)}
+                    required
+                    className="enterprise-input w-full text-xs font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Observaciones / Ruta Asignada:</label>
+                <input
+                  type="text"
+                  value={shiftNotas}
+                  onChange={(e) => setShiftNotas(e.target.value)}
+                  placeholder="Ej. Cobertura Planta Coronel / Huachipato"
+                  className="enterprise-input w-full text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-[#212A38]">
+                <button
+                  type="button"
+                  onClick={() => setShowShiftModal(false)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white border border-slate-300 dark:border-[#303B4E] cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5 mr-1" />
+                  <span>Guardar Turno ✓</span>
                 </button>
               </div>
             </form>
