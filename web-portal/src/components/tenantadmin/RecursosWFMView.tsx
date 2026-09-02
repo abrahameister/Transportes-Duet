@@ -21,6 +21,28 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleDownloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      {
+        'RUT Conductor': '12345678-9',
+        'Fecha (DD-MM-YYYY)': '25-10-2024',
+        'Hora Inicio': '08:00',
+        'Hora Fin': '16:00',
+        'Jornada': 'manana'
+      },
+      {
+        'RUT Conductor': '9876543-2',
+        'Fecha (DD-MM-YYYY)': '26-10-2024',
+        'Hora Inicio': '16:00',
+        'Hora Fin': '00:00',
+        'Jornada': 'tarde'
+      }
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Plantilla Turnos');
+    XLSX.writeFile(wb, 'plantilla_carga_turnos.xlsx');
+  };
+
   const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -35,22 +57,54 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         const data = XLSX.utils.sheet_to_json(ws);
         
         let successCount = 0;
+        let errorCount = 0;
         for (const row of data as any[]) {
           const rut = row['RUT'] || row['RUT Conductor'];
+          const rawDate = row['Fecha (DD-MM-YYYY)'] || row['Fecha'];
+          
+          let finalDate = new Date().toISOString().split('T')[0];
+          if (typeof rawDate === 'number') {
+            const d = new Date(Math.round((rawDate - 25569) * 86400 * 1000));
+            finalDate = d.toISOString().split('T')[0];
+          } else if (typeof rawDate === 'string') {
+            const parts = rawDate.split(/[-/]/);
+            if (parts.length === 3) {
+               // Assuming DD-MM-YYYY
+               finalDate = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+            } else {
+               finalDate = rawDate;
+            }
+          }
+
           const cond = conductores.find(c => c.rut === rut);
           if (cond) {
+            // Prevenir duplicados en la misma fecha
+            const existing = turnosConductores.find(t => t.conductor_id === cond.id && t.fecha === finalDate);
+            if (existing) {
+              errorCount++;
+              continue;
+            }
+
             await crearTurnoConductor({
               conductor_id: cond.id,
-              fecha: row['Fecha (DD-MM-YYYY)'] || new Date().toISOString().split('T')[0],
+              vehiculo_id: (cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId || undefined,
+              fecha: finalDate,
               hora_inicio: row['Hora Inicio'] || '08:00',
               hora_fin: row['Hora Fin'] || '18:00',
               tipo_jornada: row['Jornada']?.toLowerCase() || 'manana',
               estado: 'planificado',
             });
             successCount++;
+          } else {
+            errorCount++;
           }
         }
-        toast.success(`Se importaron ${successCount} turnos correctamente.`, 'Importación Exitosa');
+        
+        if (errorCount > 0) {
+          toast.warning(`Se importaron ${successCount} turnos. Se omitieron ${errorCount} por RUT inválido o porque el turno ya existía en esa fecha.`, 'Importación Parcial');
+        } else {
+          toast.success(`Se importaron ${successCount} turnos correctamente.`, 'Importación Exitosa');
+        }
       } catch (error) {
         console.error(error);
         toast.error('Error al procesar el archivo Excel.', 'Fallo de Lectura');
@@ -606,11 +660,20 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
               <input type="file" ref={fileInputRef} onChange={handleExcelUpload} accept=".xlsx, .xls, .csv" className="hidden" />
               <button
                 type="button"
+                onClick={handleDownloadTemplate}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-[#212A38] text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors flex items-center space-x-1.5"
+                title="Descargar Plantilla Excel"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Plantilla</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setViewModeTurnos(viewModeTurnos === 'lista' ? 'matriz' : 'lista')}
                 className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-[#212A38] text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors flex items-center space-x-1.5"
               >
                 <Calendar className="w-3.5 h-3.5" />
-                <span>Ver como {viewModeTurnos === 'lista' ? 'Matriz Semanal' : 'Lista Detallada'}</span>
+                <span>Ver como {viewModeTurnos === 'lista' ? 'Matriz' : 'Lista'}</span>
               </button>
               <button
                 type="button"
