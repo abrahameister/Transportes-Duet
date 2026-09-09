@@ -86,18 +86,19 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
 // Role Guard: Routes based on role
 const AppRouter = () => {
   const { currentRoleView, userRole } = useApp();
+  const normalizedRole = userRole?.toLowerCase?.() ?? userRole;
   let renderedView = null;
 
-  if (currentRoleView === 'admin' && userRole === 'admin') {
+  if (currentRoleView === 'admin' && normalizedRole === 'admin') {
     renderedView = <AdminPortal />;
-  } else if (currentRoleView === 'cliente_b2b' && userRole === 'cliente_b2b') {
+  } else if (currentRoleView === 'cliente_b2b' && normalizedRole === 'cliente_b2b') {
     renderedView = <ClientPortalB2B />;
-  } else if (currentRoleView === 'app_conductor' && (userRole === 'admin' || userRole === 'app_conductor')) {
+  } else if (currentRoleView === 'app_conductor' && (normalizedRole === 'admin' || normalizedRole === 'app_conductor' || normalizedRole === 'conductor')) {
     renderedView = <ConductorApp />;
   } else {
-    // Fallback de seguridad en caso de que intenten forzar una vista prohibida
-    if (userRole === 'cliente_b2b') renderedView = <ClientPortalB2B />;
-    else if (userRole === 'app_conductor') renderedView = <ConductorApp />;
+    // Fallback de seguridad: redirige según el rol real del usuario autenticado
+    if (normalizedRole === 'cliente_b2b') renderedView = <ClientPortalB2B />;
+    else if (normalizedRole === 'conductor' || normalizedRole === 'app_conductor') renderedView = <ConductorApp />;
     else renderedView = <AdminPortal />;
   }
 

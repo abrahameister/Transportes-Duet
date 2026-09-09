@@ -170,15 +170,25 @@ export const ClientesTarifacionView: React.FC = () => {
 
     if (edgeError) {
       console.error('Error invocando invite-b2b:', edgeError);
-      let realErrorMessage = edgeError.message;
+      
+      // Extraer mensaje legible del error del SDK de Supabase Functions.
+      // FunctionsHttpError expone el body en edgeError.context (Response object).
+      let realErrorMessage = 'Error desconocido al invocar la función.';
       try {
-        if (edgeError.context) {
-          const errorContext = await edgeError.context.json();
-          if (errorContext && errorContext.error) {
-            realErrorMessage = errorContext.error;
-          }
+        if (typeof edgeError.message === 'string' && edgeError.message && edgeError.message !== '[object Object]') {
+          realErrorMessage = edgeError.message;
+        } else if (edgeError.context && typeof edgeError.context.json === 'function') {
+          const errorBody = await edgeError.context.json();
+          realErrorMessage = errorBody?.error || errorBody?.message || JSON.stringify(errorBody);
+        } else if (edgeError.context && typeof edgeError.context.text === 'function') {
+          realErrorMessage = await edgeError.context.text();
+        } else {
+          realErrorMessage = JSON.stringify(edgeError);
         }
-      } catch (e) {}
+      } catch (_parseErr) {
+        realErrorMessage = String(edgeError?.message ?? edgeError);
+      }
+      
       toast.error('Error al enviar invitación: ' + realErrorMessage, 'Fallo de Invitación');
     } else {
       actualizarCliente(cl.id, { invitacionEnviada: true });

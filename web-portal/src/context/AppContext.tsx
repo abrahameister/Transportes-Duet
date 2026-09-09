@@ -61,7 +61,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
-  const userRole = useMemo(() => userProfile?.rol || authUser?.user_metadata?.rol || 'admin', [userProfile, authUser]);
+  const userRole = useMemo(() => {
+    const raw = userProfile?.rol || authUser?.user_metadata?.rol || 'admin';
+    return typeof raw === 'string' ? raw.toLowerCase() : raw;
+  }, [userProfile, authUser]);
 
   const [activeClienteB2BId, setActiveClienteB2BId] = useState<string | null>(null);
 
@@ -323,7 +326,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (error || !perfil) {
           console.error("Perfil no encontrado", error);
-          if (mounted) setAuthUser(null);
+          if (mounted) {
+            setAuthUser(null);
+            setAuthLoading(false);
+          }
           if (!isRecoveryPath) {
             await supabase.auth.signOut();
           }
@@ -332,7 +338,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (perfil.estado !== 'activo') {
           console.warn("Usuario inactivo en espera de activación o restablecimiento.");
-          if (mounted) setAuthUser(null);
+          if (mounted) {
+            setAuthUser(null);
+            setAuthLoading(false);
+          }
           if (!isRecoveryPath) {
             await supabase.auth.signOut();
           }
