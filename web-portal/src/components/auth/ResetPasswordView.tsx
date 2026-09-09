@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Lock, ArrowRight, CheckCircle, RefreshCcw } from 'lucide-react';
+import { Shield, Lock, ArrowRight, CheckCircle, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export const ResetPasswordView: React.FC = () => {
   const [password, setPassword] = useState<string>('');
@@ -9,20 +9,110 @@ export const ResetPasswordView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [success, setSuccess] = useState<boolean>(false);
+  const [sessionReady, setSessionReady] = useState<boolean>(false);
+  const [verifyingSession, setVerifyingSession] = useState<boolean>(true);
   
   const navigate = useNavigate();
   const brandName = 'Neira Transportes';
 
   useEffect(() => {
-    // Supabase will automatically parse the hash token (#access_token=...) and establish a temporary session
-    // when the user arrives here from an email link.
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        // setError('El enlace de recuperación es inválido o ha expirado.');
+    let mounted = true;
+
+    const establishRecoverySession = async () => {
+      try {
+        // 1. Revisar si hay error explícito en hash (#error=...) o search (?error=...)
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const searchParams = new URLSearchParams(window.location.search);
+
+        const errorDesc = hashParams.get('error_description') || searchParams.get('error_description');
+        if (errorDesc) {
+          if (mounted) {
+            setError(`El enlace es inválido o ha expirado: ${decodeURIComponent(errorDesc).replace(/\+/g, ' ')}`);
+            setVerifyingSession(false);
+          }
+          return;
+        }
+
+        // 2. Si viene PKCE code (?code=...), intercambiarlo por sesión
+        const code = searchParams.get('code');
+        if (code) {
+          const { data: exchangeData, error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeErr) {
+            console.warn('Error intercambiando código de recuperación:', exchangeErr.message);
+          } else if (exchangeData?.session) {
+            if (mounted) {
+              setSessionReady(true);
+              setVerifyingSession(false);
+            }
+            return;
+          }
+        }
+
+        // 3. Si viene token en hash (#access_token=...&refresh_token=...)
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        if (accessToken && refreshToken) {
+          const { data: setSessionData, error: setSessionErr } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          if (!setSessionErr && setSessionData?.session) {
+            if (mounted) {
+              setSessionReady(true);
+              setVerifyingSession(false);
+            }
+            return;
+          }
+        }
+
+        // 4. Verificar si ya existe sesión activa en memoria/localStorage
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          if (mounted) {
+            setSessionReady(true);
+            setVerifyingSession(false);
+          }
+          return;
+        }
+
+        // 5. Dar un margen de 2 segundos para que el listener detectSessionInUrl termine
+        const timeout = setTimeout(async () => {
+          if (!mounted) return;
+          const { data: { session: delayedSession } } = await supabase.auth.getSession();
+          if (delayedSession) {
+            setSessionReady(true);
+          } else {
+            setError('No se detectó una sesión activa de recuperación. Es posible que el enlace haya expirado o ya haya sido utilizado.');
+          }
+          setVerifyingSession(false);
+        }, 2000);
+
+        return () => clearTimeout(timeout);
+      } catch (err: any) {
+        console.error('Error inicializando recuperación:', err);
+        if (mounted) {
+          setError('Ocurrió un problema verificando el enlace de recuperación.');
+          setVerifyingSession(false);
+        }
       }
     };
-    checkSession();
+
+    // Escuchar eventos de autenticación de Supabase (PASSWORD_RECOVERY o SIGNED_IN)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (session && (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
+        setSessionReady(true);
+        setVerifyingSession(false);
+        setError(null);
+      }
+    });
+
+    establishRecoverySession();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleReset = async (e: React.FormEvent) => {
@@ -31,9 +121,23 @@ export const ResetPasswordView: React.FC = () => {
       setError('Las contraseñas no coinciden.');
       return;
     }
+
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
     
     setLoading(true);
     setError(null);
+
+    // Asegurar que la sesión esté lista antes de llamar a updateUser
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setError('La sesión de recuperación ha expirado. Por favor solicita un nuevo correo de restablecimiento.');
+      setLoading(false);
+      setSessionReady(false);
+      return;
+    }
 
     const { error: resetError } = await supabase.auth.updateUser({
       password: password
@@ -95,6 +199,28 @@ export const ResetPasswordView: React.FC = () => {
               </div>
               <h3 className="text-lg font-medium text-white mb-2">¡Contraseña Actualizada!</h3>
               <p className="text-slate-400 text-sm">Redirigiendo al inicio de sesión...</p>
+            </div>
+          ) : verifyingSession ? (
+            <div className="text-center py-8 space-y-3">
+              <RefreshCcw className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
+              <p className="text-sm text-slate-300 font-medium">Validando enlace de seguridad...</p>
+              <p className="text-xs text-slate-500">Un momento mientras verificamos tus credenciales.</p>
+            </div>
+          ) : !sessionReady ? (
+            <div className="text-center py-4 space-y-4">
+              <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto text-amber-400">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <p className="text-xs text-slate-400">
+                El enlace de recuperación ya no es válido o ha expirado.
+              </p>
+              <Link
+                to="/forgot-password"
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-xl text-xs shadow-lg transition-all inline-flex items-center justify-center gap-2"
+              >
+                Solicitar nuevo correo de recuperación
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           ) : (
             <form onSubmit={handleReset} className="space-y-5">

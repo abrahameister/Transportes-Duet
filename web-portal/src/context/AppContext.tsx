@@ -322,7 +322,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .single();
 
         const isRecoveryPath = typeof window !== 'undefined' && 
-          (window.location.pathname.includes('reset-password') || window.location.pathname.includes('invite') || window.location.hash.includes('type=recovery'));
+          (window.location.pathname.includes('reset-password') || 
+           window.location.pathname.includes('invite') || 
+           window.location.hash.includes('type=recovery') ||
+           window.location.search.includes('type=recovery') ||
+           window.location.search.includes('code='));
 
         if (error || !perfil) {
           console.error("Perfil no encontrado", error);
