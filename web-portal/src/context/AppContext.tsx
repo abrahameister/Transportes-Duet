@@ -319,7 +319,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .from('perfiles')
           .select('*')
           .eq('auth_user_id', rawUser.id)
-          .single();
+          .maybeSingle();
 
         const isRecoveryPath = typeof window !== 'undefined' && 
           (window.location.pathname.includes('reset-password') || 

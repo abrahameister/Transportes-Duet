@@ -10,13 +10,15 @@ export const LoginView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
-  const { authUser } = useApp();
+  const { authUser, authLoading } = useApp();
 
   React.useEffect(() => {
     if (authUser) {
       navigate('/app', { replace: true });
+    } else if (!authLoading) {
+      setLoading(false);
     }
-  }, [authUser, navigate]);
+  }, [authUser, authLoading, navigate]);
 
   const brandName = 'Neira Transportes';
   const headerText = 'Centro Operativo de Transporte • Neira Transportes';
