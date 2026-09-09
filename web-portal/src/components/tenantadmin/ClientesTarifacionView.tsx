@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../ui/Toast';
 import type { ClienteCorporativo } from '../../types';
-import { Building2, DollarSign, Plus, X, CheckCircle2, Mail, Loader2 } from 'lucide-react';
+import { Building2, DollarSign, Plus, X, CheckCircle2, Mail, Loader2, Copy } from 'lucide-react';
 
 export const ClientesTarifacionView: React.FC = () => {
   const { clientes, agregarCliente, actualizarCliente } = useApp();
@@ -157,10 +157,10 @@ export const ClientesTarifacionView: React.FC = () => {
     
     setInvitingId(cl.id);
     
-    const { error: edgeError } = await supabase.functions.invoke('invite-b2b', {
+    const { data, error: edgeError } = await supabase.functions.invoke('invite-b2b', {
       body: { 
         email: cl.contactoEmail, 
-        fullName: cl.contactoNombre, 
+        fullName: cl.contactoNombre || cl.nombreCorporativo, 
         cliente_corporativo_id: cl.id,
         redirectTo: window.location.origin + '/reset-password'
       }
@@ -169,7 +169,7 @@ export const ClientesTarifacionView: React.FC = () => {
     setInvitingId(null);
 
     if (edgeError) {
-      console.error(edgeError);
+      console.error('Error invocando invite-b2b:', edgeError);
       let realErrorMessage = edgeError.message;
       try {
         if (edgeError.context) {
@@ -182,7 +182,16 @@ export const ClientesTarifacionView: React.FC = () => {
       toast.error('Error al enviar invitación: ' + realErrorMessage, 'Fallo de Invitación');
     } else {
       actualizarCliente(cl.id, { invitacionEnviada: true });
-      toast.success(`¡Invitación enviada con éxito a ${cl.contactoEmail}!`, 'Invitación Enviada');
+      if (data?.actionLink) {
+        try {
+          await navigator.clipboard.writeText(data.actionLink);
+          toast.success(`¡Invitación procesada! Enlace de acceso directo copiado al portapapeles para ${cl.contactoEmail}.`, 'Acceso B2B Listo');
+        } catch (_) {
+          toast.success(`¡Invitación procesada exitosamente para ${cl.contactoEmail}!`, 'Invitación Exitosa');
+        }
+      } else {
+        toast.success(`¡Invitación enviada con éxito a ${cl.contactoEmail}!`, 'Invitación Enviada');
+      }
     }
   };
 

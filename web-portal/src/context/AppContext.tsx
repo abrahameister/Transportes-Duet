@@ -837,6 +837,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updates.contactoEmail !== undefined) dbUpdates.contacto_email = updates.contactoEmail;
     if (updates.contacto_telefono !== undefined) dbUpdates.contacto_telefono = updates.contacto_telefono;
     if (updates.contactoTelefono !== undefined) dbUpdates.contacto_telefono = updates.contactoTelefono;
+    if (updates.invitacion_enviada !== undefined) dbUpdates.invitacion_enviada = updates.invitacion_enviada;
+    if (updates.invitacionEnviada !== undefined) dbUpdates.invitacion_enviada = updates.invitacionEnviada;
     
     const { error } = await supabase.from('clientes_corporativos').update(dbUpdates).eq('id', id);
     if (error) { console.error('Error updating client:', error); return; }
