@@ -14,7 +14,12 @@ import {
 export const ConductorApp: React.FC = () => {
   const { conductores, avisosOperativos, marcarAvisoLeido, actualizarConductor, enviarAvisoOperativo, authUser } = useApp();
   
-  const conductor = conductores.find(c => c.id === authUser?.user_metadata?.perfil_id) || conductores[0];
+  const conductor = conductores.find(c => 
+    (c.perfil_id && authUser?.user_metadata?.perfil_id && c.perfil_id === authUser.user_metadata.perfil_id) ||
+    (c.perfilId && authUser?.user_metadata?.perfil_id && c.perfilId === authUser.user_metadata.perfil_id) ||
+    c.id === authUser?.user_metadata?.perfil_id ||
+    (c.email && authUser?.email && c.email.trim().toLowerCase() === authUser.email.trim().toLowerCase())
+  ) || conductores[0];
   const isOnline = conductor?.estadoWFM === 'en_ruta' || conductor?.estadoWFM === 'disponible';
   
   const [syncStatus, setSyncStatus] = useState<'SINCRONIZADO' | 'PENDIENTE' | 'ERROR'>('SINCRONIZADO');

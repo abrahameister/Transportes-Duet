@@ -498,7 +498,12 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                         </span>
                       </td>
                       <td className="py-4 px-4 font-mono text-slate-700 dark:text-slate-300 font-medium">
-                        {c.telefono || '+56 9 8412 9012'}
+                        <div>{c.telefono || '+56 9 8412 9012'}</div>
+                        {c.email && (
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-sans mt-0.5 truncate max-w-[180px]" title={c.email}>
+                            ✉️ {c.email}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4 px-4">
                         <div className="font-medium text-slate-800 dark:text-slate-200 flex items-center space-x-1">
@@ -927,7 +932,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Email Conductor (*):</label>
-                  <input type="email" value={condEmail} onChange={(e) => setCondEmail(e.target.value)} placeholder="conductor@transportesandina.cl" required className="enterprise-input w-full text-xs" />
+                  <input type="email" value={condEmail} onChange={(e) => setCondEmail(e.target.value)} placeholder="conductor@transportesduet.cl" required className="enterprise-input w-full text-xs" />
                 </div>
               </div>
 

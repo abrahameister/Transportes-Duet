@@ -181,8 +181,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dbConductores) {
         setConductores(dbConductores.map(c => ({
           id: c.id,
+          perfilId: c.perfil_id,
+          perfil_id: c.perfil_id,
           nombreCompleto: c.nombre_completo || 'Conductor',
-          email: '',
+          email: c.email || '',
           telefono: c.telefono || '',
           avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
           rut: c.rut || '',
