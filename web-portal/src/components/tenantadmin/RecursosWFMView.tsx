@@ -932,7 +932,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Email Conductor (*):</label>
-                  <input type="email" value={condEmail} onChange={(e) => setCondEmail(e.target.value)} placeholder="conductor@transportesduet.cl" required className="enterprise-input w-full text-xs" />
+                  <input type="email" value={condEmail} onChange={(e) => setCondEmail(e.target.value)} placeholder="conductor@neiratransportes.cl" required className="enterprise-input w-full text-xs" />
                 </div>
               </div>
 
@@ -1127,7 +1127,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         title={`¿Dar de baja la unidad de flota ${vehiculoToDelete?.placa}?`}
         message={
           <span>
-            Estás a punto de eliminar de la central operativa el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>). Esta acción removerá el móvil de las asignaciones de turno vigentes en {'Transportes Duet'}.
+            Estás a punto de eliminar de la central operativa el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>). Esta acción removerá el móvil de las asignaciones de turno vigentes en {'Neira Transportes'}.
           </span>
         }
         confirmText="Confirmar Baja de Unidad"

@@ -80,11 +80,11 @@ export const LiveTrackView: React.FC = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans max-w-md mx-auto shadow-2xl overflow-hidden relative border-x border-slate-200">
       <header className="bg-slate-900 text-white p-5 flex items-center justify-between z-10 shadow-md rounded-b-3xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700">
-             <Shield className="w-5 h-5 text-emerald-400" />
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1 border border-slate-200 overflow-hidden">
+             <img src="/Neira_Logo.png" alt="Neira Transportes" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="font-bold text-white text-lg leading-tight tracking-tight">Transportes Duet</h1>
+            <h1 className="font-bold text-white text-lg leading-tight tracking-tight">Neira Transportes</h1>
             <p className="text-[10px] text-emerald-400 uppercase tracking-widest font-black">Seguimiento Seguro</p>
           </div>
         </div>

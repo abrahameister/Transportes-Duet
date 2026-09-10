@@ -91,7 +91,7 @@ export const AdminPortal: React.FC = () => {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">
-              {'Transportes Duet'}
+              {'Neira Transportes'}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Control centralizado de flota, telemetría en tiempo real, programación de rutas e incidencias en ruta.

@@ -12,12 +12,12 @@ export const Navbar: React.FC = () => {
           
           {/* 1. Lo Esencial: Logo y Tenant Activo */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded bg-slate-100 dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] flex items-center justify-center overflow-hidden shrink-0">
-              <Building2 className="w-4 h-4 text-[#1E3A8A] dark:text-[#3B82F6]" />
+            <div className="h-9 w-auto flex items-center justify-center shrink-0">
+              <img src="/Neira_Logo.png" alt="Neira Transportes" className="h-8 max-h-8 w-auto object-contain" />
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm font-bold text-slate-900 dark:text-gray-100 tracking-tight">
-              {currentRoleView === 'cliente_b2b' ? 'Portal Clientes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : 'Transportes Duet'}
+              {currentRoleView === 'cliente_b2b' ? 'Portal Clientes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : 'Neira Transportes'}
               </span>
             </div>
           </div>

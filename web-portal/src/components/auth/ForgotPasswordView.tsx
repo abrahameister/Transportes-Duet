@@ -9,7 +9,7 @@ export const ForgotPasswordView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const brandName = 'Transportes Duet';
+  const brandName = 'Neira Transportes';
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();

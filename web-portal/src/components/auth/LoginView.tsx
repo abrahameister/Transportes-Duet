@@ -20,8 +20,8 @@ export const LoginView: React.FC = () => {
     }
   }, [authUser, authLoading, navigate]);
 
-  const brandName = 'Transportes Duet';
-  const headerText = 'Centro Operativo de Transporte • Transportes Duet';
+  const brandName = 'Neira Transportes';
+  const headerText = 'Centro Operativo de Transporte • Neira Transportes';
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,10 +52,9 @@ export const LoginView: React.FC = () => {
       <div className="w-full max-w-md z-10">
         
         {/* Cabecera corporativa */}
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl mx-auto mb-6 flex items-center justify-center relative overflow-hidden">
-             <Shield className="w-10 h-10 text-blue-500" />
-            <div className="absolute inset-0 border border-white/10 rounded-2xl pointer-events-none"></div>
+        <div className="text-center mb-8">
+          <div className="w-24 h-24 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl mx-auto mb-4 flex items-center justify-center p-3 relative overflow-hidden border border-slate-700/50">
+            <img src="/Neira_Logo.png" alt="Neira Transportes" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
             {brandName}
@@ -141,7 +140,7 @@ export const LoginView: React.FC = () => {
 
         {/* Footer Seguro */}
         <div className="mt-8 text-center text-xs text-slate-500 flex flex-col items-center gap-2">
-          <p>© {new Date().getFullYear()} Transportes Duet. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} Neira Transportes. Todos los derechos reservados.</p>
           <div className="flex items-center gap-1 opacity-60">
             <Shield className="w-3 h-3" />
             <span>Acceso seguro a la plataforma operacional</span>

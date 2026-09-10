@@ -204,9 +204,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })));
       }
 
-      const { data: dbTurnosCond } = await supabase.from('turnos_conductores').select('*, conductor:conductores(id, nombre_completo, rut)').order('fecha', { ascending: false });
+      const { data: dbTurnosCond } = await supabase
+        .from('turnos_conductores')
+        .select('*, conductor:conductores(id, nombre_completo, rut, email), vehiculo:vehiculos(id, patente, marca, modelo)')
+        .order('fecha', { ascending: false });
       if (dbTurnosCond) {
-        setTurnosConductores(dbTurnosCond as any);
+        setTurnosConductores(dbTurnosCond.map((t: any) => ({
+          ...t,
+          vehiculo: t.vehiculo ? { ...t.vehiculo, placa: t.vehiculo.patente } : undefined
+        })) as any);
       }
       if (dbClientes) {
         setClientes(dbClientes.map(cl => ({
@@ -820,7 +826,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           estado: turno.estado || 'planificado',
           notas: turno.notas || null
         }])
-        .select('*, conductor:conductores(id, nombre_completo, rut, email), vehiculo:vehiculos(id, patente, marca, placa)')
+        .select('*, conductor:conductores(id, nombre_completo, rut, email), vehiculo:vehiculos(id, patente, marca, modelo)')
         .single();
 
       if (error) {
@@ -830,7 +836,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (data) {
-        setTurnosConductores(prev => [data as any, ...prev]);
+        const enrichedTurno = {
+          ...data,
+          vehiculo: data.vehiculo ? { ...data.vehiculo, placa: (data.vehiculo as any).patente } : undefined
+        };
+        setTurnosConductores(prev => [enrichedTurno as any, ...prev]);
         toast.success('Turno de conductor asignado con éxito.', 'Turno Asignado');
       }
     } catch (e: any) {

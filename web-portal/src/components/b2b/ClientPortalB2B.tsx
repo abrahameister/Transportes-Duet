@@ -435,13 +435,9 @@ export const ClientPortalB2B: React.FC = () => {
       <div className="enterprise-card bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
-            {false ? (
-              <img src={""} alt={'Transportes Duet'} className="w-14 h-14 object-cover rounded-lg border border-slate-200 dark:border-[#212A38] shadow-2xs shrink-0" />
-            ) : (
-              <div className="w-14 h-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-lg text-slate-700 dark:text-gray-200 shrink-0">
-                {'Transportes Duet'.substring(0, 2).toUpperCase()}
-              </div>
-            )}
+            <div className="w-14 h-14 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-[#212A38] flex items-center justify-center p-1 shadow-2xs shrink-0">
+              <img src="/Neira_Logo.png" alt="Neira Transportes" className="w-full h-full object-contain" />
+            </div>
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 tracking-wider uppercase border border-slate-300 dark:border-[#303B4E]">
@@ -554,7 +550,7 @@ export const ClientPortalB2B: React.FC = () => {
                   <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold font-mono">{kpiData.movilesEnRuta} Móviles en Ruta</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
-                  La central operativa de <strong>{'Transportes Duet'}</strong> monitorea en tiempo real vía GPS todos los móviles asignados al turno diurno y nocturno. Las rutas hacia Aeropuerto Carriel Sur, sedes corporativas y plantas operan con normalidad.
+                  La central operativa de <strong>{'Neira Transportes'}</strong> monitorea en tiempo real vía GPS todos los móviles asignados al turno diurno y nocturno. Las rutas hacia Aeropuerto Carriel Sur, sedes corporativas y plantas operan con normalidad.
                 </p>
               </div>
 
@@ -591,7 +587,7 @@ export const ClientPortalB2B: React.FC = () => {
                 </div>
                 <div className="flex justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400">Ejecutivo Asignado:</span>
-                  <span className="font-bold text-slate-800 dark:text-gray-200">Central de Operaciones (Transportes Duet)</span>
+                  <span className="font-bold text-slate-800 dark:text-gray-200">Central de Operaciones (Neira Transportes)</span>
                 </div>
                 <div className="flex justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400">Emergencia 24/7:</span>
@@ -1309,7 +1305,7 @@ export const ClientPortalB2B: React.FC = () => {
                 Asistencia Directa Transportes
               </span>
               <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
-                Central Operativa {'Transportes Duet'}
+                Central Operativa {'Neira Transportes'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">Canal formal de contacto y emergencias operativas 24/7 en la Región del Biobío.</p>
             </div>
@@ -1330,7 +1326,7 @@ export const ClientPortalB2B: React.FC = () => {
                   <span className="text-slate-400 block font-bold">EJECUTIVO DE CUENTA ASIGNADO:</span>
                   <strong className="text-slate-900 dark:text-white block text-sm mt-0.5">Matías Vergara Lazo</strong>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Ejecutivo de Cuentas</span>
-                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 block mt-0.5">operaciones@transportesduet.cl</span>
+                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 block mt-0.5">operaciones@neiratransportes.cl</span>
                 </div>
               </div>
             </div>
@@ -1544,7 +1540,7 @@ export const ClientPortalB2B: React.FC = () => {
               <div className="bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-3.5 flex items-start space-x-3 text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed mt-4">
                 <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <span>
-                  Al registrar, <strong>{'Transportes Duet'}</strong> verificará la viabilidad y cobertura de la dirección en un máximo de 2 horas hábiles.
+                  Al registrar, <strong>{'Neira Transportes'}</strong> verificará la viabilidad y cobertura de la dirección en un máximo de 2 horas hábiles.
                 </span>
               </div>
 
@@ -1590,7 +1586,7 @@ export const ClientPortalB2B: React.FC = () => {
                       <div className="font-bold text-slate-900 dark:text-white text-sm">{cond?.nombreCompleto || 'Chofer Profesional'}</div>
                       <div className="text-slate-500 dark:text-slate-400 font-mono mt-0.5">Patente: <strong className="text-slate-800 dark:text-gray-200">{selectedViajeGps.vehiculoPlaca || 'LSD-802'}</strong> • Mercedes Sprinter</div>
                       <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] mt-1">
-                        ● Conductor verificado por {'Transportes Duet'}
+                        ● Conductor verificado por {'Neira Transportes'}
                       </div>
                     </div>
                   </div>
