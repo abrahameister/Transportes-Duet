@@ -100,11 +100,11 @@ export const AdminPortal: React.FC = () => {
         </div>
 
         {/* MENÚ DE DE EJES OPERATIVOS Y NAVEGACIÓN ENTERPRISE */}
-        <div className="flex flex-wrap items-center gap-1.5 mt-6 border-b border-slate-200 dark:border-[#212A38] pt-2">
+        <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 mt-6 border-b border-slate-200 dark:border-[#212A38] pt-2 pb-1 scrollbar-hide hide-scrollbar" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
           <button
             onClick={() => setActiveEje('torre')}
             style={activeEje === 'torre' ? { backgroundColor: 'var(--tenant-primary)', color: '#ffffff' } : {}}
-            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
+            className={`shrink-0 px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
               activeEje === 'torre'
                 ? 'bg-[#0F172A] text-white border-slate-300 dark:border-[#212A38] shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-[#0D1117] hover:text-slate-900 dark:hover:text-white'
@@ -116,7 +116,7 @@ export const AdminPortal: React.FC = () => {
           <button
             onClick={() => setActiveEje('conductores')}
             style={activeEje === 'conductores' ? { backgroundColor: 'var(--tenant-primary)', color: '#ffffff' } : {}}
-            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
+            className={`shrink-0 px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
               activeEje === 'conductores'
                 ? 'bg-[#0F172A] text-white border-slate-300 dark:border-[#212A38] shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-[#0D1117] hover:text-slate-900 dark:hover:text-white'
@@ -128,7 +128,7 @@ export const AdminPortal: React.FC = () => {
           <button
             onClick={() => setActiveEje('vehiculos')}
             style={activeEje === 'vehiculos' ? { backgroundColor: 'var(--tenant-primary)', color: '#ffffff' } : {}}
-            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
+            className={`shrink-0 px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
               activeEje === 'vehiculos'
                 ? 'bg-[#0F172A] text-white border-slate-300 dark:border-[#212A38] shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-[#0D1117] hover:text-slate-900 dark:hover:text-white'
@@ -140,7 +140,7 @@ export const AdminPortal: React.FC = () => {
           <button
             onClick={() => setActiveEje('incidencias')}
             style={activeEje === 'incidencias' ? { backgroundColor: 'var(--tenant-primary)', color: '#ffffff' } : {}}
-            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
+            className={`shrink-0 px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
               activeEje === 'incidencias'
                 ? 'bg-[#0F172A] text-white border-slate-300 dark:border-[#212A38] shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-[#0D1117] hover:text-slate-900 dark:hover:text-white'
@@ -152,7 +152,7 @@ export const AdminPortal: React.FC = () => {
           <button
             onClick={() => setActiveEje('clientes')}
             style={activeEje === 'clientes' ? { backgroundColor: 'var(--tenant-primary)', color: '#ffffff' } : {}}
-            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
+            className={`shrink-0 px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
               activeEje === 'clientes'
                 ? 'bg-[#0F172A] text-white border-slate-300 dark:border-[#212A38] shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-[#0D1117] hover:text-slate-900 dark:hover:text-white'
@@ -164,7 +164,7 @@ export const AdminPortal: React.FC = () => {
           <button
             onClick={() => setActiveEje('programacion')}
             style={activeEje === 'programacion' ? { backgroundColor: 'var(--tenant-primary)', color: '#ffffff' } : {}}
-            className={`px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
+            className={`shrink-0 px-4 py-2 text-xs font-bold rounded-t-lg transition-all flex items-center space-x-1.5 border-t border-x ${
               activeEje === 'programacion'
                 ? 'bg-[#0F172A] text-white border-slate-300 dark:border-[#212A38] shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-[#0D1117] hover:text-slate-900 dark:hover:text-white'

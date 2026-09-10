@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useToast } from '../ui/Toast';
 import type { ViajeOperativa } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { MapPin, Navigation, Clock, CheckCircle, AlertTriangle, ShieldAlert, X, Link as LinkIcon } from 'lucide-react';
+import { MapPin, Navigation, Clock, CheckCircle, AlertTriangle, ShieldAlert, X, Link as LinkIcon, Car } from 'lucide-react';
 
 export const TorreControlView: React.FC = () => {
   const { viajes, conductores, vehiculos, refrescarDatos, turnosConductores } = useApp();
@@ -135,7 +135,99 @@ export const TorreControlView: React.FC = () => {
 
       {activeSubView === 'tablero' && (
         <div className="enterprise-card overflow-hidden">
-          <table className="w-full text-left text-xs">
+          
+          {/* VISTA MOBILE (TARJETAS) */}
+          <div className="md:hidden divide-y divide-slate-200 dark:divide-[#212A38]">
+            {filteredViajes.map((v) => {
+              const isPendiente = v.estado === 'solicitado' || v.estado === 'validado';
+              const isExcepcion = v.estado === 'incidencia' || v.estado === 'rescate_solicitado';
+              
+              return (
+                <div key={v.id} className="p-4 bg-white dark:bg-[#161D27] flex flex-col space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">{v.pasajeroNombre}</div>
+                      <div className="text-slate-500 dark:text-slate-400 text-xs">{v.clienteNombre}</div>
+                    </div>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      isPendiente 
+                        ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60' 
+                        : isExcepcion
+                          ? 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900 animate-pulse'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60'
+                    }`}>
+                      {v.estado}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 text-xs text-slate-700 dark:text-gray-300 bg-slate-50 dark:bg-[#0D1117] p-2.5 rounded-md border border-slate-100 dark:border-[#212A38]">
+                    <div className="flex items-center truncate">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 inline-block mr-2 shrink-0" />
+                      <span className="truncate">{v.origenDireccion}</span>
+                    </div>
+                    <div className="flex items-center truncate">
+                      <span className="w-2 h-2 rounded-full bg-slate-400 inline-block mr-2 shrink-0" />
+                      <span className="truncate">{v.destinoDireccion}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex-1">
+                      {v.conductorNombre ? (
+                        <div>
+                          <div className="font-semibold text-slate-900 dark:text-white flex items-center">
+                             <Car className="w-3 h-3 mr-1 text-slate-400" />
+                             {v.conductorNombre}
+                          </div>
+                          <div className="text-slate-500 dark:text-slate-400 font-mono text-[10px] mt-0.5">Unidad: {v.vehiculoPlaca || 'N/A'}</div>
+                        </div>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400 italic font-medium">Sin conductor asignado</span>
+                      )}
+                    </div>
+                    <div className="text-right font-mono font-bold text-slate-900 dark:text-white">
+                      {v.montoEstimado ? `$${Number(v.montoEstimado).toLocaleString('es-CL')}` : '$0'}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex flex-wrap gap-2 justify-end">
+                    {isPendiente ? (
+                      <button
+                        onClick={() => handleOpenDispatch(v)}
+                        className="w-full px-3 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow transition-colors"
+                      >
+                        Asignar Conductor
+                      </button>
+                    ) : isExcepcion ? (
+                      <span className="w-full text-center py-2 text-red-600 dark:text-red-400 font-bold text-xs uppercase tracking-wide border border-red-200 dark:border-red-900/50 rounded-lg bg-red-50 dark:bg-red-950/20">
+                        Ver en Incidencias
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleGenerarEnlace(v)}
+                          className="flex-1 px-3 py-2 rounded-lg border border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 text-xs font-semibold transition-colors flex items-center justify-center"
+                        >
+                          <LinkIcon className="w-3.5 h-3.5 mr-1" />
+                          GPS
+                        </button>
+                        <button
+                          onClick={() => handleOpenDispatch(v)}
+                          className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-[#303B4E] hover:bg-slate-100 dark:hover:bg-[#212A38] text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors text-center"
+                        >
+                          Reasignar
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* VISTA ESCRITORIO (TABLA ORIGINAL) */}
+          <div className="hidden md:block">
+            <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-[#0D1117] text-slate-500 dark:text-slate-400 uppercase font-semibold border-b border-slate-200 dark:border-[#212A38]">
               <tr>
                 <th className="py-3 px-4">Estado</th>
@@ -230,6 +322,7 @@ export const TorreControlView: React.FC = () => {
               })}
             </tbody>
           </table>
+          </div>
           {filteredViajes.length === 0 && (
             <div className="p-8 text-center text-slate-500 dark:text-slate-400">
               No hay viajes en la cola de despacho con el filtro seleccionado.

@@ -51,3 +51,15 @@ body {
     @apply bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-[#0D1117] dark:border-[#212A38] dark:text-gray-100 focus:outline-none focus:border-blue-500 transition-colors;
   }
 }
+
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

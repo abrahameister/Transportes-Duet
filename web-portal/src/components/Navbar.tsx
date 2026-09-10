@@ -93,7 +93,7 @@ export const Navbar: React.FC = () => {
                 value={activeClienteB2BId || ''}
                 onChange={(e) => setActiveClienteB2BId(e.target.value)}
                 title="Seleccionar Contrato y Nómina de Cliente B2B"
-                className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
+                className="w-24 sm:w-auto truncate bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
               >
                 <option value="" disabled>Seleccione Cliente</option>
                 {clientes.map((c) => (
