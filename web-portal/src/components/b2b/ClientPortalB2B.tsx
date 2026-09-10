@@ -366,14 +366,14 @@ export const ClientPortalB2B: React.FC = () => {
 
 
   const navItems = [
-    { id: 'inicio', label: '1. Inicio (Dashboard)', icon: Home, color: 'text-blue-500' },
-    { id: 'funcionarios', label: `2. Funcionarios (${funcionarios.length})`, icon: Users, color: 'text-emerald-500' },
-    { id: 'horarios', label: '3. Carga de Horarios & Turnos', icon: Calendar, color: 'text-amber-500' },
-    { id: 'reserva', label: '4. Reserva Manual (Excepciones)', icon: Plus, color: 'text-indigo-500' },
-    { id: 'servicios', label: `5. Servicios & Monitoreo (${viajesB2B.length})`, icon: Truck, color: 'text-purple-500' },
-    { id: 'kpis', label: '6. Indicadores & BI (SLA)', icon: BarChart3, color: 'text-blue-400' },
-    { id: 'reportes', label: '7. Reportes (Exportación)', icon: FileSpreadsheet, color: 'text-emerald-400' },
-    { id: 'soporte', label: '8. Soporte Central 24/7', icon: Headphones, color: 'text-rose-500' },
+    { id: 'inicio', label: 'Inicio', icon: Home, color: 'text-blue-500' },
+    { id: 'funcionarios', label: `Colaboradores (${funcionarios.length})`, icon: Users, color: 'text-emerald-500' },
+    { id: 'horarios', label: 'Turnos y Horarios', icon: Calendar, color: 'text-amber-500' },
+    { id: 'reserva', label: 'Solicitar Viaje', icon: Plus, color: 'text-indigo-500' },
+    { id: 'servicios', label: `Viajes en Vivo (${viajesB2B.length})`, icon: Truck, color: 'text-purple-500' },
+    { id: 'kpis', label: 'Puntualidad e Indicadores', icon: BarChart3, color: 'text-blue-400' },
+    { id: 'reportes', label: 'Reportes', icon: FileSpreadsheet, color: 'text-emerald-400' },
+    { id: 'soporte', label: 'Ayuda y Contacto', icon: Headphones, color: 'text-rose-500' },
   ] as const;
 
   return (
@@ -388,7 +388,7 @@ export const ClientPortalB2B: React.FC = () => {
         </div>
       )}
 
-      {/* HEADER ENTERPRISE WHITE-LABEL */}
+      {/* HEADER CLIENTE B2B */}
       <div className="enterprise-card bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
@@ -402,18 +402,18 @@ export const ClientPortalB2B: React.FC = () => {
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 tracking-wider uppercase border border-slate-300 dark:border-[#303B4E]">
-                  Módulo 3 • Portal Corporativo de Transporte
+                  Portal Corporativo de Transporte
                 </span>
                 <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  8 Secciones Habilitadas
+                  Servicio Activo
                 </span>
               </div>
               <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1">
-                Portal Corporativo — {'Neira Transportes'}
+                Portal de Clientes
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                Supervisión de traslados, nómina de colaboradores, turnos y conciliación financiera en el Gran Concepción.
+                Supervisión de traslados, nómina de colaboradores, turnos y servicios en tiempo real.
               </p>
             </div>
           </div>
@@ -421,7 +421,7 @@ export const ClientPortalB2B: React.FC = () => {
           <div className="bg-slate-50 dark:bg-[#0D1117] p-3 rounded-lg border border-slate-200 dark:border-[#212A38] shrink-0 md:min-w-[280px]">
             <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 flex items-center gap-1.5 mb-1">
               <Building2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span>Empresa Contratante B2B:</span>
+              <span>Empresa Contratante:</span>
             </label>
             <div className="w-full text-sm font-bold bg-white dark:bg-[#161D27] text-slate-900 dark:text-white border border-slate-300 dark:border-[#303B4E] py-1.5 px-3 rounded-md">
               {activeClient?.nombreCorporativo || 'Corporativo B2B'}
@@ -572,10 +572,10 @@ export const ClientPortalB2B: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center">
                   <Users className="w-5 h-5 mr-2 text-emerald-500" />
-                  <span>Catálogo Integral de Funcionarios y Colaboradores</span>
+                  <span>Nómina de Colaboradores</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Administre los datos de recogida de su personal. Las nuevas direcciones se validarán con cobertura en máximo 2 horas hábiles.
+                  Administre a sus colaboradores y sus direcciones de recogida habituales.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -585,7 +585,7 @@ export const ClientPortalB2B: React.FC = () => {
                   className="px-3.5 py-2 rounded-lg border border-slate-300 dark:border-[#303B4E] bg-slate-50 dark:bg-[#0D1117] hover:bg-slate-100 text-slate-700 dark:text-gray-200 text-xs font-semibold flex items-center shadow-xs cursor-pointer"
                 >
                   <UploadCloud className="w-3.5 h-3.5 mr-1.5 text-blue-500" />
-                  <span>Importar Excel (.XLS)</span>
+                  <span>Importar Excel</span>
                 </button>
                 <button
                   type="button"
@@ -601,7 +601,7 @@ export const ClientPortalB2B: React.FC = () => {
                   className="px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all flex items-center cursor-pointer"
                 >
                   <Plus className="w-4 h-4 mr-1.5" />
-                  <span>+ Registrar Nuevo Funcionario</span>
+                  <span>Registrar Colaborador</span>
                 </button>
                 <input type="file" ref={fileInputRef} accept=".xls,.xlsx,.csv" onChange={handleUploadExcelNomina} className="hidden" />
               </div>
@@ -615,8 +615,8 @@ export const ClientPortalB2B: React.FC = () => {
                   type="text"
                   value={searchFuncionario}
                   onChange={(e) => setSearchFuncionario(e.target.value)}
-                  placeholder="Filtrar por Nombre, RUT, Área o Comuna..."
-                  className="enterprise-input w-full text-xs pl-9 py-2"
+                  placeholder="Buscar por nombre, RUT o comuna..."
+                  className="enterprise-input w-full text-xs pl-10 py-2"
                 />
               </div>
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Mostrando {filteredFuncionarios.length} de {funcionarios.length} colaboradores</span>
@@ -625,34 +625,45 @@ export const ClientPortalB2B: React.FC = () => {
             {/* Tabla de Colaboradores */}
             <div className="overflow-x-auto border border-slate-200 dark:border-[#212A38] rounded-lg">
               <table className="w-full text-left text-xs">
-    <thead className="bg-slate-50 dark:bg-[#0D1117] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-[#212A38]">
-      <tr>
-        <th className="py-3 px-4">FECHA</th>
-        <th className="py-3 px-4">PASAJERO</th>
-        <th className="py-3 px-4">DIRECCIÓN RECOGIDA</th>
-        <th className="py-3 px-4 text-center">HORA ENTRADA</th>
-        <th className="py-3 px-4 text-center">HORA SALIDA</th>
-        <th className="py-3 px-4 text-center">ESTADO</th>
-      </tr>
-    </thead>
-    <tbody className="divide-y divide-slate-100 dark:divide-[#212A38]">
-      {turnos.map((t) => (
-        <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1C2533]/40">
-          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{t.fecha}</td>
-          <td className="py-3.5 px-4">
-            <div className="font-bold text-slate-800 dark:text-white">{t.pasajero?.nombre_completo}</div>
-            <div className="text-[10px] text-slate-500">{t.pasajero?.rut}</div>
-          </td>
-          <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-gray-300">{t.direccion_recogida}</td>
-          <td className="py-3.5 px-4 font-mono font-semibold text-blue-600 dark:text-blue-400 text-center">{t.hora_entrada}</td>
-          <td className="py-3.5 px-4 font-mono font-semibold text-amber-600 dark:text-amber-400 text-center">{t.hora_salida}</td>
-          <td className="py-3.5 px-4 text-center">
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px] capitalize">● {t.estado}</span>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
+                <thead className="bg-slate-50 dark:bg-[#0D1117] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-[#212A38]">
+                  <tr>
+                    <th className="py-3 px-4">COLABORADOR / RUT</th>
+                    <th className="py-3 px-4">DIRECCIÓN (PUNTO RECOGIDA)</th>
+                    <th className="py-3 px-4">CONTACTO</th>
+                    <th className="py-3 px-4 text-center">ESTADO</th>
+                    <th className="py-3 px-4 text-center">FECHA REGISTRO</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-[#212A38]">
+                  {filteredFuncionarios.length === 0 ? (
+                    <tr><td colSpan={5} className="py-8 text-center text-slate-400">No se encontraron funcionarios registrados.</td></tr>
+                  ) : (
+                    filteredFuncionarios.map((f) => (
+                      <tr key={f.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1C2533]/40">
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-slate-900 dark:text-white">{f.nombre_completo}</div>
+                          <div className="text-[10px] text-slate-500 font-mono mt-0.5">{f.rut}</div>
+                        </td>
+                        <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-gray-300">
+                          {f.direccion_defecto || 'Sin Dirección'}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="text-[11px] text-slate-600 dark:text-slate-400">{f.telefono || 'Sin Teléfono'}</div>
+                          <div className="text-[11px] text-slate-500">{f.email || ''}</div>
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${f.estado === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {f.estado || 'activo'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-center text-[11px] text-slate-500">
+                          {f.created_at ? new Date(f.created_at).toLocaleDateString() : '-'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -668,10 +679,10 @@ export const ClientPortalB2B: React.FC = () => {
                   Conexión Directa Operativa
                 </span>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">
-                  Planificación de Horarios & Cruce de Demanda (Turnos)
+                  Carga de Turnos de Personal
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Al subir sus horarios semanales/mensuales, el sistema cruza las entradas y salidas para notificar de inmediato a {'Neira Transportes'}.
+                  Cargue la programación de turnos de su personal para coordinar automáticamente los servicios de transporte.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -733,7 +744,7 @@ export const ClientPortalB2B: React.FC = () => {
                   className="px-3.5 py-2 rounded-lg border border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs cursor-pointer"
                 >
                   <Download className="w-4 h-4 shrink-0" />
-                  <span>Descargar Plantilla Excel (.XLSX)</span>
+                  <span>Descargar Plantilla Excel</span>
                 </button>
 
                 <button
@@ -742,7 +753,7 @@ export const ClientPortalB2B: React.FC = () => {
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center space-x-2 cursor-pointer"
                 >
                   <UploadCloud className="w-4 h-4 shrink-0" />
-                  <span>Subir Planilla de Turnos (.XLSX)</span>
+                  <span>Subir Planilla de Turnos</span>
                 </button>
                 <input type="file" ref={fileTurnosInputRef} accept=".xls,.xlsx,.csv" onChange={async (e) => {
                   const file = e.target.files?.[0];
@@ -817,7 +828,23 @@ export const ClientPortalB2B: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-[#212A38]">
-                    {turnos.map((t) => (
+                    {Object.values(turnos.reduce((acc, t) => {
+                      const key = `${t.fecha}_${t.hora_entrada}_${t.hora_salida}`;
+                      if (!acc[key]) {
+                        acc[key] = {
+                          id: key,
+                          nombreTurno: `Operación ${t.fecha}`,
+                          horaIngreso: t.hora_entrada || '-',
+                          horaSalida: t.hora_salida || '-',
+                          cantidadEntrando: 0,
+                          cantidadSaliendo: 0,
+                          estadoSincronizacion: 'sincronizado'
+                        };
+                      }
+                      if (t.hora_entrada) acc[key].cantidadEntrando += 1;
+                      if (t.hora_salida) acc[key].cantidadSaliendo += 1;
+                      return acc;
+                    }, {} as Record<string, any>)).map((t: any) => (
                       <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1C2533]/40">
                         <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{t.nombreTurno}</td>
                         <td className="py-3.5 px-4 font-mono font-semibold text-blue-600 dark:text-blue-400">{t.horaIngreso}</td>
@@ -851,10 +878,10 @@ export const ClientPortalB2B: React.FC = () => {
           <div className="border-b border-slate-200 dark:border-[#212A38] pb-4">
             <h3 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center">
               <Plus className="w-5 h-5 mr-2 text-indigo-500" />
-              <span>Reserva Manual Excepcional (Sobretiempos / Urgencias)</span>
+              <span>Solicitar Viaje Especial o Fuera de Turno</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Para traslados fuera de la programación habitual. Obtenga confirmación instantánea de asignación desde la central de {'Neira Transportes'}.
+              Coordine un traslado puntual para su personal fuera de los turnos habituales.
             </p>
           </div>
 
@@ -1003,7 +1030,7 @@ export const ClientPortalB2B: React.FC = () => {
                 type="submit"
                 className="px-6 py-2.5 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all flex items-center space-x-2 cursor-pointer"
               >
-                <span>Solicitar Servicio Excepcional →</span>
+                <span>Confirmar Solicitud de Viaje</span>
               </button>
             </div>
           </form>
@@ -1018,10 +1045,10 @@ export const ClientPortalB2B: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center">
                   <Truck className="w-5 h-5 mr-2 text-purple-500" />
-                  <span>Bitácora en Vivo de Servicios Programados y Ejecutados</span>
+                  <span>Servicios Programados y en Ruta</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Supervisión de cada traslado con ficha técnica del móvil, patente, chofer asignado y coordenadas GPS en Concepción.
+                  Supervisión de traslados, conductor asignado, vehículo y estado del viaje en tiempo real.
                 </p>
               </div>
               <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 font-mono text-xs font-bold rounded text-slate-700 dark:text-gray-300">
@@ -1036,7 +1063,7 @@ export const ClientPortalB2B: React.FC = () => {
                     <th className="py-3.5 px-4">ID / HORA</th>
                     <th className="py-3.5 px-4">PASAJERO & DEPTO</th>
                     <th className="py-3.5 px-4">ORIGEN ➔ DESTINO FINAL</th>
-                    <th className="py-3.5 px-4">FICHA TÉCNICA (CHOFER & PATENTE)</th>
+                    <th className="py-3.5 px-4">CONDUCTOR Y VEHÍCULO</th>
                     <th className="py-3.5 px-4">ESTADO EN TIEMPO REAL</th>
                     <th className="py-3.5 px-4 text-right">ACCIONES</th>
                   </tr>
@@ -1121,17 +1148,17 @@ export const ClientPortalB2B: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38]">
-              <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cumplimiento SLA Puntualidad</div>
+              <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Puntualidad en Rutas</div>
               <div className="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-2">{kpiData.sla}%</div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">● Meta Contractual: 98.0% (Sin Penalizaciones)</div>
             </div>
             <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38]">
-              <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tasa de Ausentismo (No Show)</div>
+              <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pasajeros Ausentes (No Show)</div>
               <div className="text-3xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-2">{kpiData.ausentismo}%</div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">● {kpiData.totalNoShows} pasajeros no presentados en punto de recojo</div>
             </div>
             <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38]">
-              <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Evolución Cumplimiento Servicios</div>
+              <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Servicios Completados</div>
               <div className="text-3xl font-bold font-mono text-slate-900 dark:text-white mt-2">{kpiData.cumplimientoServicios}%</div>
               <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-2 font-semibold">● {kpiData.viajesEfectivos} de {kpiData.totalViajes} viajes ejecutados sin cancelación</div>
             </div>
@@ -1139,7 +1166,7 @@ export const ClientPortalB2B: React.FC = () => {
 
           <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] space-y-4">
             <h3 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              Análisis de Volumen y Consumo por Centro de Costo ($ CLP)
+              Consumo por Centro de Costo ($ CLP)
             </h3>
             <div className="space-y-4 text-xs">
               {kpiData.costosList.length > 0 ? (
@@ -1162,15 +1189,15 @@ export const ClientPortalB2B: React.FC = () => {
         </div>
       )}
 
-      {/* VISTA 7: REPORTES (EXPORTATION DE DATOS EXCEL / PDF) */}
+      {/* VISTA 7: REPORTES */}
       {currentView === 'reportes' && (
         <div className="space-y-6">
           <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38]">
             <h3 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2">
-              Centro de Descarga de Informes de Gestión, Auditoría y RRHH
+              Descarga de Reportes de Transporte
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-              Exporte en formato Excel (.XLS) y PDF el historial completo de sus operaciones conciliadas con la central del Transportista.
+              Exporte en formato Excel el historial completo de traslados, asistencia y puntualidad.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1231,7 +1258,7 @@ export const ClientPortalB2B: React.FC = () => {
               <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
                 Central Operativa {'Neira Transportes'}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Canal formal de contacto y emergencias operativas 24/7 en la Región del Neira Transportes y Chile.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Canal formal de contacto y emergencias operativas 24/7 en la Región del Biobío.</p>
             </div>
 
             <div className="space-y-4 text-xs">
@@ -1249,8 +1276,8 @@ export const ClientPortalB2B: React.FC = () => {
                 <div>
                   <span className="text-slate-400 block font-bold">EJECUTIVO DE CUENTA ASIGNADO:</span>
                   <strong className="text-slate-900 dark:text-white block text-sm mt-0.5">Matías Vergara Lazo</strong>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Ejecutivo Grandes Cuentas Neira Transportes</span>
-                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 block mt-0.5">mvergara@andina.cl</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Ejecutivo de Cuentas</span>
+                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 block mt-0.5">operaciones@transportesduet.cl</span>
                 </div>
               </div>
             </div>
@@ -1260,7 +1287,7 @@ export const ClientPortalB2B: React.FC = () => {
             <div className="border-b border-slate-200 dark:border-[#212A38] pb-4">
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center">
                 <Headphones className="w-5 h-5 mr-2 text-blue-500" />
-                <span>Mesa de Ayuda Operativa — Creación de Tickets</span>
+                <span>Crear Solicitud de Soporte</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Canalice dudas operacionales, aumentos de flota o incidencias del portal con su Transportista.</p>
             </div>

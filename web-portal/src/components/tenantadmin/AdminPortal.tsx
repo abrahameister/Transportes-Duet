@@ -65,7 +65,7 @@ export const AdminPortal: React.FC = () => {
             className="px-3.5 py-1.5 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-[#161D27] border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-[#212A38] transition-colors inline-flex items-center shadow-2xs cursor-pointer"
           >
             <Upload className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-            Cargar Horarios & Turnos B2B
+            Importar Turnos
           </button>
           <button
             type="button"
@@ -78,12 +78,12 @@ export const AdminPortal: React.FC = () => {
         </div>
       </div>
 
-      {/* Encabezado del Módulo y Tarjeta de Marca del Tenant */}
+      {/* Encabezado Principal de Operaciones */}
       <div className="enterprise-card p-6 border-l-4 shadow-sm bg-white dark:bg-[#161D27]" style={{ borderLeftColor: '#1E3A8A' }}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              <span>Módulo 2: Centro Operativo & Despacho</span>
+              <span>Centro Operativo y Despacho</span>
               <span>●</span>
               <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center">
                 <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-500" />
@@ -96,12 +96,6 @@ export const AdminPortal: React.FC = () => {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Control centralizado de flota, telemetría en tiempo real, programación de rutas e incidencias en ruta.
             </p>
-          </div>
-
-          <div className="flex items-center space-x-3 text-xs shrink-0">
-            <span className="bg-slate-100 dark:bg-[#0D1117] border border-slate-200 dark:border-[#212A38] px-3.5 py-2 rounded-md text-slate-700 dark:text-gray-300 font-medium shadow-2xs">
-              Plan: <strong className="text-slate-900 dark:text-white">Pro Operativo</strong>
-            </span>
           </div>
         </div>
 
@@ -177,7 +171,7 @@ export const AdminPortal: React.FC = () => {
             }`}
           >
             <Calendar className="w-3.5 h-3.5 mr-1 text-amber-500" />
-            <span>Turnos &amp; Programación</span>
+            <span>Programación de Turnos</span>
           </button>
         </div>
       </div>

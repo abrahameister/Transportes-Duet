@@ -17,12 +17,12 @@ export const Navbar: React.FC = () => {
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm font-bold text-slate-900 dark:text-gray-100 tracking-tight">
-              {currentRoleView === 'cliente_b2b' ? 'Portal Empresas Contratantes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : 'Neira Transportes'}
+              {currentRoleView === 'cliente_b2b' ? 'Portal Clientes' : currentRoleView === 'app_conductor' ? 'Terminal Conductor' : 'Neira Transportes'}
               </span>
             </div>
           </div>
 
-          {/* 2. Módulo Activo (Navegación de producto seria y estructurada) */}
+          {/* Navegación Principal */}
           <nav className="hidden md:flex items-center space-x-1">
             {userRole === 'superadmin' && (
               <button
@@ -34,7 +34,7 @@ export const Navbar: React.FC = () => {
                 }`}
               >
                 <Shield className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
-                <span>1. Administración General</span>
+                <span>Administración General</span>
               </button>
             )}
 
@@ -125,7 +125,7 @@ export const Navbar: React.FC = () => {
               <button
                 onClick={logoutAuth}
                 className="flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/60 rounded-md transition-colors ml-1"
-                title={`Conectado como: ${authUser.email || 'Operador WFM'}. Presiona para cerrar sesión WFM.`}
+                title={`Conectado como: ${authUser.email || 'Operador'}. Presiona para cerrar sesión.`}
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Cerrar Sesión</span>

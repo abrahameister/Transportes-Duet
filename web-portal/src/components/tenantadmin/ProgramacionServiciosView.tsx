@@ -4,9 +4,10 @@ import { useToast } from '../ui/Toast';
 import { supabase } from '../../lib/supabase';
 import { RoutePlanner, NominatimGeocoder } from '../../lib/routePlanner';
 import { UploadCloud, PlusCircle, Calendar, CheckCircle, ArrowRight, MapPin, Download, FileText, Sparkles, Users } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
-  'Aeropuerto Carriel Sur, Talcahuano, Región del Neira Transportes',
+  'Aeropuerto Carriel Sur, Talcahuano, Región del Biobío',
   'Siderúrgica Huachipato, Gran Bretaña 2910, Talcahuano',
   'Plaza Independencia 400, Concepción Centro',
   'Barrio Universitario UdeC, Chacabuco, Concepción',
@@ -15,19 +16,21 @@ const GOOGLE_MAPS_CHILE_SUGGESTIONS = [
   'Casino Marina del Sol, Calle A 809, Talcahuano',
   'Mall Plaza Trebol, Jorge Alessandri 3177, Talcahuano',
   'Av. Pedro de Valdivia 1200, Concepción',
-  'San Pedro de la Paz, Huerto de los Olivos 45, Neira Transportes',
+  'San Pedro de la Paz, Huerto de los Olivos 45, Concepción',
   'Clínica Sanatorio Alemán, Pedro de Valdivia 801, Concepción',
   'Aeropuerto Internacional Arturo Merino Benítez (AMB), Pudahuel, Santiago',
   'Av. Vitacura 2670, Las Condes, Santiago',
   'Plaza Baquedano / Italia, Providencia, Santiago',
   'Puerto Lirquén, Recinto Portuario s/n, Penco',
-  'Planta Neira Transportes Cementos Bío Bío, Talcahuano'
+  'Planta Cementos Bío Bío, Talcahuano'
 ];
 
 export const ProgramacionServiciosView: React.FC = () => {
   const { clientes, crearViaje, activeClienteB2BId } = useApp();
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileTurnosInputRef = useRef<HTMLInputElement>(null);
+  const [clienteB2bId, setClienteB2bId] = useState<string>(clientes[0]?.id || '');
   const activeClientObj = clientes.find(c => c.id === activeClienteB2BId) || clientes[0];
   const currentDateTime = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' hrs';
   const [subMode, setSubMode] = useState<'manual' | 'turnos_b2b'>('manual');
@@ -91,11 +94,61 @@ export const ProgramacionServiciosView: React.FC = () => {
     try {
       const { data, error } = await supabase.rpc('create_planned_trips', { p_rutas: rutasPropuestas });
       if (error) throw error;
-      toast.success(`¡${data.rutas_creadas} rutas confirmadas y viajes creados exitosamente!`, 'Planificación Confirmada');
+      toast.success(`✓ ${data.rutas_creadas} rutas confirmadas y viajes creados exitosamente!`, 'Planificación Confirmada');
       setRutasPropuestas([]);
     } catch (e: any) {
       console.error(e);
       toast.error('Error confirmando planificación: ' + e.message, 'Error de Confirmación');
+    }
+  };
+
+  const handleUploadExcelTurnos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const rawJson: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+      
+      const parseExcelDate = (val: any): string => {
+        if (typeof val === 'number') {
+          const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+          return `${date.getUTCDate().toString().padStart(2, '0')}-${(date.getUTCMonth() + 1).toString().padStart(2, '0')}-${date.getUTCFullYear()}`;
+        }
+        return String(val || '').trim();
+      };
+      const parseExcelTime = (val: any): string => {
+        if (typeof val === 'number') {
+          const totalSeconds = Math.round(val * 86400);
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        return String(val || '').trim();
+      };
+
+      const normalizedShifts = rawJson.map(row => ({
+        cliente_corporativo_id: clienteB2bId,
+        rut: row.rut || row.RUT || row.Rut,
+        nombre: row.nombre || row['Nombre Completo'] || row.Nombre,
+        telefono: row.telefono || row['Teléfono'] || row.Telefono,
+        direccion: row.direccion || row['Dirección Recogida'] || row['Dirección'] || row.Direccion,
+        fecha: parseExcelDate(row.fecha || row['Fecha (DD-MM-AAAA)'] || row.Fecha),
+        hora_entrada: parseExcelTime(row.hora_entrada || row['Hora Entrada (HH:MM)'] || row['Hora Entrada']),
+        hora_salida: parseExcelTime(row.hora_salida || row['Hora Salida (HH:MM)'] || row['Hora Salida']),
+        sede: row.sede || row['Sede Destino'] || row.Sede || row.sede_id
+      }));
+
+      // Add the active client B2B id to the import RPC
+      const { data: res, error } = await supabase.rpc('import_b2b_shifts', { p_shifts: normalizedShifts });
+      if (error) throw error;
+      
+      const count = (res as any)?.turnos_creados ?? rawJson.length;
+      toast.success(`Planilla procesada con éxito! Se importaron ${count} turnos corporativos.`, 'Importación B2B');
+      if (fileTurnosInputRef.current) fileTurnosInputRef.current.value = '';
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Error importando planilla: ' + err.message, 'Fallo de Importación');
     }
   };
 
@@ -119,7 +172,7 @@ export const ProgramacionServiciosView: React.FC = () => {
       clienteNombre: clienteSeleccionado?.nombreCorporativo || 'Cuenta B2B',
       pasajeroNombre,
       pasajeroTelefono,
-      origenDireccion: origen || 'Aeropuerto Carriel Sur, Talcahuano, Región del Neira Transportes',
+      origenDireccion: origen || 'Aeropuerto Carriel Sur, Talcahuano, Región del Biobío',
       destinoDireccion: destino || 'Plaza Independencia 400, Concepción Centro',
       montoEstimado: Number(monto),
       fechaProgramada: 'Inmediato (Hoy)'
@@ -153,7 +206,7 @@ export const ProgramacionServiciosView: React.FC = () => {
           <div>
             <div className="text-xs font-bold uppercase tracking-wider mb-0.5 flex items-center">
               <PlusCircle className="w-3.5 h-3.5 mr-1.5 text-blue-500 shrink-0" />
-              1. Carga Manual
+              Servicio Manual
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">Viajes ocasionales o urgentes</div>
           </div>
@@ -171,7 +224,7 @@ export const ProgramacionServiciosView: React.FC = () => {
           <div>
             <div className="text-xs font-bold uppercase tracking-wider mb-0.5 flex items-center">
               <Users className="w-3.5 h-3.5 mr-1.5 text-blue-500 shrink-0" />
-              4. Turnos B2B (Clientes)
+              Turnos de Clientes
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">Demanda corporativa de ingreso/salida</div>
           </div>
@@ -183,8 +236,8 @@ export const ProgramacionServiciosView: React.FC = () => {
       {subMode === 'manual' && (
         <div className="enterprise-card p-6 space-y-5">
           <div className="border-b border-slate-200 dark:border-[#212A38] pb-3">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Formulario de Reserva Ocasional (Concepción)</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Ingreso rápido por central de despacho o telefonía operativa en Chile.</p>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Nuevo Servicio Manual</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Registro directo para traslados inmediatos o fuera de pauta.</p>
           </div>
 
           <form onSubmit={handleSubmitManual} className="space-y-4 max-w-3xl">
@@ -336,15 +389,51 @@ export const ProgramacionServiciosView: React.FC = () => {
       {/* CONTENIDO 4: TURNOS B2B — DEMANDA DE CLIENTES CORPORATIVOS */}
       {subMode === 'turnos_b2b' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Planificación de Turnos B2B</h3>
-            <button 
-              onClick={planificarTurnos} 
-              disabled={isPlanning}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow disabled:opacity-50"
-            >
-              {isPlanning ? 'Procesando...' : 'Generar Propuestas (Asistida)'}
-            </button>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 border-b border-slate-200 dark:border-[#212A38] pb-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Programación de Turnos</h3>
+              <p className="text-xs text-slate-500">Administra los turnos de los clientes corporativos o sube sus planillas directamente.</p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <select
+                value={clienteB2bId}
+                onChange={(e) => setClienteB2bId(e.target.value)}
+                className="enterprise-input text-xs"
+              >
+                <option value="">Seleccione Cliente...</option>
+                {clientes.map(cl => (
+                  <option key={cl.id} value={cl.id}>
+                    {cl.nombreCorporativo}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!clienteB2bId) {
+                    toast.warning('Seleccione un cliente corporativo antes de importar la nómina.', 'Atención');
+                    return;
+                  }
+                  fileTurnosInputRef.current?.click();
+                }}
+                className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow flex items-center gap-1.5"
+              >
+                <UploadCloud className="w-4 h-4" />
+                Subir Planilla
+              </button>
+              <input type="file" ref={fileTurnosInputRef} accept=".xls,.xlsx,.csv" onChange={handleUploadExcelTurnos} className="hidden" />
+
+              <button 
+                onClick={planificarTurnos} 
+                disabled={isPlanning}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Sparkles className="w-4 h-4" />
+                {isPlanning ? 'Procesando...' : 'Generar Propuestas (Asistida)'}
+              </button>
+            </div>
           </div>
           
           {rutasPropuestas.length === 0 && !isPlanning && (

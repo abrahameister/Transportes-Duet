@@ -2,25 +2,45 @@ import type { Database } from './database.types';
 
 export type UUID = string;
 
-// Mapeos 1:1 desde Supabase
-export type Perfil = Database['public']['Tables']['perfiles']['Row'];
-export type ClienteCorporativo = Database['public']['Tables']['clientes_corporativos']['Row'];
-export type Sede = Database['public']['Tables']['sedes']['Row'];
-export type CentroCosto = Database['public']['Tables']['centros_costo']['Row'];
-export type UsuarioClienteB2B = Database['public']['Tables']['usuarios_cliente_b2b']['Row'];
-export type Pasajero = Database['public']['Tables']['pasajeros']['Row'];
-export type Conductor = Database['public']['Tables']['conductores']['Row'];
-export type Vehiculo = Database['public']['Tables']['vehiculos']['Row'];
-export type Viaje = Database['public']['Tables']['viajes']['Row'];
-export type ViajePasajero = Database['public']['Tables']['viaje_pasajeros']['Row'];
-export type Asignacion = Database['public']['Tables']['asignaciones']['Row'];
-export type EventoViaje = Database['public']['Tables']['eventos_viaje']['Row'];
-export type Incidencia = Database['public']['Tables']['incidencias']['Row'];
-export type Aviso = Database['public']['Tables']['avisos']['Row'];
-export type Inspeccion = Database['public']['Tables']['inspecciones']['Row'];
-export type TrackingPosition = Database['public']['Tables']['tracking_positions']['Row'];
-export type TrackingToken = Database['public']['Tables']['tracking_tokens']['Row'];
-export type Auditoria = Database['public']['Tables']['auditoria']['Row'];
+// Tipos crudos DB
+type DbPerfil = Database['public']['Tables']['perfiles']['Row'];
+type DbClienteCorporativo = Database['public']['Tables']['clientes_corporativos']['Row'];
+type DbSede = Database['public']['Tables']['sedes']['Row'];
+type DbCentroCosto = Database['public']['Tables']['centros_costo']['Row'];
+type DbUsuarioClienteB2B = Database['public']['Tables']['usuarios_cliente_b2b']['Row'];
+type DbPasajero = Database['public']['Tables']['pasajeros']['Row'];
+type DbConductor = Database['public']['Tables']['conductores']['Row'];
+type DbVehiculo = Database['public']['Tables']['vehiculos']['Row'];
+type DbViaje = Database['public']['Tables']['viajes']['Row'];
+type DbViajePasajero = Database['public']['Tables']['viaje_pasajeros']['Row'];
+type DbAsignacion = Database['public']['Tables']['asignaciones']['Row'];
+type DbEventoViaje = Database['public']['Tables']['eventos_viaje']['Row'];
+type DbIncidencia = Database['public']['Tables']['incidencias']['Row'];
+type DbAviso = Database['public']['Tables']['avisos']['Row'];
+type DbInspeccion = Database['public']['Tables']['inspecciones']['Row'];
+type DbTrackingPosition = Database['public']['Tables']['tracking_positions']['Row'];
+type DbTrackingToken = Database['public']['Tables']['tracking_tokens']['Row'];
+type DbAuditoria = Database['public']['Tables']['auditoria']['Row'];
+
+// Mapeos 1:1 desde Supabase + UI Extensions (Bypassing strict DB fields for UI logic)
+export type Perfil = Partial<DbPerfil> & { id: string; [key: string]: any };
+export type ClienteCorporativo = Partial<DbClienteCorporativo> & { id: string; [key: string]: any };
+export type Sede = Partial<DbSede> & { id: string; [key: string]: any };
+export type CentroCosto = Partial<DbCentroCosto> & { id: string; [key: string]: any };
+export type UsuarioClienteB2B = Partial<DbUsuarioClienteB2B> & { id: string; [key: string]: any };
+export type Pasajero = Partial<DbPasajero> & { id: string; [key: string]: any };
+export type Conductor = Partial<DbConductor> & { id: string; [key: string]: any };
+export type Vehiculo = Partial<DbVehiculo> & { id: string; [key: string]: any };
+export type Viaje = Partial<DbViaje> & { id: string; [key: string]: any };
+export type ViajePasajero = Partial<DbViajePasajero> & { id: string; [key: string]: any };
+export type Asignacion = Partial<DbAsignacion> & { id: string; [key: string]: any };
+export type EventoViaje = Partial<DbEventoViaje> & { id: string; [key: string]: any };
+export type Incidencia = Partial<DbIncidencia> & { id: string; [key: string]: any };
+export type Aviso = Partial<DbAviso> & { id: string; [key: string]: any };
+export type Inspeccion = Partial<DbInspeccion> & { id: string; [key: string]: any };
+export type TrackingPosition = Partial<DbTrackingPosition> & { id: string; [key: string]: any };
+export type TrackingToken = Partial<DbTrackingToken> & { id: string; [key: string]: any };
+export type Auditoria = Partial<DbAuditoria> & { id: string; [key: string]: any };
 
 // Tipos Compuestos (Útiles para UI con Joins)
 export interface ViajeOperativo extends Viaje {
@@ -50,11 +70,11 @@ export interface RutaRecurrente {
 }
 
 // Legacy UI types (Bypassed)
-export type AvisoOperativo = Aviso;
-export type ConductorWFM = Conductor;
-export type VehiculoFlota = Vehiculo;
-export type ViajeOperativa = ViajeOperativo;
-export type EmpresaTenant = ClienteCorporativo;
+export type AvisoOperativo = Partial<Aviso> & { [key: string]: any };
+export type ConductorWFM = Partial<Conductor> & { [key: string]: any };
+export type VehiculoFlota = Partial<Vehiculo> & { [key: string]: any };
+export type ViajeOperativa = Partial<ViajeOperativo> & { [key: string]: any };
+export type EmpresaTenant = Partial<ClienteCorporativo> & { [key: string]: any };
 export type PasajeroRutaCheck = any;
 
 export interface TurnoConductor {
@@ -73,3 +93,5 @@ export interface TurnoConductor {
   updated_at?: string;
 }
 
+export type FuncionarioB2B = any;
+export type DemandaTurnoB2B = any;

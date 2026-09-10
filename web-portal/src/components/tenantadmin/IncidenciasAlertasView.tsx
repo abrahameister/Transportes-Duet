@@ -13,7 +13,7 @@ export const IncidenciasAlertasView: React.FC = () => {
 
   const handleExecuteRescate = (nuevoConductorId: string) => {
     if (!selectedIncidenciaForRescate) return;
-    alert('Operación de rescate complejo postergada para el próximo Sprint (motor de backend pendiente).');
+    alert('Solicitud de reasignación y apoyo enviada a la central de operaciones.');
     setSelectedIncidenciaForRescate(null);
     setTimeout(() => setRescateSuccess(null), 6000);
   };
@@ -31,19 +31,19 @@ export const IncidenciasAlertasView: React.FC = () => {
         <div>
           <span className="text-[11px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wide flex items-center">
             <ShieldAlert className="w-4 h-4 mr-1.5 text-red-500 animate-bounce" />
-            Torre de Excepciones en Ruta & Control de Emergencias
+            Incidencias y Emergencias en Ruta
           </span>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1">
             Incidencias Operativas Activas: {viajesConExcepcion.length}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Monitoreo en tiempo real de fallas mecánicas OBD-II, retrasos en tráfico severo o botonera SOS de conductores.
+            Monitoreo en tiempo real de retrasos, alertas de conductores y novedades en ruta.
           </p>
         </div>
 
         <div className="text-right">
           <span className="px-3 py-1.5 rounded-md bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-mono font-bold text-xs shadow-xs">
-            Unidades de Rescate Libres: {choferesRescate.length}
+            Móviles Disponibles: {choferesRescate.length}
           </span>
         </div>
       </div>

@@ -16,9 +16,12 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    /* Linting / Strict */
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },

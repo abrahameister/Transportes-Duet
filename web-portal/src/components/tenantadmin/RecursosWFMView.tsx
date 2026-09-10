@@ -343,15 +343,15 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         </div>
       )}
 
-      {/* Grand White/Slate Card Header (Image 1 replica) */}
+      {/* Encabezado Principal de Recursos */}
       <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-              TRANSPORTES ANDINA • GESTIÓN DE FLOTA Y CAPITAL HUMANO
+              GESTIÓN DE FLOTA Y CONDUCTORES
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-              Directorio Operacional — Conductores y Vehículos
+              Directorio de Conductores y Vehículos
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Control de licencias profesionales A1/A2/A3, revisión técnica, capacidades de pasaje y disponibilidad.
@@ -407,7 +407,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                   className="px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-semibold text-xs transition-colors flex items-center shadow-sm cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 mr-1.5 shrink-0" />
-                  <span>Crear Conductor</span>
+                  <span>Nuevo Conductor</span>
                 </button>
               </div>
             ) : subTab === 'flota' ? (
@@ -417,7 +417,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 className="px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-semibold text-xs transition-colors flex items-center shadow-sm cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
-                <span>Crear Vehículo</span>
+                <span>Nuevo Vehículo</span>
               </button>
             ) : (
               <button
@@ -426,7 +426,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center shadow-sm cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
-                <span>Asignar Turno Conductor</span>
+                <span>Nuevo Turno</span>
               </button>
             )}
           </div>
@@ -839,9 +839,9 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
               <div>
                 <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Estado Operativo Técnico:</label>
                 <select value={estado} onChange={(e: any) => setEstado(e.target.value)} className="enterprise-input w-full text-xs font-bold">
-                  <option value="operativo">OPERATIVO - Listo para despachar en Live Ops</option>
-                  <option value="mantenimiento">MANTENIMIENTO - Bloquea al conductor y unidad</option>
-                  <option value="inactivo">INACTIVO - Fuera de temporada</option>
+                  <option value="operativo">OPERATIVO - Disponible para servicios</option>
+                  <option value="mantenimiento">MANTENIMIENTO - Unidad en taller o revisión</option>
+                  <option value="inactivo">INACTIVO - Fuera de servicio</option>
                 </select>
               </div>
 
@@ -891,7 +891,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                     className="enterprise-input flex-1 text-xs"
                   />
                 </div>
-                <span className="text-[11px] text-slate-400 block mt-1">Los usuarios verán esta foto al solicitar su servicio de transporte en Concepción y Neira Transportes.</span>
+                <span className="text-[11px] text-slate-400 block mt-1">Los pasajeros verán esta fotografía al asignarse su servicio de transporte.</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

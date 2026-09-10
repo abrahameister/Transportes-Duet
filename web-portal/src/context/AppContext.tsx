@@ -62,7 +62,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
   const userRole = useMemo(() => {
-    const raw = userProfile?.rol || authUser?.user_metadata?.rol || 'admin';
+    const raw = userProfile?.rol || authUser?.user_metadata?.rol || '';
     return typeof raw === 'string' ? raw.toLowerCase() : raw;
   }, [userProfile, authUser]);
 
@@ -776,21 +776,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const actualizarConductor = async (id: string, updates: Partial<ConductorWFM>) => {
     const dbUpdates: any = {};
-    if (updates.nombreCompleto) dbUpdates.nombre_completo = updates.nombreCompleto;
-    if (updates.email !== undefined) dbUpdates.email = updates.email;
-    if (updates.rut) dbUpdates.rut = updates.rut;
-    if (updates.telefono) dbUpdates.telefono = updates.telefono;
-    if (updates.tipoLicencia) dbUpdates.tipo_licencia = updates.tipoLicencia;
-    if (updates.vencimientoLicencia) {
-      const trimmed = updates.vencimientoLicencia.trim();
+    const uiUpdates: any = updates;
+    if (uiUpdates.nombreCompleto) dbUpdates.nombre_completo = uiUpdates.nombreCompleto;
+    if (uiUpdates.email !== undefined) dbUpdates.email = uiUpdates.email;
+    if (uiUpdates.rut) dbUpdates.rut = uiUpdates.rut;
+    if (uiUpdates.telefono) dbUpdates.telefono = uiUpdates.telefono;
+    if (uiUpdates.tipoLicencia) dbUpdates.tipo_licencia = uiUpdates.tipoLicencia;
+    if (uiUpdates.vencimientoLicencia) {
+      const trimmed = uiUpdates.vencimientoLicencia.trim();
       const dmyMatch = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
       dbUpdates.vencimiento_licencia = dmyMatch 
         ? `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`
         : trimmed;
     }
-    if (updates.estadoWFM) dbUpdates.estado = updates.estadoWFM === 'inactivo' ? 'inactivo' : 'activo';
-    if ((updates as any).vehiculoHabitualId !== undefined || (updates as any).vehiculoAsignadoId !== undefined) {
-      dbUpdates.vehiculo_habitual_id = (updates as any).vehiculoHabitualId || (updates as any).vehiculoAsignadoId || null;
+    if (uiUpdates.estadoWFM) dbUpdates.estado = uiUpdates.estadoWFM === 'inactivo' ? 'inactivo' : 'activo';
+    if (uiUpdates.vehiculoHabitualId !== undefined || uiUpdates.vehiculoAsignadoId !== undefined) {
+      dbUpdates.vehiculo_habitual_id = uiUpdates.vehiculoHabitualId || uiUpdates.vehiculoAsignadoId || null;
     }
 
     const { error } = await supabase.from('conductores').update(dbUpdates).eq('id', id);
@@ -864,20 +865,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   const actualizarCliente = async (id: string, updates: Partial<ClienteCorporativo>) => {
     const dbUpdates: any = { updated_at: new Date().toISOString() };
-    if (updates.nombre_corporativo !== undefined) dbUpdates.nombre_corporativo = updates.nombre_corporativo;
-    if (updates.nombreCorporativo !== undefined) dbUpdates.nombre_corporativo = updates.nombreCorporativo;
-    if (updates.rut_identificador !== undefined) dbUpdates.rut_identificador = updates.rut_identificador;
-    if (updates.rutIdentificador !== undefined) dbUpdates.rut_identificador = updates.rutIdentificador;
-    if (updates.direccion_fiscal !== undefined) dbUpdates.direccion_fiscal = updates.direccion_fiscal;
-    if (updates.direccionFiscal !== undefined) dbUpdates.direccion_fiscal = updates.direccionFiscal;
-    if (updates.contacto_nombre !== undefined) dbUpdates.contacto_nombre = updates.contacto_nombre;
-    if (updates.contactoNombre !== undefined) dbUpdates.contacto_nombre = updates.contactoNombre;
-    if (updates.contacto_email !== undefined) dbUpdates.contacto_email = updates.contacto_email;
-    if (updates.contactoEmail !== undefined) dbUpdates.contacto_email = updates.contactoEmail;
-    if (updates.contacto_telefono !== undefined) dbUpdates.contacto_telefono = updates.contacto_telefono;
-    if (updates.contactoTelefono !== undefined) dbUpdates.contacto_telefono = updates.contactoTelefono;
-    if (updates.invitacion_enviada !== undefined) dbUpdates.invitacion_enviada = updates.invitacion_enviada;
-    if (updates.invitacionEnviada !== undefined) dbUpdates.invitacion_enviada = updates.invitacionEnviada;
+    const uiUpdates: any = updates;
+    if (uiUpdates.nombre_corporativo !== undefined) dbUpdates.nombre_corporativo = uiUpdates.nombre_corporativo;
+    if (uiUpdates.nombreCorporativo !== undefined) dbUpdates.nombre_corporativo = uiUpdates.nombreCorporativo;
+    if (uiUpdates.rut_identificador !== undefined) dbUpdates.rut_identificador = uiUpdates.rut_identificador;
+    if (uiUpdates.rutIdentificador !== undefined) dbUpdates.rut_identificador = uiUpdates.rutIdentificador;
+    if (uiUpdates.direccion_fiscal !== undefined) dbUpdates.direccion_fiscal = uiUpdates.direccion_fiscal;
+    if (uiUpdates.direccionFiscal !== undefined) dbUpdates.direccion_fiscal = uiUpdates.direccionFiscal;
+    if (uiUpdates.contacto_nombre !== undefined) dbUpdates.contacto_nombre = uiUpdates.contacto_nombre;
+    if (uiUpdates.contactoNombre !== undefined) dbUpdates.contacto_nombre = uiUpdates.contactoNombre;
+    if (uiUpdates.contacto_email !== undefined) dbUpdates.contacto_email = uiUpdates.contacto_email;
+    if (uiUpdates.contactoEmail !== undefined) dbUpdates.contacto_email = uiUpdates.contactoEmail;
+    if (uiUpdates.contacto_telefono !== undefined) dbUpdates.contacto_telefono = uiUpdates.contacto_telefono;
+    if (uiUpdates.contactoTelefono !== undefined) dbUpdates.contacto_telefono = uiUpdates.contactoTelefono;
+    if (uiUpdates.invitacion_enviada !== undefined) dbUpdates.invitacion_enviada = uiUpdates.invitacion_enviada;
+    if (uiUpdates.invitacionEnviada !== undefined) dbUpdates.invitacion_enviada = uiUpdates.invitacionEnviada;
     
     const { error } = await supabase.from('clientes_corporativos').update(dbUpdates).eq('id', id);
     if (error) { console.error('Error updating client:', error); return; }

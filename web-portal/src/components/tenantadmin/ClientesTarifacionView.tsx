@@ -18,56 +18,22 @@ export const ClientesTarifacionView: React.FC = () => {
   const [tarifaMinima, setTarifaMinima] = useState<number>(0);
   const [rutasFijas, setRutasFijas] = useState<{ nombre: string; precio: number }[]>([]);
 
-  // Form states para Nuevo Cliente B2B en Concepción
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const clientesTenant = clientes;
+
+  // Form states para alta de nuevo cliente B2B
   const [nombreCorporativo, setNombreCorporativo] = useState('');
   const [rut, setRut] = useState('');
   const [direccion, setDireccion] = useState('');
   const [contactoNombre, setContactoNombre] = useState('');
   const [contactoEmail, setContactoEmail] = useState('');
 
-  const clientesTenant = clientes;
-
-  const tenants: any[] = [];
-
-  const handleSelectTemplate = (val: string) => {
-    setSelectedTemplate(val);
-    if (!val) return;
-    const tenantMatch = (tenants as any[]).find(t => t.id === val);
-    if (tenantMatch) {
-      setNombreCorporativo(tenantMatch.nombre);
-      setRut((tenantMatch as any).rut || '77.491.330-1');
-      setDireccion('Casa Matriz / Base Operativa Neira Transportes');
-      setContactoNombre((tenantMatch as any).contacto || 'Jefatura WFM');
-      setContactoEmail((tenantMatch as any).email || 'operaciones@empresa.cl');
-    } else if (val === 'codelco') {
-      setNombreCorporativo('Codelco División El Teniente / Rancagua');
-      setRut('61.704.000-0');
-      setDireccion('Av. Millán 1040, Rancagua');
-      setContactoNombre('Roberto Valdés - Despacho');
-      setContactoEmail('rvaldes001@codelco.cl');
-    } else if (val === 'arauco') {
-      setNombreCorporativo('Celulosa y Forestal Arauco Neira Transportes S.A.');
-      setRut('96.536.000-5');
-      setDireccion('Planta Horcones s/n, Arauco');
-      setContactoNombre('Paulina Gacitúa - Logística');
-      setContactoEmail('paulina.gacitua@arauco.cl');
-    } else if (val === 'huachipato') {
-      setNombreCorporativo('Compañía Siderúrgica Huachipato CAP');
-      setRut('90.222.000-1');
-      setDireccion('Gran Bretaña 2910, Talcahuano');
-      setContactoNombre('Mario Soto - Jefe Turnos');
-      setContactoEmail('msoto@cap.cl');
-    }
-  };
-
   const handleAddNuevaRuta = () => {
     if (!selectedClienteForTariffs) return;
     const newRoute = {
       id: `rf-${Date.now()}`,
-      nombre: 'Nueva Ruta Corporativa (Concepción ➔ Neira Transportes)',
+      nombre: 'Nueva Ruta Corporativa (Concepción ➔ Planta Industrial)',
       origen: 'Centro Concepción / Plaza Independencia',
-      destino: 'Planta Industrial Neira Transportes',
+      destino: 'Planta Industrial',
       precioClp: 22000
     };
     const updated = {
@@ -218,16 +184,16 @@ export const ClientesTarifacionView: React.FC = () => {
         <div>
           <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center">
             <Building2 className="w-4 h-4 mr-1.5 text-blue-500" />
-            Directorio y Matriz Tarifaria de Cuentas B2B (Chile)
+            Clientes y Tarifas
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Cada cuenta opera con esquemas independientes de precio por kilómetro ($ CLP/Km) y rutas fijas consolidas.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Administración de tarifas base, costo por kilómetro y rutas fijas por cliente.</p>
         </div>
         <button
           onClick={() => setShowClienteModal(true)}
           className="px-3.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center space-x-1.5 shadow-sm"
         >
           <Plus className="w-3.5 h-3.5 mr-1" />
-          <span>Registrar Cuenta B2B</span>
+          <span>Nuevo Cliente</span>
         </button>
       </div>
 
@@ -321,7 +287,7 @@ export const ClientesTarifacionView: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="space-y-4">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-200 dark:border-[#212A38] pb-2">
-                  1. Parámetros Monetarios Base ($ CLP)
+                  Parámetros Tarifarios Base ($ CLP)
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -352,7 +318,7 @@ export const ClientesTarifacionView: React.FC = () => {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#212A38] pb-2">
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    2. Tarifario de Rutas Fijas Preestablecidas
+                    Rutas Fijas Preestablecidas
                   </h4>
                   <button
                     type="button"
@@ -360,7 +326,7 @@ export const ClientesTarifacionView: React.FC = () => {
                     className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px] flex items-center space-x-1 shadow-xs transition-colors"
                   >
                     <Plus className="w-3 h-3" />
-                    <span>+ Añadir Ruta</span>
+                    <span>Añadir Ruta</span>
                   </button>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">

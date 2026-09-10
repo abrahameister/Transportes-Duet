@@ -75,6 +75,11 @@ export const ConductorApp: React.FC = () => {
   const [notificacion, setNotificacion] = useState<string | null>(null);
   const [vozActiva, setVozActiva] = useState<string | null>(null);
   const [rutaCompletada, setRutaCompletada] = useState<boolean>(false);
+  const [showApkModal, setShowApkModal] = useState<boolean>(false);
+
+  const handleDownloadAPK = () => {
+    mostrarNotificacion('La descarga de la APK nativa estará disponible próximamente desde el Centro de Distribución WFM.');
+  };
 
   // Map backend pasajeros to UI state
   const pasajerosRuta = activeTrip?.viaje_pasajeros?.map(vp => ({
@@ -154,13 +159,35 @@ const [checkFluidos, setCheckFluidos] = useState(true);
     mostrarNotificacion('✅ Certificado de Inspección Técnica WFM #BIO-772 emitido y sincronizado con el Centro Operativo.');
   };
 
-  const handleReportarIncidenteConductor = (tipo: string) => {
+  const handleReportarIncidenteConductor = async (tipoLabel: string) => {
     enviarAvisoOperativo({
       pasajeroNombre: `${conductor.nombreCompleto} (Móvil ${conductor.vehiculo?.placa || 'VIP-100'})`,
-      mensaje: `🚨 ALERTA CONDUCTOR: ${tipo} en Gran Concepción. Solicito gestión o asistencia desde Central.`,
+      mensaje: `🚨 ALERTA CONDUCTOR: ${tipoLabel} en Gran Concepción. Solicito gestión o asistencia desde Central.`,
       tipo: 'alerta_central'
     });
-    mostrarNotificacion(`🚨 Reporte de "${tipo}" despachado en tiempo real a la Central de ${'Neira Transportes'}.`);
+
+    if (activeTrip?.id) {
+      // Map the generic text to the enum types
+      let tipoDb = 'otro';
+      let severidadDb = 'media';
+      const t = tipoLabel.toLowerCase();
+      if (t.includes('congestión') || t.includes('tráfico')) { tipoDb = 'trafico'; severidadDb = 'media'; }
+      else if (t.includes('falla') || t.includes('mecánica') || t.includes('avería')) { tipoDb = 'falla_mecanica'; severidadDb = 'alta'; }
+      else if (t.includes('accidente')) { tipoDb = 'accidente'; severidadDb = 'critica'; }
+      else if (t.includes('emergencia') || t.includes('urgencia')) { tipoDb = 'emergencia'; severidadDb = 'critica'; }
+      else if (t.includes('retraso')) { tipoDb = 'retraso'; severidadDb = 'baja'; }
+
+      await supabase.from('incidencias').insert({
+        viaje_id: activeTrip.id,
+        reportado_por_perfil_id: authUser?.user_metadata?.perfil_id || null,
+        tipo: tipoDb,
+        severidad: severidadDb,
+        descripcion: tipoLabel,
+        estado: 'abierta'
+      });
+    }
+    
+    mostrarNotificacion(`🚨 Reporte de "${tipoLabel}" despachado en tiempo real a la Central de Neira Transportes.`);
   };
 
   const totalAbordo = pasajerosRuta.filter(p => p.estado === 'abordo').length;
@@ -190,10 +217,10 @@ const [checkFluidos, setCheckFluidos] = useState(true);
           </span>
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-              Módulo 5 • Terminal Operativo de Abordo
+              Terminal de Conducción
             </span>
             <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              App Conductor — {'Neira Transportes'}
+              Panel del Conductor
             </h1>
           </div>
         </div>
@@ -408,12 +435,12 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                   <button
                     onClick={() => {
                       setRutaCompletada(false);
-                      setPasajerosRuta(prev => prev.map(p => ({ ...p, estado: 'pendiente' })));
-                      mostrarNotificacion('Simulación reiniciada: Ruta y lista de pasajeros en estado inicial.');
+                      fetchTrips();
+                      mostrarNotificacion('Estado reiniciado: recargando datos del viaje desde el servidor.');
                     }}
                     className="w-full sm:w-auto px-4 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-300 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-1.5"
                   >
-                    <span>Reabrir Simulación</span>
+                    <span>Recargar Viaje</span>
                   </button>
                 </div>
               </div>
@@ -970,10 +997,10 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
-                    Portal Instalador APK — Conductor WFM
+                    Descargar Aplicación para Conductor
                   </h3>
-                  <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 block">
-                    v2026.8.1 (EAS Build • Expo React Native)
+                  <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 block">
+                    Aplicación móvil oficial
                   </span>
                 </div>
               </div>
@@ -986,33 +1013,33 @@ const [checkFluidos, setCheckFluidos] = useState(true);
               </button>
             </div>
 
-            {/* Banner de arquitectura corporativa */}
+            {/* Información de la Aplicación */}
             <div className="bg-slate-50 dark:bg-[#0D1117] p-3.5 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-2 text-xs">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Marca Blanca Configurada: {'Neira Transportes'}</span>
+                <span>Aplicación Oficial — {'Neira Transportes'}</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                ¡Hola! Esta APK es el terminal nativo de terreno optimizado con <strong>Expo</strong>. La autorización del conductor proviene estrictamente de su sesión criptográfica y el tenant activo; <strong>nunca se usan query params en la URL como fuente de permisos</strong>, asegurando que nadie burle el sistema ni suplante identidades en el Gran Concepción.
+                Terminal móvil para conductores con conexión en tiempo real a la central de operaciones. Permite gestionar viajes asignados, confirmar abordajes y consultar rutas de transporte.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center space-y-2 bg-white dark:bg-[#1C2533]">
                 <QrCode className="w-12 h-12 text-slate-800 dark:text-white mx-auto stroke-1.5" />
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Escaneo Expo Go / QR</div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">Escanee este código con su terminal móvil para instalación en caliente o entorno de pruebas en vivo.</p>
+                <div className="text-xs font-bold text-slate-900 dark:text-white">Instalación con Código QR</div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Escanee este código con la cámara de su teléfono móvil para descargar la aplicación directamente.</p>
               </div>
 
               <div className="flex flex-col justify-between space-y-2 p-3 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/20">
                 <div>
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-blue-600 text-white uppercase tracking-wider block w-max">
-                    Android Native APK
+                    Instalador Android
                   </span>
                   <p className="text-xs font-bold text-slate-900 dark:text-gray-100 mt-2">
-                    Paquete Autónomo para Terreno
+                    Descarga Directa
                   </p>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Tamaño: 42.8 MB • Firma SHA-256</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Archivo de instalación seguro</span>
                 </div>
                 <button
                   type="button"
@@ -1023,13 +1050,13 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                   className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg font-extrabold text-xs shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <Download className="w-4 h-4 shrink-0" />
-                  <span>Descargar .APK (v2026.8)</span>
+                  <span>Descargar Aplicación (.APK)</span>
                 </button>
               </div>
             </div>
 
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-              <span>Evitamos sobrecarga: 100% Expo (Sin Capacitor)</span>
+              <span>Conexión directa con la central de transporte</span>
               <button
                 type="button"
                 onClick={() => setShowApkModal(false)}

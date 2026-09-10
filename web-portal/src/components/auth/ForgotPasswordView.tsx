@@ -45,7 +45,6 @@ export const ForgotPasswordView: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
             {brandName}
-            <span className="text-[10px] bg-[#E8832A] text-slate-950 font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">WFM PRO</span>
           </h1>
         </div>
 

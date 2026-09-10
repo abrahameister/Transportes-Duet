@@ -59,7 +59,6 @@ export const LoginView: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
             {brandName}
-            <span className="text-[10px] bg-[#E8832A] text-slate-950 font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">WFM PRO</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             {headerText}
@@ -145,7 +144,7 @@ export const LoginView: React.FC = () => {
           <p>© {new Date().getFullYear()} Neira Transportes. Todos los derechos reservados.</p>
           <div className="flex items-center gap-1 opacity-60">
             <Shield className="w-3 h-3" />
-            <span>Sistema protegido por cifrado de grado militar</span>
+            <span>Acceso seguro a la plataforma operacional</span>
           </div>
         </div>
       </div>

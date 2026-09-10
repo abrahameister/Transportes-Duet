@@ -89,6 +89,15 @@ const AppRouter = () => {
   const normalizedRole = userRole?.toLowerCase?.() ?? userRole;
   let renderedView = null;
 
+  // Si el rol es vacío o desconocido, no mostrar ningún módulo
+  if (!normalizedRole) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white p-4 font-sans text-center">
+        <p className="text-sm text-slate-400 mb-4">No se pudo determinar el perfil de acceso. Por favor, cierre sesión y vuelva a ingresar.</p>
+      </div>
+    );
+  }
+
   if (currentRoleView === 'admin' && normalizedRole === 'admin') {
     renderedView = <AdminPortal />;
   } else if (currentRoleView === 'cliente_b2b' && normalizedRole === 'cliente_b2b') {
@@ -96,10 +105,17 @@ const AppRouter = () => {
   } else if (currentRoleView === 'app_conductor' && (normalizedRole === 'admin' || normalizedRole === 'app_conductor' || normalizedRole === 'conductor')) {
     renderedView = <ConductorApp />;
   } else {
-    // Fallback de seguridad: redirige según el rol real del usuario autenticado
+    // Fallback: redirige según el rol real del usuario autenticado
     if (normalizedRole === 'cliente_b2b') renderedView = <ClientPortalB2B />;
     else if (normalizedRole === 'conductor' || normalizedRole === 'app_conductor') renderedView = <ConductorApp />;
-    else renderedView = <AdminPortal />;
+    else if (normalizedRole === 'admin' || normalizedRole === 'operaciones' || normalizedRole === 'dispatcher') renderedView = <AdminPortal />;
+    else {
+      renderedView = (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white p-4 font-sans text-center">
+          <p className="text-sm text-slate-400 mb-4">Rol no autorizado: <code className="text-amber-400">{normalizedRole}</code>. Contacte al administrador.</p>
+        </div>
+      );
+    }
   }
 
   return renderedView;
@@ -116,7 +132,7 @@ const AppLayout = () => {
       <footer className="border-t border-slate-200 dark:border-[#212A38] bg-white dark:bg-[#090C10] py-4 text-center text-xs text-slate-500 dark:text-gray-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">Neira Transportes</span>
-          <span>Plataforma de Transporte de Personal Chile ● v2.0.0</span>
+          <span>Sistema de Gestión de Transporte de Personal</span>
         </div>
       </footer>
     </div>

@@ -99,7 +99,7 @@ export const TorreControlView: React.FC = () => {
                 : 'bg-slate-100 text-slate-600 dark:bg-[#161D27] dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#212A38]'
             }`}
           >
-            Tablero Live Dispatch ({viajesTenant.length})
+            Despacho de Viajes ({viajesTenant.length})
           </button>
           <button
             onClick={() => setActiveSubView('radar')}
@@ -110,7 +110,7 @@ export const TorreControlView: React.FC = () => {
             }`}
           >
             <Navigation className="w-3.5 h-3.5 text-emerald-500 mr-1 animate-pulse" />
-            <span>Radar Telemetría GPS</span>
+            <span>Monitoreo GPS en Vivo</span>
           </button>
         </div>
 
@@ -143,7 +143,7 @@ export const TorreControlView: React.FC = () => {
                 <th className="py-3 px-4">Ruta Operativa</th>
                 <th className="py-3 px-4">Conductor & Unidad</th>
                 <th className="py-3 px-4">Tarifa Estimada</th>
-                <th className="py-3 px-4 text-right">Acción Dispatch</th>
+                <th className="py-3 px-4 text-right">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-[#212A38] text-slate-700 dark:text-gray-300">
@@ -249,10 +249,10 @@ export const TorreControlView: React.FC = () => {
                   <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping" />
                   Telemetría GPS Activa (Frecuencia: 5s)
                 </span>
-                <h3 className="text-base font-bold text-white mt-0.5">Radar Operativa en Tiempo Real - CDMX & Zona Metropolita</h3>
+                <h3 className="text-base font-bold text-white mt-0.5">Monitoreo GPS de Flota en Tiempo Real</h3>
               </div>
               <div className="text-xs font-mono text-slate-400 bg-black/40 px-3 py-1.5 rounded border border-slate-800">
-                Unidades Transmutadas: {conductoresTenant.length} | Operativas: {conductoresTenant.filter(c => c.estadoWFM !== 'offline').length}
+                Total Móviles: {conductoresTenant.length} | Operativos: {conductoresTenant.filter(c => c.estadoWFM !== 'offline').length}
               </div>
             </div>
 
@@ -283,7 +283,7 @@ export const TorreControlView: React.FC = () => {
             </div>
 
             <div className="text-center text-[11px] text-slate-500 z-10 border-t border-slate-800/50 pt-2">
-              Los enlaces Deep Linking hacia Waze o Google Maps se autogeneran cuando el conductor acepta el servicio en su terminal móvil Expo.
+              Los enlaces a Waze o Google Maps se generan automáticamente cuando el conductor acepta el servicio en su aplicación móvil.
             </div>
           </div>
         </div>
@@ -298,7 +298,7 @@ export const TorreControlView: React.FC = () => {
             <div className="p-5 border-b border-slate-200 dark:border-[#212A38] flex items-center justify-between bg-slate-50 dark:bg-[#0D1117]">
               <div>
                 <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">
-                  Motor de Despacho & Validación WFM
+                  Asignación de Conductor y Móvil
                 </span>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
                   Asignar Unidad al Viaje #{selectedViajeForDispatch.id.slice(-4)}
