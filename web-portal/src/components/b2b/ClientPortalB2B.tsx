@@ -86,6 +86,9 @@ export const ClientPortalB2B: React.FC = () => {
       supabase.from('turnos_pasajeros').select('*, pasajero:pasajero_id(nombre_completo, rut)').eq('cliente_corporativo_id', activeClient.id).order('fecha', {ascending: false}).then(({data}) => {
         if(data) setTurnos(data);
       });
+      supabase.from('tickets_soporte').select('*').eq('cliente_corporativo_id', activeClient.id).order('created_at', {ascending: false}).then(({data}) => {
+        if(data) setTickets(data);
+      });
     }
   }, [activeClient?.id]);
 
@@ -1160,11 +1163,26 @@ export const ClientPortalB2B: React.FC = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Canalice dudas operacionales, aumentos de flota o incidencias del portal con su Transportista.</p>
             </div>
 
-            <form onSubmit={(e) => {
+            <form onSubmit={async (e) => {
               e.preventDefault();
-              if (!newTicketAsunto || !newTicketDesc) return;
-              setTickets([{ id: `TKT-${Math.floor(1000 + Math.random() * 8999)}`, asunto: newTicketAsunto, estado: 'Ingresado / En Revisión', fecha: 'Ahora', ejecutivo: 'Mesa Central' }, ...tickets]);
-              setActionMsg('✓ Ticket de soporte ingresado con éxito. Su Ejecutivo de Cuenta Matías Vergara ha sido notificado.');
+              if (!newTicketAsunto || !newTicketDesc || !activeClient?.id) return;
+              
+              const { data, error } = await supabase.from('tickets_soporte').insert({
+                cliente_corporativo_id: activeClient.id,
+                asunto: newTicketAsunto,
+                detalle: newTicketDesc,
+                estado: 'Ingresado / En Revisión',
+                ejecutivo_asignado: 'Mesa Central'
+              }).select().single();
+              
+              if (error) {
+                setActionMsg('⚠️ Error al crear ticket: ' + error.message);
+                setTimeout(() => setActionMsg(null), 5500);
+                return;
+              }
+              
+              setTickets([data, ...tickets]);
+              setActionMsg('✓ Ticket de soporte ingresado con éxito. Su Ejecutivo de Cuenta ha sido notificado.');
               setNewTicketAsunto(''); setNewTicketDesc('');
               setTimeout(() => setActionMsg(null), 5500);
             }} className="space-y-4 text-xs">
@@ -1194,9 +1212,9 @@ export const ClientPortalB2B: React.FC = () => {
                   tickets.map(tk => (
                     <div key={tk.id} className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-200 dark:border-[#212A38] flex items-center justify-between text-xs">
                       <div>
-                        <span className="font-mono font-bold text-blue-600 dark:text-blue-400 mr-2">[{tk.id}]</span>
+                        <span className="font-mono font-bold text-blue-600 dark:text-blue-400 mr-2">[{tk.id.substring(0,8)}]</span>
                         <span className="font-bold text-slate-800 dark:text-gray-200">{tk.asunto}</span>
-                        <span className="text-[11px] text-slate-400 block mt-0.5">Asignado a: {tk.ejecutivo} ({tk.fecha})</span>
+                        <span className="text-[11px] text-slate-400 block mt-0.5">Asignado a: {tk.ejecutivo_asignado || 'Mesa Central'} ({new Date(tk.created_at || new Date()).toLocaleDateString('es-CL')})</span>
                       </div>
                       <span className="px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px]">{tk.estado}</span>
                     </div>

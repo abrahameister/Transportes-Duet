@@ -25,7 +25,7 @@ interface AppContextType {
   viajesB2B: ViajeOperativa[]; 
   
   toggleConductorEstado: (conductorId: string) => void;
-  crearViaje: (nuevo: Partial<ViajeOperativa>) => void;
+  crearViaje: (nuevo: Partial<ViajeOperativa>) => Promise<void>;
   
   agregarVehiculo: (vehiculo: VehiculoFlota) => void;
   actualizarVehiculo: (id: string, updates: Partial<VehiculoFlota>) => void;
@@ -109,9 +109,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const viajesB2B = useMemo(() => {
-    if (!activeClienteB2BId) return [];
-    return viajes.filter(v => v.clienteCorporativoId === activeClienteB2BId);
-  }, [viajes, activeClienteB2BId]);
+    const targetId = activeClienteB2BId || (currentRoleViewInternal === 'cliente_b2b' && clientes.length > 0 ? clientes[0].id : null);
+    if (!targetId) return [];
+    return viajes.filter(v => v.clienteCorporativoId === targetId);
+  }, [viajes, activeClienteB2BId, currentRoleViewInternal, clientes]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--tenant-primary', '#1E3A8A');
@@ -355,6 +356,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const authoritativeRole = perfil.rol;
         setCurrentRoleViewInternal(authoritativeRole.toLowerCase());
 
+        // Si es CLIENTE_B2B, auto-asignar activeClienteB2BId para que el portal cargue de inmediato
+        if (authoritativeRole === 'CLIENTE_B2B') {
+          try {
+            const { data: b2bData } = await supabase
+              .from('usuarios_cliente_b2b')
+              .select('cliente_corporativo_id')
+              .eq('perfil_id', perfil.id)
+              .limit(1)
+              .maybeSingle();
+            
+            if (b2bData?.cliente_corporativo_id && mounted) {
+              setActiveClienteB2BId(b2bData.cliente_corporativo_id);
+            }
+          } catch (e) {
+            console.error("Error resolviendo empresa B2B", e);
+          }
+        }
+
         const enrichedUser = {
           ...rawUser,
           user_metadata: {
@@ -495,35 +514,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (insertError) {
         console.error('Error insertando viaje:', insertError);
         toast.error('Error al guardar viaje en base de datos: ' + insertError.message, 'Fallo de Registro');
-        return;
+        throw new Error(insertError.message);
       }
 
       // 3. Crear pasajero y viaje_pasajero si tenemos datos
       if (data.pasajeroNombre && insertedViaje?.id) {
-        try {
-          const fakeRut = 'RUT-P-' + Date.now().toString().slice(-6);
-          const { data: insPasajero } = await supabase
-            .from('pasajeros')
-            .insert([{
-              cliente_corporativo_id: clienteCorpId,
-              nombre_completo: data.pasajeroNombre,
-              rut: fakeRut,
-              telefono: data.pasajeroTelefono || '+56900000000',
-              estado: 'activo'
-            }])
-            .select()
-            .single();
+        const fakeRut = 'RUT-P-' + Date.now().toString().slice(-6);
+        const { data: insPasajero, error: pasError } = await supabase
+          .from('pasajeros')
+          .insert([{
+            cliente_corporativo_id: clienteCorpId,
+            nombre_completo: data.pasajeroNombre,
+            rut: fakeRut,
+            telefono: data.pasajeroTelefono || '+56900000000',
+            estado: 'activo'
+          }])
+          .select()
+          .single();
 
-          if (insPasajero?.id) {
-            await supabase.from('viaje_pasajeros').insert([{
-              viaje_id: insertedViaje.id,
-              pasajero_id: insPasajero.id,
-              estado: 'pendiente',
-              orden_parada: 1
-            }]);
+        if (pasError) {
+          console.error('Error insertando pasajero:', pasError);
+          // Opcional: rollback del viaje insertado o simplemente notificar
+          throw new Error('Viaje creado, pero falló registro de pasajero: ' + pasError.message);
+        }
+
+        if (insPasajero?.id) {
+          const { error: vpError } = await supabase.from('viaje_pasajeros').insert([{
+            viaje_id: insertedViaje.id,
+            pasajero_id: insPasajero.id,
+            estado: 'pendiente',
+            orden_parada: 1
+          }]);
+          
+          if (vpError) {
+            console.error('Error insertando viaje_pasajeros:', vpError);
+            throw new Error('Pasajero creado, pero falló asignación al viaje: ' + vpError.message);
           }
-        } catch (e) {
-          console.warn('Registro complementario de pasajero:', e);
         }
       }
 
