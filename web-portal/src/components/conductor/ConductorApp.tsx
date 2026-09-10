@@ -12,19 +12,33 @@ import {
 } from 'lucide-react';
 
 export const ConductorApp: React.FC = () => {
-  const { conductores, avisosOperativos, marcarAvisoLeido, actualizarConductor, enviarAvisoOperativo, authUser } = useApp();
+  const { 
+    conductores, avisosOperativos, marcarAvisoLeido, actualizarConductor, 
+    enviarAvisoOperativo, authUser, turnosConductores 
+  } = useApp();
   
   const conductor = conductores.find(c => 
     (c.perfil_id && authUser?.user_metadata?.perfil_id && c.perfil_id === authUser.user_metadata.perfil_id) ||
     (c.perfilId && authUser?.user_metadata?.perfil_id && c.perfilId === authUser.user_metadata.perfil_id) ||
     c.id === authUser?.user_metadata?.perfil_id ||
     (c.email && authUser?.email && c.email.trim().toLowerCase() === authUser.email.trim().toLowerCase())
-  ) || conductores[0];
+  );
+  
   const isOnline = conductor?.estadoWFM === 'en_ruta' || conductor?.estadoWFM === 'disponible';
   
   const [syncStatus, setSyncStatus] = useState<'SINCRONIZADO' | 'PENDIENTE' | 'ERROR'>('SINCRONIZADO');
   const [myTrips, setMyTrips] = useState<any[]>([]);
   const [activeTrip, setActiveTrip] = useState<any>(null);
+
+  const handleNavegar = (lat?: number | null, lng?: number | null, direccion?: string) => {
+    if (lat && lng) {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    } else if (direccion) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`, '_blank');
+    } else {
+      mostrarNotificacion('Coordenadas no disponibles para navegación.');
+    }
+  };
   
   // Realtime and data fetching
   const fetchTrips = async () => {
@@ -161,13 +175,13 @@ const [checkFluidos, setCheckFluidos] = useState(true);
       return;
     }
     setInspeccionTransmitida(true);
-    mostrarNotificacion('✅ Certificado de Inspección Técnica WFM #BIO-772 emitido y sincronizado con el Centro Operativo.');
+    mostrarNotificacion('✅ Inspección Técnica transmitida y sincronizada con el Centro Operativo.');
   };
 
   const handleReportarIncidenteConductor = async (tipoLabel: string) => {
     enviarAvisoOperativo({
-      pasajeroNombre: `${conductor.nombreCompleto} (Móvil ${conductor.vehiculo?.placa || 'VIP-100'})`,
-      mensaje: `🚨 ALERTA CONDUCTOR: ${tipoLabel} en Gran Concepción. Solicito gestión o asistencia desde Central.`,
+      pasajeroNombre: `${conductor.nombreCompleto} (Móvil ${conductor.vehiculo?.patente || 'S/V'})`,
+      mensaje: `🚨 ALERTA CONDUCTOR: ${tipoLabel}. Solicito gestión o asistencia desde Central.`,
       tipo: 'alerta_central'
     });
 
@@ -203,88 +217,34 @@ const [checkFluidos, setCheckFluidos] = useState(true);
   const proximoPasajero = pasajerosRuta.find(p => p.estado === 'pendiente');
 
   
-  if (!activeTrip && myTrips.length === 0) {
+  if (!conductor) {
     return (
       <div className="py-10 px-4 text-center">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white">Tu perfil de conductor no está activo.</h2>
+        <p className="text-sm text-slate-500 mt-2">Contacta al administrador de la plataforma.</p>
+      </div>
+    );
+  }
+
+  if (!activeTrip && myTrips.length === 0 && activeTab === 'ruta_inm') {
+    return (
+      <div className="py-10 px-4 text-center h-[100dvh] flex flex-col items-center justify-center bg-slate-50 dark:bg-[#0D1117]">
         <h2 className="text-xl font-bold text-slate-800 dark:text-white">No tienes viajes asignados en este momento.</h2>
+        <button
+          onClick={() => setActiveTab('bitacora')}
+          className="mt-4 px-6 py-2.5 bg-emerald-500 text-slate-950 font-bold rounded-lg shadow-md"
+        >
+          Ver Bitácora de Turnos
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="py-6 px-3 sm:px-6 max-w-5xl mx-auto transition-all">
+    <div className="h-[100dvh] flex flex-col bg-slate-50 dark:bg-[#0D1117] overflow-hidden w-full m-0 p-0">
       
-      {/* Barra superior de control (Switch de vista y estado de conexión) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-200 dark:border-[#212A38]">
-        <div className="flex items-center space-x-2.5">
-          <span className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-500/20 font-bold">
-            <Radio className="w-5 h-5 animate-pulse" />
-          </span>
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-              Terminal de Conducción
-            </span>
-            <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-              Panel del Conductor
-            </h1>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 bg-white dark:bg-[#161D27] p-1.5 rounded-lg border border-slate-200 dark:border-[#212A38] shadow-xs self-start sm:self-auto">
-          {/* Sync Status Badge */}
-          <div className={`px-2 py-1 rounded text-[10px] font-bold ${
-            syncStatus === 'SINCRONIZADO' ? 'bg-emerald-500/20 text-emerald-600' :
-            syncStatus === 'PENDIENTE' ? 'bg-amber-500/20 text-amber-600 animate-pulse' :
-            'bg-rose-500/20 text-rose-600'
-          }`}>
-            {syncStatus === 'SINCRONIZADO' ? '✓ SYNC' :
-             syncStatus === 'PENDIENTE' ? '⏳ PENDING' :
-             '⚠️ ERROR'}
-          </div>
-          {lastPosition && (
-            <div className="px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20 flex items-center gap-1" title="GPS Activo">
-              <MapPin className="w-3 h-3" /> GPS ON
-            </div>
-          )}
-          
-          <button
-            type="button"
-            onClick={() => setIsMobileFrame(true)}
-            className={`flex items-center px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              isMobileFrame 
-                ? 'bg-slate-900 text-white dark:bg-emerald-500 dark:text-slate-950 shadow-xs' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#212A38]'
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5 mr-1.5 shrink-0" />
-            Vista Móvil (Cabina)
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsMobileFrame(false)}
-            className={`flex items-center px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              !isMobileFrame 
-                ? 'bg-slate-900 text-white dark:bg-emerald-500 dark:text-slate-950 shadow-xs' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#212A38]'
-            }`}
-          >
-            Vista Ampliada
-          </button>
-        </div>
-      </div>
-
-      {/* Contenedor Adaptable (Marco Móvil o Escritorio Ampliado) */}
-      <div className={`transition-all duration-300 mx-auto ${
-        isMobileFrame 
-          ? 'max-w-md bg-slate-900 dark:bg-slate-950 p-3 sm:p-4 rounded-[36px] shadow-2xl border-[6px] border-slate-800 ring-1 ring-slate-700' 
-          : 'max-w-4xl bg-transparent'
-      }`}>
-
-        <div className={`rounded-2xl overflow-hidden shadow-xl ${
-          isMobileFrame 
-            ? 'bg-white dark:bg-[#0D1117] min-h-[680px] flex flex-col border border-slate-700/50' 
-            : 'bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] p-6'
-        }`}>
+      {/* Contenedor Adaptable (Ocupa el 100% en móvil) */}
+      <div className="flex-1 flex flex-col w-full h-full overflow-hidden bg-white dark:bg-[#0D1117]">
 
           {/* SIMULADOR VOZ EN CABINA TTS */}
           {vozActiva && (
@@ -351,23 +311,23 @@ const [checkFluidos, setCheckFluidos] = useState(true);
           )}
 
           {/* CABECERA PERFIL CONDUCTOR & MÓVIL */}
-          <div className="bg-slate-900 dark:bg-[#090C10] text-white p-4 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+          <div className="bg-slate-900 dark:bg-[#090C10] text-white p-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <div className="flex items-center space-x-3 min-w-0">
               <img 
                 src={conductor.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'} 
                 alt="Conductor" 
                 className="w-11 h-11 rounded-full object-cover border-2 border-emerald-500 shrink-0" 
               />
-              <div>
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center space-x-1.5">
-                  <span className="font-bold text-sm text-white">{conductor.nombreCompleto}</span>
-                  <span title="Licencia Profesional A3 Verificada"><ShieldCheck className="w-4 h-4 text-emerald-400" /></span>
+                  <span className="font-bold text-sm text-white truncate">{conductor.nombreCompleto}</span>
+                  <span title="Licencia Profesional A3 Verificada" className="shrink-0"><ShieldCheck className="w-4 h-4 text-emerald-400" /></span>
                 </div>
-                <div className="flex items-center space-x-2 mt-0.5 text-xs">
-                  <span className="px-1.5 py-0.5 rounded font-mono font-extrabold text-[11px] bg-amber-400 text-slate-950 tracking-wider uppercase border border-amber-500 shadow-xs">
-                    {conductor.vehiculo?.placa || 'VIP-100'}
+                <div className="flex items-center space-x-2 mt-0.5 text-xs truncate">
+                  <span className="px-1.5 py-0.5 rounded font-mono font-extrabold text-[11px] bg-amber-400 text-slate-950 tracking-wider uppercase border border-amber-500 shadow-xs shrink-0">
+                    {conductor.vehiculo?.patente || 'S/V'}
                   </span>
-                  <span className="text-slate-300 text-[11px]">{conductor.vehiculo?.modelo || 'Sprinter 516'}</span>
+                  <span className="text-slate-300 text-[11px] truncate">{conductor.vehiculo?.modelo || 'Sin Vehículo Asignado'}</span>
                 </div>
               </div>
             </div>
@@ -377,16 +337,16 @@ const [checkFluidos, setCheckFluidos] = useState(true);
               onClick={() => {
                 const nextStatus = isOnline ? 'offline' : 'en_ruta';
                 actualizarConductor(conductor.id, { estadoWFM: nextStatus, enDescanso: false });
-                mostrarNotificacion(`Estado operativo actualizado a ${nextStatus === 'en_ruta' ? 'EN SERVICIO (Activo)' : 'FUERA DE TURNO (Desconectado)'} en la Central.`);
+                mostrarNotificacion(`Estado operativo actualizado a ${nextStatus === 'en_ruta' ? 'EN SERVICIO (Activo)' : 'FUERA DE TURNO (Desconectado)'}.`);
               }}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center space-x-2 transition-all shadow-md shrink-0 border ${
+              className={`px-2 py-1.5 sm:px-3.5 rounded-full text-[10px] sm:text-xs font-extrabold flex items-center space-x-1.5 sm:space-x-2 transition-all shadow-md shrink-0 border ml-2 ${
                 isOnline
                   ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 border-emerald-400 ring-2 ring-emerald-500/50'
                   : 'bg-slate-800 text-slate-200 hover:bg-slate-700 border-slate-600'
               }`}
             >
-              <span className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-slate-950 animate-pulse' : 'bg-rose-500'}`}></span>
-              <span>{isOnline ? '● En Servicio' : '● Fuera Turno'}</span>
+              <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${isOnline ? 'bg-slate-950 animate-pulse' : 'bg-rose-500'}`}></span>
+              <span className="whitespace-nowrap">{isOnline ? 'En Servicio' : 'Fuera Turno'}</span>
             </button>
           </div>
 
@@ -458,21 +418,18 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                 <div className="bg-slate-50 dark:bg-[#111720] p-4 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold rounded-full uppercase tracking-wider">
-                      Turno AM • En Curso
+                      Estado: {activeTrip?.estado || 'Despachado'}
                     </span>
                     <span className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center">
                       <Clock className="w-3.5 h-3.5 mr-1 text-emerald-500" />
-                      Salida: 06:30 AM
+                      Salida: {activeTrip?.fecha_programada ? new Date(activeTrip.fecha_programada).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Inmediato'}
                     </span>
                   </div>
 
                   <div>
                     <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                      Ruta 160 ➔ Hospital Sanatorio Alemán & Huachipato
+                      {activeTrip?.origen_direccion || 'Origen'} ➔ {activeTrip?.destino_direccion || 'Destino'}
                     </h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                      Cliente Corporativo: <strong className="text-slate-900 dark:text-white">Clínica Sanatorio Alemán / Urgencias</strong>
-                    </p>
                   </div>
 
                   {/* Próximo paradero inmediato dinámico */}
@@ -483,15 +440,19 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                       </div>
                       <div className="min-w-0 flex-1">
                         <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block truncate">
-                          {proximoPasajero ? `Próximo Paradero (${proximoPasajero.nombre}) • ETA: 3 min` : '🏁 Recogida 100% completa • Destino Final'}
+                          {proximoPasajero ? `Próximo Paradero (${proximoPasajero.nombre})` : '🏁 Recogida completa • Destino Final'}
                         </span>
                         <p className="text-sm font-bold text-white truncate">
-                          {proximoPasajero ? proximoPasajero.direccion : 'Hospital Sanatorio Alemán (Portería Central)'}
+                          {proximoPasajero ? proximoPasajero.direccion : activeTrip?.destino_direccion || 'Destino'}
                         </p>
                       </div>
                     </div>
                     <button 
-                      onClick={() => mostrarNotificacion(`🚀 Abriendo navegación en Waze / Google Maps hacia: ${proximoPasajero ? proximoPasajero.direccion : 'Hospital Sanatorio Alemán'}`)}
+                      onClick={() => handleNavegar(
+                        proximoPasajero ? undefined : activeTrip?.destino_lat,
+                        proximoPasajero ? undefined : activeTrip?.destino_lng,
+                        proximoPasajero ? proximoPasajero.direccion : activeTrip?.destino_direccion
+                      )}
                       className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shrink-0 shadow-sm flex items-center"
                     >
                       <span>Navegar</span>
@@ -531,7 +492,6 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                   <div className="space-y-2.5">
                     {pasajerosRuta.map((p, index) => {
                       const tieneAviso = p.notaAviso && p.estado === 'pendiente';
-                      const pinVigente = index === 0 ? '8492' : index === 1 ? '3109' : '5501';
                       return (
                         <div 
                           key={p.id} 
@@ -567,10 +527,6 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                                 <MapPin className="w-3.5 h-3.5 mr-1 text-slate-400 shrink-0" />
                                 <span className="truncate">{p.direccion}</span>
                               </div>
-                              <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center pl-8 font-bold">
-                                <Key className="w-3 h-3 mr-1 text-emerald-500 shrink-0" />
-                                <span>PIN Abordaje: {pinVigente} • Token Efímero WFM Activo</span>
-                              </div>
                             </div>
 
                             {/* Botones de acción del conductor para cada pasajero */}
@@ -596,13 +552,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
 
                               {p.estado !== 'ausente' && p.estado !== 'abordo' && (
                                 <button
-                                  onClick={async () => {
-                                    const { error } = await supabase.rpc('passenger_update_status', { 
-                                      p_pasajero_viaje_id: p.id, 
-                                      p_estado: 'ausente' 
-                                    });
-                                    if (!error) mostrarNotificacion(`Pasajero ${p.nombre} marcado como ausente.`);
-                                  }}
+                                  onClick={() => handleCambiarEstadoPasajero(p.id, 'ausente')}
                                   className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 rounded-lg transition-all"
                                   title="Marcar ausente"
                                 >
@@ -613,11 +563,14 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                               {(p.estado === 'abordo' || p.estado === 'ausente') && (
                                 <button
                                   onClick={async () => {
-                                    const { error } = await supabase.rpc('passenger_update_status', { 
-                                      p_pasajero_viaje_id: p.id, 
+                                    const { error } = await supabase.rpc('board_passenger', { 
+                                      p_viaje_pasajero_id: p.id, 
                                       p_estado: 'pendiente' 
                                     });
-                                    if (!error) mostrarNotificacion(`Estado de ${p.nombre} reiniciado a pendiente.`);
+                                    if (!error) {
+                                      mostrarNotificacion(`Estado de ${p.nombre} reiniciado a pendiente.`);
+                                      fetchTrips();
+                                    }
                                   }}
                                   className="p-1.5 text-xs text-slate-400 underline"
                                 >
@@ -687,83 +640,43 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                 <div className="border-b border-slate-200 dark:border-[#212A38] pb-3">
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-blue-500" />
-                    Bitácora de Asignaciones del Día (Neira Transportes)
+                    Bitácora de Turnos
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Servicios regulares e incidencias despachadas desde la Central Operativa de {'Neira Transportes'}.
+                    Turnos asignados desde la Central Operativa de {'Neira Transportes'}.
                   </p>
                 </div>
 
-                {/* Alerta de Orden de Rescate Operativo */}
-                {!ordenRescateAceptada ? (
-                  <div className="bg-amber-500/10 border-2 border-amber-500 p-4 rounded-xl space-y-3 shadow-md">
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded font-extrabold text-xs bg-amber-500 text-slate-950 uppercase tracking-wider animate-pulse flex items-center">
-                        ⚡ Orden de Rescate Operativo #BIO-911
-                      </span>
-                      <span className="text-xs text-amber-500 font-mono font-bold">¡Requiere Respuesta!</span>
-                    </div>
-                    <div>
-                      <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
-                        Reasignación de Emergencia — Talcahuano
-                      </h4>
-                      <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">
-                        El móvil Patente BCN-401 sufrió retraso mecánico en Autopista Concepción-Talcahuano. Central solicita que te desvíes al punto de rescate para recoger 8 funcionarios de <strong>Compañía Siderúrgica Huachipato</strong>.
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-end space-x-2 pt-2">
-                      <button
-                        onClick={() => {
-                          setOrdenRescateAceptada(true);
-                          mostrarNotificacion('✅ Orden de Rescate #BIO-911 Aceptada. Coordenadas cargadas en tu sistema GPS y notificación enviada a los pasajeros y Central.');
-                        }}
-                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-lg shadow-md transition-all flex items-center"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-1.5" />
-                        Aceptar Orden y Desviar Unidad
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center justify-between">
-                    <span>⚡ Orden de Rescate #BIO-911 integrada exitosamente en tu ruta en curso.</span>
-                    <span className="px-2 py-0.5 bg-emerald-500 text-slate-950 rounded text-[10px] font-mono">EN EJECUCIÓN</span>
-                  </div>
-                )}
-
                 <div className="space-y-2.5">
-                  <div className="p-3.5 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] rounded-xl flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">06:30 AM — 08:15 AM</span>
-                      <h5 className="font-extrabold text-sm text-slate-900 dark:text-white mt-0.5">Turno AM • Clínica Sanatorio Alemán</h5>
-                      <span className="text-xs text-emerald-500 font-medium">● En Ejecución Actual (14/19 asientos)</span>
-                    </div>
-                    <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs rounded-lg">
-                      Ruta 160
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 bg-slate-50 dark:bg-[#111720] border border-slate-200 dark:border-[#212A38] rounded-xl flex items-center justify-between opacity-80">
-                    <div>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">13:30 PM — 15:00 PM</span>
-                      <h5 className="font-extrabold text-sm text-slate-900 dark:text-white mt-0.5">Turno Intermedio • Planta Celulósica Arauco</h5>
-                      <span className="text-xs text-slate-500 font-medium">⏳ Programado en Central (16 pasajeros confirmados)</span>
-                    </div>
-                    <span className="px-2.5 py-1 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-xs rounded-lg">
-                      Coronel
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 bg-slate-50 dark:bg-[#111720] border border-slate-200 dark:border-[#212A38] rounded-xl flex items-center justify-between opacity-80">
-                    <div>
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">22:00 PM — 23:45 PM</span>
-                      <h5 className="font-extrabold text-sm text-slate-900 dark:text-white mt-0.5">Turno Noche • Hospital Clínico Regional</h5>
-                      <span className="text-xs text-slate-500 font-medium">⏳ Programado en Central (19 pasajeros confirmados)</span>
-                    </div>
-                    <span className="px-2.5 py-1 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-xs rounded-lg">
-                      Concepción
-                    </span>
-                  </div>
+                  {(() => {
+                    const misTurnos = turnosConductores.filter(t => t.conductor_id === conductor?.id);
+                    if (misTurnos.length === 0) {
+                      return (
+                        <div className="p-4 text-center bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">No tienes turnos programados en este momento.</p>
+                        </div>
+                      );
+                    }
+                    
+                    return misTurnos.map(turno => (
+                      <div key={turno.id} className="p-3.5 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] rounded-xl flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                            {turno.fecha} • {turno.hora_inicio} — {turno.hora_fin}
+                          </span>
+                          <h5 className="font-extrabold text-sm text-slate-900 dark:text-white mt-0.5 capitalize">
+                            Jornada: {turno.tipo_jornada}
+                          </h5>
+                          <span className={`text-xs font-medium ${turno.estado === 'en_turno' ? 'text-emerald-500' : 'text-slate-500'}`}>
+                            {turno.estado === 'en_turno' ? '● En Ejecución' : `Estado: ${turno.estado}`}
+                          </span>
+                        </div>
+                        <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-bold text-xs rounded-lg uppercase">
+                          {turno.vehiculo?.patente || 'S/V'}
+                        </span>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
             )}
@@ -774,10 +687,10 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                 <div className="border-b border-slate-200 dark:border-[#212A38] pb-3">
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                    Inspección Técnica Pre-Viaje (Checklist WFM)
+                    Inspección Técnica Pre-Viaje
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Verificación obligatoria conforme a protocolo de seguridad laboral de {'Neira Transportes'} antes de iniciar traslados en el Gran Concepción.
+                    Verificación obligatoria conforme a protocolo de seguridad laboral de {'Neira Transportes'}.
                   </p>
                 </div>
 
@@ -787,9 +700,11 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                       <Car className="w-6 h-6" />
                     </div>
                     <div>
-                      <span className="text-xs font-extrabold text-slate-900 dark:text-white block">Móvil Asignado: {conductor.vehiculo?.marca} {conductor.vehiculo?.modelo}</span>
-                      <span className="text-[11px] font-mono font-bold bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded">Patente: {conductor.vehiculo?.placa || 'VIP-100'}</span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-2">Capacidad: {conductor.vehiculo?.capacidadPasajeros} personas</span>
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white block">Móvil Asignado: {conductor.vehiculo?.marca || 'S/V'} {conductor.vehiculo?.modelo || ''}</span>
+                      <span className="text-[11px] font-mono font-bold bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded">Patente: {conductor.vehiculo?.patente || 'S/V'}</span>
+                      {conductor.vehiculo?.capacidadPasajeros && (
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-2">Capacidad: {conductor.vehiculo.capacidadPasajeros} personas</span>
+                      )}
                     </div>
                   </div>
 
@@ -821,7 +736,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                         onChange={e => setCheckLicencia(e.target.checked)}
                         className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
                       />
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">3. Licencia Profesional Clase {conductor.tipoLicencia} original al día y en poder del conductor.</span>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">3. Licencia Profesional original al día y en poder del conductor.</span>
                     </label>
 
                     <label className="flex items-center space-x-3 cursor-pointer p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
@@ -840,12 +755,12 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                       onClick={handleTransmitirInspeccion}
                       className="w-full py-2.5 rounded-xl text-xs font-black bg-blue-600 hover:bg-blue-500 text-white shadow-md transition-all mt-2"
                     >
-                      ✓ Transmitir Certificado de Inspección a Central Operativa
+                      ✓ Transmitir Inspección a Central
                     </button>
                   ) : (
                     <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-700 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center space-x-2">
                       <CheckCircle className="w-4 h-4 text-emerald-500" />
-                      <span>Inspección Aprobada • Certificado #BIO-772 Sincronizado</span>
+                      <span>Inspección Aprobada y Sincronizada</span>
                     </div>
                   )}
                 </div>
@@ -858,34 +773,34 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                 <div className="border-b border-slate-200 dark:border-[#212A38] pb-3">
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-rose-500" />
-                    Canal Directo Central Operativa & Asistencia
+                    Canal Directo Central Operativa
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Línea prioritaria con los despachadores 24/7 de Neira Transportes y reporte en vivo de incidencias en ruta.
+                    Línea prioritaria con los despachadores 24/7 de Neira Transportes y reporte en vivo de incidencias.
                   </p>
                 </div>
 
                 <div className="bg-slate-50 dark:bg-[#111720] p-4 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-3">
-                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Mesa de Despacho Central (Concepción)</h4>
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">Mesa de Despacho Central</h4>
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-extrabold text-sm text-slate-900 dark:text-white block">Operador de Turno: Mauricio Arrau</span>
-                      <span className="text-xs font-mono text-slate-500 dark:text-slate-400">+56 41 228 9000 • Central Neira Transportes</span>
+                      <span className="font-extrabold text-sm text-slate-900 dark:text-white block">Despacho Central</span>
+                      <span className="text-xs font-mono text-slate-500 dark:text-slate-400">Neira Transportes</span>
                     </div>
-                    <a
-                      href="tel:+56412289000"
+                    <button
+                      onClick={() => mostrarNotificacion('Número de central no configurado por administrador.')}
                       className="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center space-x-1.5 shadow-xs"
                     >
                       <Phone className="w-4 h-4" />
                       <span>Llamar Central</span>
-                    </a>
+                    </button>
                   </div>
                 </div>
 
                 <div className="bg-white dark:bg-[#161D27] p-4 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-3">
                   <h4 className="text-xs font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-wide flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-rose-500" />
-                    Reportar Incidencia o Retraso a Central (1-Click)
+                    Reportar Incidencia o Retraso (1-Click)
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
                     Selecciona una incidencia operativa para alertar en tiempo real a los operadores de {'Neira Transportes'} y reprogramar los tiempos ETA:
@@ -893,15 +808,15 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                     <button
-                      onClick={() => handleReportarIncidenteConductor('Congestión Severa en Ruta 160 (Coronel/San Pedro)')}
+                      onClick={() => handleReportarIncidenteConductor('Congestión Severa en Ruta (Posible Retraso)')}
                       className="p-3 text-left rounded-xl border border-amber-400/50 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center justify-between group"
                     >
-                      <span>🚗 Congestión en Ruta 160</span>
+                      <span>🚗 Congestión en Ruta</span>
                       <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
                     </button>
 
                     <button
-                      onClick={() => handleReportarIncidenteConductor('Falla Mecánica Menor en Móvil VIP-100')}
+                      onClick={() => handleReportarIncidenteConductor(`Falla Mecánica Menor en Móvil ${conductor.vehiculo?.patente || 'Asignado'}`)}
                       className="p-3 text-left rounded-xl border border-orange-400/50 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center justify-between group"
                     >
                       <span>🔧 Avería o Desperfecto Móvil</span>
@@ -909,7 +824,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                     </button>
 
                     <button
-                      onClick={() => handleReportarIncidenteConductor('Desvío por Manifestaciones / Corte en Av. Chacabuco')}
+                      onClick={() => handleReportarIncidenteConductor('Desvío por Manifestaciones / Corte de Ruta')}
                       className="p-3 text-left rounded-xl border border-blue-400/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center justify-between group"
                     >
                       <span>🚧 Corte de Calle / Desvío</span>
@@ -980,13 +895,8 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              <AlertTriangle className="w-5 h-5 text-rose-500" />
-              <span className="text-[10px] sm:text-xs mt-1 truncate">Central 24/7</span>
             </button>
           </div>
-
-        </div>
-
       </div>
 
       {/* MODAL DE DISTRIBUCIÓN APK EXPO NATIVE (MOTO CONDUCTORES WFM) */}
