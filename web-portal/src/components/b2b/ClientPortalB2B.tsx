@@ -233,15 +233,67 @@ export const ClientPortalB2B: React.FC = () => {
     setTimeout(() => setActionMsg(null), 6500);
   };
 
-  // Descargar Reporte Generic Excel
-  const handleDownloadReporteExcel = (title: string) => {
-    const ws = XLSX.utils.json_to_sheet([
-      { rut: "11111111-1", nombre: "Ejemplo Pasajero", direccion: "Av Siempre Viva 123", fecha: "2026-10-15", hora_entrada: "08:00", hora_salida: "18:00", sede_id: "s0000000-0000-0000-0000-000000000000" }
-    ]);
+  // Descargar Reportes Reales en Excel
+  const handleDownloadReporteExcel = (title: 'Historial_Servicios' | 'Nomina_Ausentismo' | 'Auditoria_SLA') => {
+    let dataToExport: any[] = [];
+    let sheetName = "Reporte";
+    let fileName = `${title}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    if (title === 'Historial_Servicios') {
+      sheetName = "Viajes";
+      dataToExport = viajesB2B.map(v => ({
+        "ID Viaje": v.id.substring(0, 8),
+        "Fecha Programada": v.fechaProgramada || 'Inmediato',
+        "Pasajero": v.pasajeroNombre,
+        "Teléfono": v.pasajeroTelefono,
+        "Origen": v.origenDireccion,
+        "Destino": v.destinoDireccion,
+        "Conductor": v.conductorNombre || 'Por Asignar',
+        "Patente": v.vehiculoPlaca || 'Por Asignar',
+        "Estado": v.estado,
+        "Costo Estimado (CLP)": v.montoEstimado || 0
+      }));
+    } else if (title === 'Nomina_Ausentismo') {
+      sheetName = "Asistencia";
+      dataToExport = turnos.map(t => ({
+        "ID Turno": t.id.substring(0, 8),
+        "Fecha": t.fecha,
+        "Hora Entrada": t.hora_entrada || 'N/A',
+        "Hora Salida": t.hora_salida || 'N/A',
+        "Pasajero": t.pasajero?.nombre_completo || 'Desconocido',
+        "RUT": t.pasajero?.rut || 'Sin RUT',
+        "Presente (No-Show)": t.presente === false ? 'No Show' : (t.presente === true ? 'Presente' : 'Pendiente')
+      }));
+    } else if (title === 'Auditoria_SLA') {
+      sheetName = "SLA Operativo";
+      dataToExport = viajesB2B.map(v => {
+        let cumplimiento = 'Pendiente';
+        if (v.estado === 'completado') cumplimiento = 'Cumple SLA (A Tiempo)';
+        if (v.estado === 'no_show') cumplimiento = 'Fallo Pasajero (No-Show)';
+        if (v.estado === 'cancelado') cumplimiento = 'Cancelado';
+        
+        return {
+          "ID Viaje": v.id.substring(0, 8),
+          "Fecha Programada": v.fechaProgramada || 'Inmediato',
+          "Pasajero": v.pasajeroNombre,
+          "Estado Actual": v.estado,
+          "Hora Despacho": v.timestampDespacho || 'N/A',
+          "Evaluación SLA": cumplimiento
+        };
+      });
+    }
+
+    if (dataToExport.length === 0) {
+      setActionMsg(`⚠️ No hay datos disponibles para generar el reporte de ${title}.`);
+      setTimeout(() => setActionMsg(null), 5000);
+      return;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Turnos");
-    XLSX.writeFile(wb, "Plantilla_Turnos.xlsx");
-    setActionMsg(`✓ Reporte Excel "${title}" generado y descargado para auditoría corporativa.`);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, fileName);
+    setActionMsg(`✓ Reporte Excel "${fileName}" generado y descargado para auditoría corporativa.`);
     setTimeout(() => setActionMsg(null), 5000);
   };
 
