@@ -87,22 +87,7 @@ export const Navbar: React.FC = () => {
             
             {/* El selector de Empresas Transportistas ha sido eliminado por migración a Single-Tenant */}
 
-            {/* Selector de Clientes Corporativos B2B sólo para Empresa Transportista (Tenant Admin) */}
-            {userRole === 'admin' && (
-              <select
-                value={activeClienteB2BId || ''}
-                onChange={(e) => setActiveClienteB2BId(e.target.value)}
-                title="Seleccionar Contrato y Nómina de Cliente B2B"
-                className="w-24 sm:w-auto truncate bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-2xs"
-              >
-                <option value="" disabled>Seleccione Cliente</option>
-                {clientes.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-white dark:bg-[#0D1117] text-slate-900 dark:text-gray-200">
-                    🤝 {((c.nombreCorporativo || (c as any).nombre_corporativo || 'Cliente')).split(' ')[0]} {((c.nombreCorporativo || (c as any).nombre_corporativo || '')).split(' ')[1] || ''}
-                  </option>
-                ))}
-              </select>
-            )}
+            {/* Selector removido de la barra superior */}
             {/* Si es cliente_b2b o app_conductor, el selector no se muestra */}
 
             <button

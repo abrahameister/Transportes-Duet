@@ -52,12 +52,7 @@ export const AdminPortal: React.FC = () => {
       
       {/* Top info badges and quick buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-[#212A38]">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs">
-            <CheckCircle className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
-            Planificación Próx. Turno: {formattedDate}
-          </span>
-        </div>
+        <div className="flex-1"></div>
         <div className="flex items-center space-x-2.5 shrink-0">
           <button
             type="button"
