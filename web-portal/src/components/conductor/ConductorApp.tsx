@@ -187,7 +187,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
       });
     }
     
-    mostrarNotificacion(`🚨 Reporte de "${tipoLabel}" despachado en tiempo real a la Central de Neira Transportes.`);
+    mostrarNotificacion(`🚨 Reporte de "${tipoLabel}" despachado en tiempo real a la Central de Transportes Duet.`);
   };
 
   const totalAbordo = pasajerosRuta.filter(p => p.estado === 'abordo').length;
@@ -402,7 +402,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                     Manifiesto Transmitido a la Central
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                    La bitácora de telemetría GPS y el reporte digital de asistencia de funcionarios fueron sincronizados exitosamente en el Centro Operativo de <strong className="text-slate-900 dark:text-gray-200">{'Neira Transportes'}</strong>.
+                    La bitácora de telemetría GPS y el reporte digital de asistencia de funcionarios fueron sincronizados exitosamente en el Centro Operativo de <strong className="text-slate-900 dark:text-gray-200">{'Transportes Duet'}</strong>.
                   </p>
                 </div>
 
@@ -682,10 +682,10 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                 <div className="border-b border-slate-200 dark:border-[#212A38] pb-3">
                   <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-blue-500" />
-                    Bitácora de Asignaciones del Día (Neira Transportes)
+                    Bitácora de Asignaciones del Día (Transportes Duet)
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Servicios regulares e incidencias despachadas desde la Central Operativa de {'Neira Transportes'}.
+                    Servicios regulares e incidencias despachadas desde la Central Operativa de {'Transportes Duet'}.
                   </p>
                 </div>
 
@@ -772,7 +772,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                     Inspección Técnica Pre-Viaje (Checklist WFM)
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Verificación obligatoria conforme a protocolo de seguridad laboral de {'Neira Transportes'} antes de iniciar traslados en el Gran Concepción.
+                    Verificación obligatoria conforme a protocolo de seguridad laboral de {'Transportes Duet'} antes de iniciar traslados en el Gran Concepción.
                   </p>
                 </div>
 
@@ -856,7 +856,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                     Canal Directo Central Operativa & Asistencia
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Línea prioritaria con los despachadores 24/7 en el Neira Transportes y reporte en vivo de incidencias en ruta.
+                    Línea prioritaria con los despachadores 24/7 de Transportes Duet y reporte en vivo de incidencias en ruta.
                   </p>
                 </div>
 
@@ -865,7 +865,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-extrabold text-sm text-slate-900 dark:text-white block">Operador de Turno: Mauricio Arrau</span>
-                      <span className="text-xs font-mono text-slate-500 dark:text-slate-400">+56 41 228 9000 • Neira Transportes Centro</span>
+                      <span className="text-xs font-mono text-slate-500 dark:text-slate-400">+56 41 228 9000 • Central Transportes Duet</span>
                     </div>
                     <a
                       href="tel:+56412289000"
@@ -883,7 +883,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                     Reportar Incidencia o Retraso a Central (1-Click)
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Selecciona una incidencia operativa para alertar en tiempo real a los operadores de {'Neira Transportes'} y reprogramar los tiempos ETA:
+                    Selecciona una incidencia operativa para alertar en tiempo real a los operadores de {'Transportes Duet'} y reprogramar los tiempos ETA:
                   </p>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
@@ -1017,7 +1017,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
             <div className="bg-slate-50 dark:bg-[#0D1117] p-3.5 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-2 text-xs">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Aplicación Oficial — {'Neira Transportes'}</span>
+                <span>Aplicación Oficial — {'Transportes Duet'}</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
                 Terminal móvil para conductores con conexión en tiempo real a la central de operaciones. Permite gestionar viajes asignados, confirmar abordajes y consultar rutas de transporte.

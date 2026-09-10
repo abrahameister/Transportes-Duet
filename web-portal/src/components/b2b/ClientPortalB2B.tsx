@@ -8,6 +8,9 @@ import { supabase } from '../../lib/supabase';
 
 const SUGGERENCIAS_MAPS_BIOBIO = [
   'Aeropuerto Carriel Sur, Talcahuano',
+  'Hotel Holiday Inn Express Concepción (Aeropuerto)',
+  'Hotel Diego de Almagro Lomas Verdes, Concepción',
+  'Hotel Radisson Blu Concepción',
   'Compañía Siderúrgica Huachipato CAP, Talcahuano',
   'Celulosa y Forestal Arauco Planta Horcones, Arauco',
   'Plaza Independencia 400, Concepción Centro',
@@ -92,17 +95,49 @@ export const ClientPortalB2B: React.FC = () => {
     }
   }, [activeClient?.id]);
 
-  // Reserva Manual (Excepciones)
-  const [reservaTipo, setReservaTipo] = useState<'Entrada (Recojo)' | 'Salida (Despacho Domicilio)' | 'Reserva Especial / Urgencia'>('Entrada (Recojo)');
+  // Reserva Manual (Excepciones y Servicios Especiales)
+  const [reservaTipo, setReservaTipo] = useState<string>('Hacia el Aeropuerto (Salida de Vuelo)');
   const [reservaPasajero, setReservaPasajero] = useState('');
   const [reservaTelefono, setReservaTelefono] = useState('+56 9 ');
   const [reservaFecha, setReservaFecha] = useState(new Date().toISOString().split('T')[0]);
   const [reservaHora, setReservaHora] = useState('22:00');
-  const [reservaCentroCosto, setReservaCentroCosto] = useState('Urgencias Médicas');
+  const [reservaCentroCosto, setReservaCentroCosto] = useState('General / Sin Asignar');
   const [reservaOrigen, setReservaOrigen] = useState('');
-  const [reservaDestino, setReservaDestino] = useState('');
+  const [reservaDestino, setReservaDestino] = useState('Aeropuerto Carriel Sur, Talcahuano');
   const [showOrigenSug, setShowOrigenSug] = useState(false);
   const [showDestinoSug, setShowDestinoSug] = useState(false);
+
+  // Cambio dinámico de tipo de servicio con lógica aeroportuaria
+  const handleTipoServicioChange = (tipo: string) => {
+    setReservaTipo(tipo);
+    if (tipo.startsWith('Hacia el Aeropuerto')) {
+      setReservaDestino('Aeropuerto Carriel Sur, Talcahuano');
+      if (reservaOrigen === 'Aeropuerto Carriel Sur, Talcahuano') {
+        setReservaOrigen('');
+      }
+    } else if (tipo.startsWith('Desde el Aeropuerto')) {
+      setReservaOrigen('Aeropuerto Carriel Sur, Talcahuano');
+      if (reservaDestino === 'Aeropuerto Carriel Sur, Talcahuano') {
+        setReservaDestino('');
+      }
+    }
+  };
+
+  // Autocompletado inteligente de colaborador desde la nómina
+  const handlePasajeroChange = (nombre: string) => {
+    setReservaPasajero(nombre);
+    const encontrado = funcionarios.find(f => (f.nombre_completo || '').toLowerCase().trim() === nombre.toLowerCase().trim());
+    if (encontrado) {
+      if (encontrado.telefono) setReservaTelefono(encontrado.telefono);
+      if (encontrado.direccion_defecto) {
+        if (reservaTipo.startsWith('Hacia el Aeropuerto')) {
+          setReservaOrigen(encontrado.direccion_defecto);
+        } else if (reservaTipo.startsWith('Desde el Aeropuerto')) {
+          setReservaDestino(encontrado.direccion_defecto);
+        }
+      }
+    }
+  };
 
   // Tickets Soporte
   const [tickets, setTickets] = useState<any[]>([]);
@@ -202,7 +237,7 @@ export const ClientPortalB2B: React.FC = () => {
   const handleCrearReservaManual = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reservaPasajero || !reservaOrigen || !reservaDestino) {
-      setActionMsg('⚠️ Indique el pasajero, punto de origen y destino para procesar el despacho excepcional.');
+      setActionMsg('⚠️ Indique el pasajero, punto de recogida y lugar de destino.');
       setTimeout(() => setActionMsg(null), 4500);
       return;
     }
@@ -223,10 +258,18 @@ export const ClientPortalB2B: React.FC = () => {
 
     try {
       await crearViaje(newViaje);
-      setActionMsg(`🚀 ¡CONFIRMACIÓN INSTANTÁNEA DE ASIGNACIÓN! Requerimiento transmitido en línea a la central de Neira Transportes.`);
+      setActionMsg('✓ Solicitud de traslado enviada exitosamente a la central de operaciones.');
       setReservaPasajero('');
-      setReservaOrigen('');
-      setReservaDestino('');
+      if (reservaTipo.startsWith('Hacia el Aeropuerto')) {
+        setReservaOrigen('');
+        setReservaDestino('Aeropuerto Carriel Sur, Talcahuano');
+      } else if (reservaTipo.startsWith('Desde el Aeropuerto')) {
+        setReservaOrigen('Aeropuerto Carriel Sur, Talcahuano');
+        setReservaDestino('');
+      } else {
+        setReservaOrigen('');
+        setReservaDestino('');
+      }
     } catch (err: any) {
       setActionMsg('⚠️ Error: ' + err.message);
     }
@@ -393,10 +436,10 @@ export const ClientPortalB2B: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             {false ? (
-              <img src={""} alt={'Neira Transportes'} className="w-14 h-14 object-cover rounded-lg border border-slate-200 dark:border-[#212A38] shadow-2xs shrink-0" />
+              <img src={""} alt={'Transportes Duet'} className="w-14 h-14 object-cover rounded-lg border border-slate-200 dark:border-[#212A38] shadow-2xs shrink-0" />
             ) : (
               <div className="w-14 h-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-lg text-slate-700 dark:text-gray-200 shrink-0">
-                {'Neira Transportes'.substring(0, 2).toUpperCase()}
+                {'Transportes Duet'.substring(0, 2).toUpperCase()}
               </div>
             )}
             <div>
@@ -503,7 +546,7 @@ export const ClientPortalB2B: React.FC = () => {
             <div className="md:col-span-2 enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] space-y-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center">
                 <Truck className="w-4 h-4 mr-2 text-blue-500" />
-                <span>Estado de Flota en Ruta — Gran Concepción & Neira Transportes</span>
+                <span>Estado de Flota en Ruta — Gran Concepción y Rutas Aeropuerto</span>
               </h3>
               <div className="bg-slate-50 dark:bg-[#0D1117] p-4 rounded-lg border border-slate-200 dark:border-[#212A38] space-y-3 text-xs">
                 <div className="flex items-center justify-between font-semibold">
@@ -511,7 +554,7 @@ export const ClientPortalB2B: React.FC = () => {
                   <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold font-mono">{kpiData.movilesEnRuta} Móviles en Ruta</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
-                  La central operativa de <strong>{'Neira Transportes'}</strong> monitorea en tiempo real vía GPS todos los móviles asignados al turno diurno y nocturno. Las rutas hacia Huachipato, Aeropuerto Carriel Sur y Planta Horcones operan con tráfico normal por Ruta 160.
+                  La central operativa de <strong>{'Transportes Duet'}</strong> monitorea en tiempo real vía GPS todos los móviles asignados al turno diurno y nocturno. Las rutas hacia Aeropuerto Carriel Sur, sedes corporativas y plantas operan con normalidad.
                 </p>
               </div>
 
@@ -523,7 +566,7 @@ export const ClientPortalB2B: React.FC = () => {
                 </button>
                 <button onClick={() => setCurrentView('reserva')} className="p-3 rounded-lg border border-slate-300 dark:border-[#303B4E] bg-slate-50 dark:bg-[#0D1117] hover:bg-slate-100 dark:hover:bg-[#212A38] text-center transition-colors font-semibold text-xs text-slate-800 dark:text-gray-200 cursor-pointer">
                   <Plus className="w-5 h-5 mx-auto mb-1.5 text-indigo-500" />
-                  <span>Reserva Excepciones</span>
+                  <span>Solicitar Viaje</span>
                 </button>
                 <button onClick={() => setCurrentView('horarios')} className="p-3 rounded-lg border border-slate-300 dark:border-[#303B4E] bg-slate-50 dark:bg-[#0D1117] hover:bg-slate-100 dark:hover:bg-[#212A38] text-center transition-colors font-semibold text-xs text-slate-800 dark:text-gray-200 cursor-pointer">
                   <Calendar className="w-5 h-5 mx-auto mb-1.5 text-amber-500" />
@@ -548,7 +591,7 @@ export const ClientPortalB2B: React.FC = () => {
                 </div>
                 <div className="flex justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400">Ejecutivo Asignado:</span>
-                  <span className="font-bold text-slate-800 dark:text-gray-200">Matías Vergara (Neira Transportes)</span>
+                  <span className="font-bold text-slate-800 dark:text-gray-200">Central de Operaciones (Transportes Duet)</span>
                 </div>
                 <div className="flex justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <span className="text-slate-500 dark:text-slate-400">Emergencia 24/7:</span>
@@ -864,7 +907,7 @@ export const ClientPortalB2B: React.FC = () => {
                 </table>
               </div>
               <div className="bg-slate-50 dark:bg-[#0D1117] p-3.5 rounded-lg border border-slate-200 dark:border-[#212A38] text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                <span>Total estimado de traslados a coordinar para hoy: <strong className="text-slate-800 dark:text-gray-200 font-mono">224 pasajeros (Neira Transportes / Chile)</strong></span>
+                <span>Total estimado de traslados a coordinar para hoy: <strong className="text-slate-800 dark:text-gray-200 font-mono">224 pasajeros programados</strong></span>
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Información cargada al Centro de Operaciones</span>
               </div>
             </div>
@@ -891,27 +934,35 @@ export const ClientPortalB2B: React.FC = () => {
                 <label className="font-semibold text-slate-700 dark:text-gray-300 block mb-1">Tipo de Servicio (*):</label>
                 <select
                   value={reservaTipo}
-                  onChange={(e: any) => setReservaTipo(e.target.value)}
+                  onChange={(e) => handleTipoServicioChange(e.target.value)}
                   className="enterprise-input w-full font-semibold bg-white dark:bg-[#161D27]"
                 >
-                  <option value="Entrada (Recojo)">Entrada (Recojo a Planta/Clínica)</option>
-                  <option value="Salida (Despacho Domicilio)">Salida (Despacho a Domicilio)</option>
-                  <option value="Reserva Especial / Urgencia">Reserva Especial / Urgencia / Visita</option>
+                  <option value="Hacia el Aeropuerto (Salida de Vuelo)">Hacia el Aeropuerto (Salida de Vuelo)</option>
+                  <option value="Desde el Aeropuerto (Llegada de Vuelo)">Desde el Aeropuerto (Llegada de Vuelo)</option>
+                  <option value="Traslado Especial / Interurbano">Traslado Especial / Interurbano</option>
                 </select>
               </div>
               <div>
                 <label className="font-semibold text-slate-700 dark:text-gray-300 block mb-1">Pasajero / Colaborador (*):</label>
                 <input
                   type="text"
+                  list="lista-colaboradores"
                   value={reservaPasajero}
-                  onChange={(e) => setReservaPasajero(e.target.value)}
-                  placeholder="Ej. Ing. Martín Valdés (Urgencia)"
+                  onChange={(e) => handlePasajeroChange(e.target.value)}
+                  placeholder="Ej. Seleccionar de la nómina o escribir nombre"
                   required
                   className="enterprise-input w-full"
                 />
+                <datalist id="lista-colaboradores">
+                  {funcionarios.map((f, idx) => (
+                    <option key={f.id || idx} value={f.nombre_completo}>
+                      {f.rut ? `${f.rut} — ` : ''}{f.direccion_defecto || 'Sin dirección registrada'}
+                    </option>
+                  ))}
+                </datalist>
               </div>
               <div>
-                <label className="font-semibold text-slate-700 dark:text-gray-300 block mb-1">Teléfono Móvil Chile (*):</label>
+                <label className="font-semibold text-slate-700 dark:text-gray-300 block mb-1">Teléfono Móvil (*):</label>
                 <input
                   type="text"
                   value={reservaTelefono}
@@ -951,17 +1002,19 @@ export const ClientPortalB2B: React.FC = () => {
                   onChange={(e) => setReservaCentroCosto(e.target.value)}
                   className="enterprise-input w-full font-medium bg-white dark:bg-[#161D27]"
                 >
-                  <option value="Urgencias Médicas">Urgencias Médicas</option>
-                  <option value="Operaciones y Planta">Operaciones y Planta</option>
-                  <option value="Gerencia y Supervisión">Gerencia y Supervisión</option>
-                  <option value="Proyectos y Terreno">Proyectos y Terreno</option>
+                  <option value="General / Sin Asignar">General / Sin Asignar</option>
+                  <option value="Tripulaciones y Vuelos">Tripulaciones y Vuelos</option>
+                  <option value="Operaciones y Turnos Aeropuerto">Operaciones y Turnos Aeropuerto</option>
+                  <option value="Mantenimiento y Rampa">Mantenimiento y Rampa</option>
+                  <option value="Administración y Gerencia">Administración y Gerencia</option>
+                  <option value="Especial / Pasajeros Comerciales">Especial / Pasajeros Comerciales</option>
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="relative">
-                <label className="font-semibold text-slate-700 dark:text-gray-300 block mb-1">Origen / Recojo con Google Maps (*):</label>
+                <label className="font-semibold text-slate-700 dark:text-gray-300 block mb-1">Punto de Recogida (*):</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -969,7 +1022,7 @@ export const ClientPortalB2B: React.FC = () => {
                     onChange={(e) => setReservaOrigen(e.target.value)}
                     onFocus={() => setShowOrigenSug(true)}
                     onBlur={() => setTimeout(() => setShowOrigenSug(false), 250)}
-                    placeholder="Ej. Aeropuerto Carriel Sur, Talcahuano"
+                    placeholder="Ej. Domicilio, Hotel o Aeropuerto"
                     required
                     className="enterprise-input w-full pr-8"
                   />
@@ -977,7 +1030,7 @@ export const ClientPortalB2B: React.FC = () => {
                 </div>
                 {showOrigenSug && (
                   <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-[#1C2533] border border-slate-200 dark:border-[#303B4E] rounded-lg shadow-xl max-h-44 overflow-y-auto">
-                    <div className="px-3 py-1 bg-slate-100 dark:bg-[#0D1117] text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Sugerencias Concepción / Neira Transportes</div>
+                    <div className="px-3 py-1 bg-slate-100 dark:bg-[#0D1117] text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Puntos y Destinos Frecuentes</div>
                     {SUGGERENCIAS_MAPS_BIOBIO.map((s, idx) => (
                       <button key={idx} type="button" onClick={() => { setReservaOrigen(s); setShowOrigenSug(false); }} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-[#212A38] border-b border-slate-100 dark:border-slate-800 flex items-center">
                         <MapPin className="w-3.5 h-3.5 mr-2 text-blue-500 shrink-0" />
@@ -989,7 +1042,7 @@ export const ClientPortalB2B: React.FC = () => {
               </div>
 
               <div className="relative">
-                <label className="font-semibold text-slate-700 dark:text-gray-300 block mb-1">Destino Final (*):</label>
+                <label className="font-semibold text-slate-700 dark:text-gray-300 block mb-1">Lugar de Destino (*):</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -997,7 +1050,7 @@ export const ClientPortalB2B: React.FC = () => {
                     onChange={(e) => setReservaDestino(e.target.value)}
                     onFocus={() => setShowDestinoSug(true)}
                     onBlur={() => setTimeout(() => setShowDestinoSug(false), 250)}
-                    placeholder="Ej. Clínica Sanatorio Alemán, Concepción"
+                    placeholder="Ej. Aeropuerto Carriel Sur, Talcahuano"
                     required
                     className="enterprise-input w-full pr-8"
                   />
@@ -1005,7 +1058,7 @@ export const ClientPortalB2B: React.FC = () => {
                 </div>
                 {showDestinoSug && (
                   <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-[#1C2533] border border-slate-200 dark:border-[#303B4E] rounded-lg shadow-xl max-h-44 overflow-y-auto">
-                    <div className="px-3 py-1 bg-slate-100 dark:bg-[#0D1117] text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Sugerencias Concepción / Neira Transportes</div>
+                    <div className="px-3 py-1 bg-slate-100 dark:bg-[#0D1117] text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Puntos y Destinos Frecuentes</div>
                     {SUGGERENCIAS_MAPS_BIOBIO.map((s, idx) => (
                       <button key={idx} type="button" onClick={() => { setReservaDestino(s); setShowDestinoSug(false); }} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-[#212A38] border-b border-slate-100 dark:border-slate-800 flex items-center">
                         <MapPin className="w-3.5 h-3.5 mr-2 text-blue-500 shrink-0" />
@@ -1020,8 +1073,8 @@ export const ClientPortalB2B: React.FC = () => {
             <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 p-3.5 rounded-lg flex items-start space-x-2.5">
               <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               <div className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                <strong className="text-slate-900 dark:text-white block font-sans">Asignación Instantánea Confirmada:</strong>
-                Despacho a domicilio programado confirmado. La central del transportista recibirá y asignará un conductor de inmediato.
+                <strong className="text-slate-900 dark:text-white block font-sans">Solicitud en Línea Confirmada:</strong>
+                Servicio registrado. La central de operaciones recibirá la solicitud y asignará el móvil oportunamente.
               </div>
             </div>
 
@@ -1256,7 +1309,7 @@ export const ClientPortalB2B: React.FC = () => {
                 Asistencia Directa Transportes
               </span>
               <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
-                Central Operativa {'Neira Transportes'}
+                Central Operativa {'Transportes Duet'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">Canal formal de contacto y emergencias operativas 24/7 en la Región del Biobío.</p>
             </div>
@@ -1491,7 +1544,7 @@ export const ClientPortalB2B: React.FC = () => {
               <div className="bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-3.5 flex items-start space-x-3 text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed mt-4">
                 <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <span>
-                  Al registrar, <strong>{'Neira Transportes'}</strong> verificará la viabilidad y cobertura de la dirección en un máximo de 2 horas hábiles.
+                  Al registrar, <strong>{'Transportes Duet'}</strong> verificará la viabilidad y cobertura de la dirección en un máximo de 2 horas hábiles.
                 </span>
               </div>
 
@@ -1537,7 +1590,7 @@ export const ClientPortalB2B: React.FC = () => {
                       <div className="font-bold text-slate-900 dark:text-white text-sm">{cond?.nombreCompleto || 'Chofer Profesional'}</div>
                       <div className="text-slate-500 dark:text-slate-400 font-mono mt-0.5">Patente: <strong className="text-slate-800 dark:text-gray-200">{selectedViajeGps.vehiculoPlaca || 'LSD-802'}</strong> • Mercedes Sprinter</div>
                       <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] mt-1">
-                        ● Conductor verificado por {'Neira Transportes'}
+                        ● Conductor verificado por {'Transportes Duet'}
                       </div>
                     </div>
                   </div>
@@ -1547,7 +1600,7 @@ export const ClientPortalB2B: React.FC = () => {
                       ⚡ SATÉLITE CONCEPCIÓN (LAT: -36.826, LNG: -73.049)
                     </div>
                     <MapPin className="w-10 h-10 text-emerald-400 mx-auto mt-4 animate-bounce" />
-                    <p className="font-bold text-white mt-2">Móvil en Recorrido por Ruta 160 / Neira Transportes</p>
+                    <p className="font-bold text-white mt-2">Móvil en Recorrido hacia Aeropuerto Carriel Sur</p>
                     <p className="text-slate-400 text-[11px] mt-0.5">ETA estimada de arribo al punto de recojo: <strong className="text-emerald-400">4 minutos</strong></p>
                   </div>
 

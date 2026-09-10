@@ -13,7 +13,7 @@ export const ResetPasswordView: React.FC = () => {
   const [verifyingSession, setVerifyingSession] = useState<boolean>(true);
   
   const navigate = useNavigate();
-  const brandName = 'Neira Transportes';
+  const brandName = 'Transportes Duet';
 
   useEffect(() => {
     let mounted = true;

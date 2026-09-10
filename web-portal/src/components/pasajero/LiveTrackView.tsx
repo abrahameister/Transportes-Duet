@@ -84,7 +84,7 @@ export const LiveTrackView: React.FC = () => {
              <Shield className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h1 className="font-bold text-white text-lg leading-tight tracking-tight">Neira Transportes</h1>
+            <h1 className="font-bold text-white text-lg leading-tight tracking-tight">Transportes Duet</h1>
             <p className="text-[10px] text-emerald-400 uppercase tracking-widest font-black">Seguimiento Seguro</p>
           </div>
         </div>

@@ -390,7 +390,7 @@ export const ClientesTarifacionView: React.FC = () => {
             <form onSubmit={handleSaveNuevoCliente} className="space-y-3.5">
               <div className="pt-2">
                 <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Razón Social Contratante (*):</label>
-                <input type="text" value={nombreCorporativo} onChange={(e) => setNombreCorporativo(e.target.value)} placeholder="Ej. Forestal Arauco Neira Transportes S.A." required className="enterprise-input w-full text-xs" />
+                <input type="text" value={nombreCorporativo} onChange={(e) => setNombreCorporativo(e.target.value)} placeholder="Ej. Forestal Arauco S.A." required className="enterprise-input w-full text-xs" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">RUT Contratante (*):</label>

@@ -299,7 +299,7 @@ export const ProgramacionServiciosView: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="relative">
                 <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">
-                  Punto de Origen / Recojo: <span className="text-[10px] text-blue-500 font-normal">● Google Maps AutoComplete</span>
+                  Punto de Origen / Recogida (*):
                 </label>
                 <div className="relative">
                   <input
@@ -317,7 +317,7 @@ export const ProgramacionServiciosView: React.FC = () => {
                 {showOrigenSuggestions && filteredOrigenSuggestions.length > 0 && (
                   <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-[#1C2533] border border-slate-200 dark:border-[#303B4E] rounded-lg shadow-xl overflow-hidden text-xs max-h-48 overflow-y-auto">
                     <div className="px-3 py-1 bg-slate-100 dark:bg-[#0D1117] text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                      <span>Sugerencias Google Maps Chile</span>
+                      <span>Puntos y Destinos Frecuentes</span>
                       <Sparkles className="w-3 h-3 text-amber-500" />
                     </div>
                     {filteredOrigenSuggestions.map((sug, idx) => (
@@ -337,7 +337,7 @@ export const ProgramacionServiciosView: React.FC = () => {
 
               <div className="relative">
                 <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">
-                  Destino Final: <span className="text-[10px] text-blue-500 font-normal">● Google Maps AutoComplete</span>
+                  Lugar de Destino (*):
                 </label>
                 <div className="relative">
                   <input
@@ -355,7 +355,7 @@ export const ProgramacionServiciosView: React.FC = () => {
                 {showDestinoSuggestions && filteredDestinoSuggestions.length > 0 && (
                   <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-[#1C2533] border border-slate-200 dark:border-[#303B4E] rounded-lg shadow-xl overflow-hidden text-xs max-h-48 overflow-y-auto">
                     <div className="px-3 py-1 bg-slate-100 dark:bg-[#0D1117] text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                      <span>Sugerencias Google Maps Chile</span>
+                      <span>Puntos y Destinos Frecuentes</span>
                       <Sparkles className="w-3 h-3 text-amber-500" />
                     </div>
                     {filteredDestinoSuggestions.map((sug, idx) => (
