@@ -301,6 +301,70 @@ export const ClientPortalB2B: React.FC = () => {
     return conductores.find(c => c.id === viaje.conductorId || c.nombreCompleto === viaje.conductorNombre) || conductores[0];
   };
 
+  const kpiData = React.useMemo(() => {
+    // 1. SLA Puntualidad (basado en estados completados vs total)
+    const totalViajes = viajesB2B.length || 1; // evitar / 0
+    const despachadosOTerminados = viajesB2B.filter(v => ['despachado', 'en_camino', 'en_ruta', 'completado', 'finalizado'].includes(v.estado)).length;
+    const sla = viajesB2B.length === 0 ? 100 : ((despachadosOTerminados / totalViajes) * 100).toFixed(1);
+
+    // 2. Tasa de Ausentismo (basado en turnos donde presente es false)
+    const totalTurnos = turnos.length || 1;
+    const totalNoShows = turnos.filter(t => t.presente === false).length;
+    const ausentismo = turnos.length === 0 ? 0 : ((totalNoShows / totalTurnos) * 100).toFixed(1);
+
+    // 3. Evolución Cumplimiento Servicios
+    const cancelados = viajesB2B.filter(v => v.estado === 'cancelado').length;
+    const viajesEfectivos = viajesB2B.length - cancelados;
+    const cumplimientoServicios = viajesB2B.length === 0 ? 100 : ((viajesEfectivos / totalViajes) * 100).toFixed(1);
+
+    // 4. Consumo por Centro de Costo (agrupando montos de viajesB2B por origen o un criterio)
+    const ccs = viajesB2B.reduce((acc, v) => {
+      let cc = 'Gerencia, Supervisión y Administración';
+      const origen = (v.origenDireccion || '').toLowerCase();
+      if (origen.includes('urgencia') || origen.includes('clínica') || origen.includes('sanatorio')) {
+        cc = 'Urgencias Médicas y Operativos';
+      } else if (origen.includes('aeropuerto') || origen.includes('planta') || origen.includes('celulosa') || origen.includes('siderúrgica')) {
+        cc = 'Operaciones y Relevo Planta';
+      }
+      if (!acc[cc]) acc[cc] = 0;
+      acc[cc] += Number(v.montoEstimado) || 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalCosto = Object.values(ccs).reduce((a, b) => a + b, 0) || 1;
+    
+    const colors = {
+      'Urgencias Médicas y Operativos': { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500' },
+      'Operaciones y Relevo Planta': { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500' },
+      'Gerencia, Supervisión y Administración': { text: 'text-indigo-500 dark:text-indigo-400', bg: 'bg-indigo-500' }
+    };
+
+    const costosList = Object.entries(ccs)
+      .filter(([_, amount]) => amount > 0)
+      .map(([name, amount]) => ({
+        name,
+        amount,
+        percent: ((amount / totalCosto) * 100).toFixed(1),
+        colorClass: colors[name as keyof typeof colors]?.text || 'text-slate-600',
+        bgClass: colors[name as keyof typeof colors]?.bg || 'bg-slate-500'
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
+    const movilesEnRuta = viajesB2B.filter(v => ['despachado', 'en_camino', 'en_ruta'].includes(v.estado)).length;
+
+    return {
+      sla,
+      ausentismo,
+      totalNoShows,
+      cumplimientoServicios,
+      viajesEfectivos,
+      totalViajes: viajesB2B.length,
+      costosList,
+      movilesEnRuta
+    };
+  }, [viajesB2B, turnos]);
+
+
   const navItems = [
     { id: 'inicio', label: '1. Inicio (Dashboard)', icon: Home, color: 'text-blue-500' },
     { id: 'funcionarios', label: `2. Funcionarios (${funcionarios.length})`, icon: Users, color: 'text-emerald-500' },
@@ -444,7 +508,7 @@ export const ClientPortalB2B: React.FC = () => {
               <div className="bg-slate-50 dark:bg-[#0D1117] p-4 rounded-lg border border-slate-200 dark:border-[#212A38] space-y-3 text-xs">
                 <div className="flex items-center justify-between font-semibold">
                   <span className="text-slate-700 dark:text-gray-200">Móviles Operando para {activeClient?.nombreCorporativo}:</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold font-mono">14 Móviles en Ruta</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold font-mono">{kpiData.movilesEnRuta} Móviles en Ruta</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
                   La central operativa de <strong>{'Neira Transportes'}</strong> monitorea en tiempo real vía GPS todos los móviles asignados al turno diurno y nocturno. Las rutas hacia Huachipato, Aeropuerto Carriel Sur y Planta Horcones operan con tráfico normal por Ruta 160.
@@ -1058,18 +1122,18 @@ export const ClientPortalB2B: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38]">
               <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cumplimiento SLA Puntualidad</div>
-              <div className="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-2">99.4 %</div>
+              <div className="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-2">{kpiData.sla}%</div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">● Meta Contractual: 98.0% (Sin Penalizaciones)</div>
             </div>
             <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38]">
               <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tasa de Ausentismo (No Show)</div>
-              <div className="text-3xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-2">1.2 %</div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">● 3 pasajeros no presentados en punto de recojo</div>
+              <div className="text-3xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-2">{kpiData.ausentismo}%</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">● {kpiData.totalNoShows} pasajeros no presentados en punto de recojo</div>
             </div>
             <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38]">
               <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Evolución Cumplimiento Servicios</div>
-              <div className="text-3xl font-bold font-mono text-slate-900 dark:text-white mt-2">100 %</div>
-              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-2 font-semibold">● 142 de 142 viajes ejecutados sin cancelación</div>
+              <div className="text-3xl font-bold font-mono text-slate-900 dark:text-white mt-2">{kpiData.cumplimientoServicios}%</div>
+              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-2 font-semibold">● {kpiData.viajesEfectivos} de {kpiData.totalViajes} viajes ejecutados sin cancelación</div>
             </div>
           </div>
 
@@ -1078,35 +1142,21 @@ export const ClientPortalB2B: React.FC = () => {
               Análisis de Volumen y Consumo por Centro de Costo ($ CLP)
             </h3>
             <div className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-slate-800 dark:text-gray-200">Urgencias Médicas y Operativos:</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400">$ 1.280.000 CLP (45%)</span>
-                </div>
-                <div className="w-full h-2 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                  <div className="bg-emerald-500 h-full" style={{ width: '45%' }} />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-slate-800 dark:text-gray-200">Operaciones y Relevo Planta Neira Transportes:</span>
-                  <span className="font-mono text-blue-600 dark:text-blue-400">$ 994.000 CLP (35%)</span>
-                </div>
-                <div className="w-full h-2 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                  <div className="bg-blue-500 h-full" style={{ width: '35%' }} />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-slate-800 dark:text-gray-200">Gerencia, Supervisión y Administración:</span>
-                  <span className="font-mono text-indigo-500 dark:text-indigo-400">$ 566.000 CLP (20%)</span>
-                </div>
-                <div className="w-full h-2 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                  <div className="bg-indigo-500 h-full" style={{ width: '20%' }} />
-                </div>
-              </div>
+              {kpiData.costosList.length > 0 ? (
+                kpiData.costosList.map((c: any, i: number) => (
+                  <div key={i} className="space-y-1">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-slate-800 dark:text-gray-200">{c.name}:</span>
+                      <span className={`font-mono ${c.colorClass}`}>$ {c.amount.toLocaleString('es-CL')} CLP ({c.percent}%)</span>
+                    </div>
+                    <div className="w-full h-2 rounded bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                      <div className={`${c.bgClass} h-full`} style={{ width: `${c.percent}%` }} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-4 text-center text-slate-400">Sin datos financieros para mostrar en el periodo actual.</div>
+              )}
             </div>
           </div>
         </div>
