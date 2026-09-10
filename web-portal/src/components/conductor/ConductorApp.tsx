@@ -30,6 +30,26 @@ export const ConductorApp: React.FC = () => {
   const [myTrips, setMyTrips] = useState<any[]>([]);
   const [activeTrip, setActiveTrip] = useState<any>(null);
 
+  // Derivar vehículo asignado: del viaje activo -> del turno del conductor -> vehículo habitual
+  const vehiculoTurno = turnosConductores.find(t => t.conductor_id === conductor?.id && t.vehiculo)?.vehiculo;
+  const vehiculoViaje = activeTrip?.asignaciones?.[0]?.vehiculo;
+  const vehiculoAsignado = vehiculoViaje || vehiculoTurno || conductor?.vehiculo;
+  const patenteVehiculo = vehiculoAsignado?.patente || (vehiculoAsignado as any)?.placa || 'S/V';
+  const modeloVehiculo = vehiculoAsignado
+    ? `${vehiculoAsignado.marca || ''} ${vehiculoAsignado.modelo || ''}`.trim() || 'Vehículo Asignado'
+    : 'Sin Vehículo Asignado';
+
+  const formatHora24 = (isoOrTime?: string | null) => {
+    if (!isoOrTime) return '--:--';
+    if (isoOrTime.includes('T') || (isoOrTime.includes('-') && isoOrTime.includes(':'))) {
+      const d = new Date(isoOrTime);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
+    }
+    return isoOrTime.slice(0, 5);
+  };
+
   const handleNavegar = (lat?: number | null, lng?: number | null, direccion?: string) => {
     if (lat && lng) {
       window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
@@ -121,10 +141,25 @@ export const ConductorApp: React.FC = () => {
       mostrarNotificacion(`✓ Pasajero registrado como: ${nuevoEstado === 'abordo' ? 'A BORDO' : 'AUSENTE'}`);
       await fetchTrips();
       setSyncStatus('SINCRONIZADO');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
       setSyncStatus('ERROR');
-      mostrarNotificacion('Error al registrar pasajero');
+      mostrarNotificacion(e?.message || 'Error al registrar pasajero');
+    }
+  };
+
+  const handleRevertirEstadoPasajero = async (id: string, nombre: string) => {
+    setSyncStatus('PENDIENTE');
+    try {
+      const { error } = await supabase.rpc('board_passenger', { p_viaje_pasajero_id: id, p_estado: 'pendiente' });
+      if (error) throw error;
+      mostrarNotificacion(`Estado de ${nombre} reestablecido a pendiente`);
+      await fetchTrips();
+      setSyncStatus('SINCRONIZADO');
+    } catch (e: any) {
+      console.error('Error al revertir abordaje:', e);
+      setSyncStatus('ERROR');
+      mostrarNotificacion(e?.message || 'Error al revertir estado');
     }
   };
 
@@ -138,10 +173,10 @@ export const ConductorApp: React.FC = () => {
       mostrarNotificacion('🏁 ¡Recorrido finalizado!');
       await fetchTrips();
       setSyncStatus('SINCRONIZADO');
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error('Error al finalizar ruta:', e);
       setSyncStatus('ERROR');
-      mostrarNotificacion('Error al finalizar ruta');
+      mostrarNotificacion(e?.message || 'Error al finalizar ruta');
     }
   };
   
@@ -180,7 +215,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
 
   const handleReportarIncidenteConductor = async (tipoLabel: string) => {
     enviarAvisoOperativo({
-      pasajeroNombre: `${conductor.nombreCompleto} (Móvil ${conductor.vehiculo?.patente || 'S/V'})`,
+      pasajeroNombre: `${conductor.nombreCompleto} (Móvil ${patenteVehiculo})`,
       mensaje: `🚨 ALERTA CONDUCTOR: ${tipoLabel}. Solicito gestión o asistencia desde Central.`,
       tipo: 'alerta_central'
     });
@@ -325,9 +360,9 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                 </div>
                 <div className="flex items-center space-x-2 mt-0.5 text-xs truncate">
                   <span className="px-1.5 py-0.5 rounded font-mono font-extrabold text-[11px] bg-amber-400 text-slate-950 tracking-wider uppercase border border-amber-500 shadow-xs shrink-0">
-                    {conductor.vehiculo?.patente || 'S/V'}
+                    {patenteVehiculo}
                   </span>
-                  <span className="text-slate-300 text-[11px] truncate">{conductor.vehiculo?.modelo || 'Sin Vehículo Asignado'}</span>
+                  <span className="text-slate-300 text-[11px] truncate">{modeloVehiculo}</span>
                 </div>
               </div>
             </div>
@@ -363,25 +398,25 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                   <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-xs">
                     ✓ Recorrido Finalizado
                   </span>
-                  <h3 className="text-xl font-extrabold text-slate-900 dark:text-white pt-2">
-                    Manifiesto Transmitido a la Central
+                  <h3 className="text-lg font-extrabold text-slate-900 dark:text-white pt-1">
+                    Recorrido Finalizado
                   </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                    La bitácora de telemetría GPS y el reporte digital de asistencia de funcionarios fueron sincronizados exitosamente en el Centro Operativo de <strong className="text-slate-900 dark:text-gray-200">{'Neira Transportes'}</strong>.
+                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+                    El registro de asistencia fue transmitido a la Central de Neira Transportes.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto bg-white dark:bg-[#161D27] p-3.5 rounded-xl border border-slate-200 dark:border-[#212A38] text-left shadow-xs">
+                <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto bg-white dark:bg-[#161D27] p-3 rounded-xl border border-slate-200 dark:border-[#212A38] text-left shadow-xs">
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Asistencia Validada</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Pasajeros a Bordo</span>
                     <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
-                      {pasajerosRuta.filter(p => p.estado === 'abordo').length} de {pasajerosRuta.length} funcionarios
+                      {pasajerosRuta.filter(p => p.estado === 'abordo').length} de {pasajerosRuta.length}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Estado Conductor</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Estado Conductor</span>
                     <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                      ● Disponible para Central
+                      ● Disponible
                     </span>
                   </div>
                 </div>
@@ -415,34 +450,34 @@ const [checkFluidos, setCheckFluidos] = useState(true);
               <div className="space-y-4">
                 
                 {/* Resumen del Recorrido */}
-                <div className="bg-slate-50 dark:bg-[#111720] p-4 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-3">
+                <div className="bg-slate-50 dark:bg-[#111720] p-3.5 rounded-xl border border-slate-200 dark:border-[#212A38] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold rounded-full uppercase tracking-wider">
-                      Estado: {activeTrip?.estado || 'Despachado'}
+                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold rounded-full capitalize">
+                      {activeTrip?.estado?.replace('_', ' ') || 'Despachado'}
                     </span>
-                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center">
+                    <span className="text-xs font-mono text-slate-600 dark:text-slate-300 flex items-center font-bold">
                       <Clock className="w-3.5 h-3.5 mr-1 text-emerald-500" />
-                      Salida: {activeTrip?.fecha_programada ? new Date(activeTrip.fecha_programada).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Inmediato'}
+                      Salida: {formatHora24(activeTrip?.fecha_programada)}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                       {activeTrip?.origen_direccion || 'Origen'} ➔ {activeTrip?.destino_direccion || 'Destino'}
                     </h3>
                   </div>
 
-                  {/* Próximo paradero inmediato dinámico */}
-                  <div className="bg-slate-900 dark:bg-slate-950 text-white p-3.5 rounded-lg flex items-center justify-between gap-3 border border-slate-800 shadow-inner">
+                  {/* Próxima Parada */}
+                  <div className="bg-slate-900 dark:bg-slate-950 text-white p-3.5 rounded-xl flex items-center justify-between gap-3 border border-slate-800 shadow-sm">
                     <div className="flex items-center space-x-3 min-w-0 flex-1">
-                      <div className={`p-2.5 rounded-full shrink-0 ${proximoPasajero ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                        <Navigation className="w-5 h-5 animate-pulse" />
+                      <div className={`p-2 rounded-lg shrink-0 ${proximoPasajero ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                        <Navigation className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 block truncate">
-                          {proximoPasajero ? `Próximo Paradero (${proximoPasajero.nombre})` : '🏁 Recogida completa • Destino Final'}
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-400 block truncate">
+                          {proximoPasajero ? `Próxima Parada • ${proximoPasajero.nombre}` : 'Destino Final'}
                         </span>
-                        <p className="text-sm font-bold text-white truncate">
+                        <p className="text-xs sm:text-sm font-semibold text-white truncate">
                           {proximoPasajero ? proximoPasajero.direccion : activeTrip?.destino_direccion || 'Destino'}
                         </p>
                       </div>
@@ -453,10 +488,10 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                         proximoPasajero ? undefined : activeTrip?.destino_lng,
                         proximoPasajero ? proximoPasajero.direccion : activeTrip?.destino_direccion
                       )}
-                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shrink-0 shadow-sm flex items-center"
+                      className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shrink-0 flex items-center gap-1 shadow-sm"
                     >
                       <span>Navegar</span>
-                      <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
@@ -480,12 +515,11 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                 {/* Checklist de Recogida de Pasajeros (Abordaje Digital) */}
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between px-1">
-                    <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <span className="text-base">👋</span>
-                      <span>¿Quién viaja hoy?</span>
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      Lista de Pasajeros
                     </h4>
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      {totalAbordo} de {pasajerosRuta.length} validados
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      {totalAbordo} de {pasajerosRuta.length} a bordo
                     </span>
                   </div>
 
@@ -562,17 +596,10 @@ const [checkFluidos, setCheckFluidos] = useState(true);
 
                               {(p.estado === 'abordo' || p.estado === 'ausente') && (
                                 <button
-                                  onClick={async () => {
-                                    const { error } = await supabase.rpc('board_passenger', { 
-                                      p_viaje_pasajero_id: p.id, 
-                                      p_estado: 'pendiente' 
-                                    });
-                                    if (!error) {
-                                      mostrarNotificacion(`Estado de ${p.nombre} reiniciado a pendiente.`);
-                                      fetchTrips();
-                                    }
-                                  }}
-                                  className="p-1.5 text-xs text-slate-400 underline"
+                                  type="button"
+                                  onClick={() => handleRevertirEstadoPasajero(p.id, p.nombre)}
+                                  className="px-2.5 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
+                                  title="Revertir a pendiente"
                                 >
                                   Revertir
                                 </button>
@@ -601,31 +628,31 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                     })}
                   </div>
 
-                  {/* Bloqueo Operativo WFM: El cierre de ruta exige validar el 100% del manifiesto */}
+                  {/* Mensaje de confirmación de pendientes */}
                   {totalPendientes > 0 && (
-                    <div className="bg-amber-500/15 border border-amber-500/40 dark:border-amber-500/20 rounded-xl p-3.5 mt-3 flex items-center space-x-2.5 text-amber-900 dark:text-amber-200 text-xs font-bold shadow-xs">
-                      <Lock className="w-5 h-5 text-amber-500 shrink-0" />
-                      <span>Por favor marca "Abordo" o "Ausente" en los {totalPendientes} pasajero{totalPendientes !== 1 ? 's' : ''} que falta{totalPendientes !== 1 ? 'n' : ''} por confirmar para poder finalizar tu recorrido.</span>
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 mt-3 flex items-center space-x-2 text-amber-800 dark:text-amber-300 text-xs font-semibold">
+                      <Lock className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span>Marca "Abordo" o "Ausente" en los {totalPendientes} pasajero{totalPendientes !== 1 ? 's' : ''} pendiente{totalPendientes !== 1 ? 's' : ''} para finalizar.</span>
                     </div>
                   )}
 
                   <button
                     disabled={totalPendientes > 0}
                     onClick={handleFinalizarRuta}
-                    className={`w-full mt-2.5 py-3.5 rounded-xl font-black text-sm shadow-md transition-all flex items-center justify-center space-x-2 ${
+                    className={`w-full mt-3 py-3 rounded-xl font-extrabold text-sm shadow-md transition-all flex items-center justify-center space-x-2 ${
                       totalPendientes > 0
-                        ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-85'
-                        : 'bg-emerald-400 text-slate-950 hover:bg-emerald-300 ring-2 ring-emerald-500/40'
+                        ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-300 dark:border-slate-700 cursor-not-allowed'
+                        : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-emerald-500/20 cursor-pointer'
                     }`}
                   >
                     {totalPendientes > 0 ? (
                       <>
-                        <Lock className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0" />
-                        <span>Finalizar Recorrido (Bloqueado: {totalPendientes} pendiente{totalPendientes !== 1 ? 's' : ''})</span>
+                        <Lock className="w-4 h-4" />
+                        <span>Finalizar Recorrido ({totalPendientes} pendiente{totalPendientes !== 1 ? 's' : ''})</span>
                       </>
                     ) : (
                       <>
-                        <CheckSquare className="w-5 h-5 text-slate-950 shrink-0" />
+                        <CheckSquare className="w-4 h-4" />
                         <span>Finalizar Recorrido</span>
                       </>
                     )}
@@ -662,7 +689,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                       <div key={turno.id} className="p-3.5 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] rounded-xl flex items-center justify-between">
                         <div>
                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                            {turno.fecha} • {turno.hora_inicio} — {turno.hora_fin}
+                            {turno.fecha} • {formatHora24(turno.hora_inicio)} — {formatHora24(turno.hora_fin)}
                           </span>
                           <h5 className="font-extrabold text-sm text-slate-900 dark:text-white mt-0.5 capitalize">
                             Jornada: {turno.tipo_jornada}
@@ -700,10 +727,10 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                       <Car className="w-6 h-6" />
                     </div>
                     <div>
-                      <span className="text-xs font-extrabold text-slate-900 dark:text-white block">Móvil Asignado: {conductor.vehiculo?.marca || 'S/V'} {conductor.vehiculo?.modelo || ''}</span>
-                      <span className="text-[11px] font-mono font-bold bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded">Patente: {conductor.vehiculo?.patente || 'S/V'}</span>
-                      {conductor.vehiculo?.capacidadPasajeros && (
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-2">Capacidad: {conductor.vehiculo.capacidadPasajeros} personas</span>
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white block">Móvil Asignado: {modeloVehiculo}</span>
+                      <span className="text-[11px] font-mono font-bold bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded">Patente: {patenteVehiculo}</span>
+                      {vehiculoAsignado?.capacidadPasajeros && (
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-2">Capacidad: {vehiculoAsignado.capacidadPasajeros} personas</span>
                       )}
                     </div>
                   </div>
@@ -816,7 +843,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                     </button>
 
                     <button
-                      onClick={() => handleReportarIncidenteConductor(`Falla Mecánica Menor en Móvil ${conductor.vehiculo?.patente || 'Asignado'}`)}
+                      onClick={() => handleReportarIncidenteConductor(`Falla Mecánica Menor en Móvil ${patenteVehiculo}`)}
                       className="p-3 text-left rounded-xl border border-orange-400/50 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-all text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center justify-between group"
                     >
                       <span>🔧 Avería o Desperfecto Móvil</span>
@@ -895,6 +922,8 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
+              <AlertTriangle className="w-5 h-5" />
+              <span className="text-[10px] sm:text-xs mt-1 truncate">Central</span>
             </button>
           </div>
       </div>
