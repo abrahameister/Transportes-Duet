@@ -109,10 +109,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const viajesB2B = useMemo(() => {
-    const targetId = activeClienteB2BId || (currentRoleViewInternal === 'cliente_b2b' && clientes.length > 0 ? clientes[0].id : null);
+    const targetId = activeClienteB2BId || (currentRoleView === 'cliente_b2b' && clientes.length > 0 ? clientes[0].id : null);
     if (!targetId) return [];
     return viajes.filter(v => v.clienteCorporativoId === targetId);
-  }, [viajes, activeClienteB2BId, currentRoleViewInternal, clientes]);
+  }, [viajes, activeClienteB2BId, currentRoleView, clientes]);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--tenant-primary', '#1E3A8A');
