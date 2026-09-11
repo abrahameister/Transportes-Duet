@@ -1146,7 +1146,7 @@ export const ClientPortalB2B: React.FC = () => {
                                 <img src={conductor.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover border border-slate-300 dark:border-slate-700 shrink-0" />
                                 <div>
                                   <div className="font-semibold text-slate-800 dark:text-white text-[11px]">{conductor.nombreCompleto}</div>
-                                  <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Patente: <strong>{v.vehiculoPlaca || 'LSD-802'}</strong> (Mercedes Sprinter)</div>
+                                  <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">Patente: <strong>{v.vehiculoPlaca || 'Sin Unidad Asignada'}</strong></div>
                                 </div>
                               </div>
                             ) : (
@@ -1581,23 +1581,22 @@ export const ClientPortalB2B: React.FC = () => {
               return (
                 <div className="space-y-4 text-xs">
                   <div className="flex items-center space-x-3.5 bg-slate-50 dark:bg-[#0D1117] p-3.5 rounded-lg border border-slate-200 dark:border-[#212A38]">
-                    <img src={cond?.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-purple-500 shadow-xs shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-slate-900 dark:text-white text-sm">{cond?.nombreCompleto || 'Chofer Profesional'}</div>
-                      <div className="text-slate-500 dark:text-slate-400 font-mono mt-0.5">Patente: <strong className="text-slate-800 dark:text-gray-200">{selectedViajeGps.vehiculoPlaca || 'LSD-802'}</strong> • Mercedes Sprinter</div>
+                      <div className="font-bold text-slate-900 dark:text-white text-sm">{selectedViajeGps.conductorNombre || 'Conductor no asignado aún'}</div>
+                      <div className="text-slate-500 dark:text-slate-400 font-mono mt-0.5">Unidad: <strong className="text-slate-800 dark:text-gray-200">{selectedViajeGps.vehiculoPlaca || 'Sin Asignar'}</strong></div>
                       <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] mt-1">
-                        ● Conductor verificado por {'Neira Transportes'}
+                        ● Viaje administrado por Neira Transportes
                       </div>
                     </div>
                   </div>
 
                   <div className="bg-[#0F172A] rounded-xl overflow-hidden text-center p-6 border border-slate-700 relative text-gray-100">
                     <div className="absolute top-2 left-3 text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700">
-                      ⚡ SATÉLITE CONCEPCIÓN (LAT: -36.826, LNG: -73.049)
+                      ⚡ ESTADO DEL VIAJE
                     </div>
                     <MapPin className="w-10 h-10 text-emerald-400 mx-auto mt-4 animate-bounce" />
-                    <p className="font-bold text-white mt-2">Móvil en Recorrido hacia Aeropuerto Carriel Sur</p>
-                    <p className="text-slate-400 text-[11px] mt-0.5">ETA estimada de arribo al punto de recojo: <strong className="text-emerald-400">4 minutos</strong></p>
+                    <p className="font-bold text-white mt-2">{selectedViajeGps.estado.replace('_', ' ').toUpperCase()}</p>
+                    <p className="text-slate-400 text-[11px] mt-0.5">El enlace de seguimiento en vivo en mapa es enviado al pasajero por SMS al iniciar la ruta.</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[11px]">

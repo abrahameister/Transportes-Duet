@@ -360,7 +360,7 @@ export const TorreControlView: React.FC = () => {
                   latitude: -36.8201,
                   zoom: 11
                 }}
-                mapStyle="https://tiles.openfreemap.org/styles/liberty"
+                mapStyle="https://tiles.openfreemap.org/styles/positron"
                 style={{ width: '100%', height: '100%' }}
               >
                 <NavigationControl position="bottom-right" />
@@ -378,7 +378,7 @@ export const TorreControlView: React.FC = () => {
                       <div className="flex flex-col items-center cursor-pointer group">
                         <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-2 py-1 rounded shadow-md border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-800 dark:text-gray-200 whitespace-nowrap mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           {c.nombreCompleto} <br/>
-                          <span className="font-mono font-normal">{c.vehiculo?.placa || 'VIP-001'}</span>
+                          <span className="font-mono font-normal">{c.vehiculo?.patente || c.vehiculo?.placa || 'Sin Asignar'}</span>
                         </div>
                         <div className={`w-6 h-6 rounded-full border-2 shadow-lg flex items-center justify-center ${
                           isExcepcion ? 'bg-red-500 border-white animate-pulse' : 
