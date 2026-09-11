@@ -1,3 +1,5 @@
+import Map, { Marker, NavigationControl } from 'react-map-gl/maplibre';
+import * as maplibregl from 'maplibre-gl';
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../ui/Toast';
@@ -333,50 +335,70 @@ export const TorreControlView: React.FC = () => {
 
       {activeSubView === 'radar' && (
         <div className="space-y-4">
-          <div className="enterprise-card p-4 bg-slate-900 dark:bg-[#090C10] text-gray-100 relative overflow-hidden border border-slate-800 dark:border-[#212A38] min-h-[360px] flex flex-col justify-between">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293715_1px,transparent_1px),linear-gradient(to_bottom,#1f293715_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
+          <div className="enterprise-card p-0 bg-slate-900 dark:bg-[#090C10] text-gray-100 relative overflow-hidden border border-slate-800 dark:border-[#212A38] h-[500px] flex flex-col">
             
-            <div className="flex items-center justify-between z-10">
+            {/* Cabecera superpuesta al mapa */}
+            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 to-transparent p-4 pointer-events-none flex items-start justify-between">
               <div>
                 <span className="text-[10px] uppercase font-mono tracking-wider text-emerald-400 flex items-center">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-ping" />
-                  Telemetría GPS Activa (Frecuencia: 5s)
+                  Telemetría GPS Activa (MapLibre + Supabase)
                 </span>
-                <h3 className="text-base font-bold text-white mt-0.5">Monitoreo GPS de Flota en Tiempo Real</h3>
+                <h3 className="text-base font-bold text-white mt-0.5 drop-shadow-md">Monitoreo GPS de Flota</h3>
               </div>
-              <div className="text-xs font-mono text-slate-400 bg-black/40 px-3 py-1.5 rounded border border-slate-800">
-                Total Móviles: {conductoresTenant.length} | Operativos: {conductoresTenant.filter(c => c.estadoWFM !== 'offline').length}
+              <div className="text-xs font-mono text-slate-200 bg-black/60 px-3 py-1.5 rounded border border-slate-700/50 backdrop-blur-sm pointer-events-auto">
+                Total: {conductoresTenant.length} | Online: {conductoresTenant.filter(c => c.estadoWFM !== 'offline').length}
               </div>
             </div>
 
-            {/* Simulated Map Pins Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 my-6 z-10">
-              {conductoresTenant.map((c) => {
-                const isOnline = c.estadoWFM !== 'offline' && !c.enDescanso;
-                return (
-                  <div key={c.id} className={`p-3 rounded-lg border bg-black/60 backdrop-blur-sm transition-all ${
-                    isOnline ? 'border-emerald-800/80 text-white' : 'border-slate-800 text-slate-400'
-                  }`}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                      <span className="font-mono text-[10px] text-slate-400">{c.vehiculo?.placa || 'VIP-001'}</span>
-                    </div>
-                    <div className="font-bold text-sm text-white truncate">{c.nombreCompleto}</div>
-                    <div className="text-[11px] text-slate-400 mt-1 flex items-center truncate">
-                      <MapPin className="w-3 h-3 mr-1 shrink-0 text-slate-500" />
-                      <span className="font-mono text-[11px]">{c.ultimaLatitud?.toFixed(4)}, {c.ultimaLongitud?.toFixed(4)}</span>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono">
-                      <span className={isOnline ? 'text-emerald-400' : 'text-slate-500'}>{c.estadoWFM.toUpperCase()}</span>
-                      <span>Ping: {c.ultimaActualizacionGps}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Contenedor del Mapa */}
+            <div className="flex-1 w-full h-full">
+              <Map
+                mapLib={maplibregl}
+                initialViewState={{
+                  longitude: -73.0444,
+                  latitude: -36.8201,
+                  zoom: 11
+                }}
+                mapStyle="https://tiles.openfreemap.org/styles/liberty"
+                style={{ width: '100%', height: '100%' }}
+              >
+                <NavigationControl position="bottom-right" />
+                
+                {conductoresTenant.map((c) => {
+                  const isOnline = c.estadoWFM !== 'offline' && !c.enDescanso;
+                  const isExcepcion = c.estadoWFM === 'incidencia';
+                  const lat = c.ultimaLatitud;
+                  const lng = c.ultimaLongitud;
 
-            <div className="text-center text-[11px] text-slate-500 z-10 border-t border-slate-800/50 pt-2">
-              Los enlaces a Waze o Google Maps se generan automáticamente cuando el conductor acepta el servicio en su aplicación móvil.
+                  if (!lat || !lng) return null;
+
+                  return (
+                    <Marker key={c.id} longitude={lng} latitude={lat} anchor="bottom">
+                      <div className="flex flex-col items-center cursor-pointer group">
+                        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-2 py-1 rounded shadow-md border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-800 dark:text-gray-200 whitespace-nowrap mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          {c.nombreCompleto} <br/>
+                          <span className="font-mono font-normal">{c.vehiculo?.placa || 'VIP-001'}</span>
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 shadow-lg flex items-center justify-center ${
+                          isExcepcion ? 'bg-red-500 border-white animate-pulse' : 
+                          isOnline ? 'bg-emerald-500 border-white' : 
+                          'bg-slate-500 border-slate-300'
+                        }`}>
+                          <Car className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        {isOnline && !isExcepcion && (
+                          <div className="absolute top-1/2 left-1/2 w-8 h-8 bg-emerald-500/30 rounded-full -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none" />
+                        )}
+                      </div>
+                    </Marker>
+                  );
+                })}
+              </Map>
+            </div>
+            
+            <div className="text-center text-[10px] text-slate-400 bg-slate-900/90 py-1.5 border-t border-slate-800 absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+              Mapa OpenFreeMap • Datos GPS sincronizados en tiempo real vía Supabase Realtime
             </div>
           </div>
         </div>
