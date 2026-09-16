@@ -320,20 +320,22 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     let success = 0;
     
     // Matriz base diseñada para Neira Transportes
-    // Matriz Estricta 40h (Turnos de máximo 8h)
+    // Matriz de Alta Cobertura (6 días x 7h = 42h Max)
     const template = {
-      'JORGE ZAPPETTINI': { default: '09:00-17:00', type: 'manana', exclude: [6, 0] },
-      'CESAR REYES BRIONES': { default: '04:00-12:00', type: 'manana', exclude: [1, 2] },
-      'VICTOR PINCHEIRA RIFFO': { custom: { 4: '11:00-19:00', 5: '22:00-06:00', 6: '22:00-06:00', 0: '12:00-20:00' } },
-      'LINSEN JOE UBILLA PEÑA': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 3, 6, 0] },
-      'HUGO SUAZO REYES': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 3, 5, 6] },
-      'OSCAR REYES AGUILERA': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 5, 6, 0] },
-      'MARCO ANTONIO MENDOZA BURGOS': { default: '11:00-19:00', type: 'tarde', include: [3, 4, 5, 6, 0] },
-      'CARLOS VILLANUEVA SANCHEZ': { default: '21:00-05:00', type: 'noche', include: [1, 2, 3, 4, 0] },
-      'NICOLAS AVILA JORQUERA': { default: '22:00-06:00', type: 'noche', include: [1, 2, 3, 5, 6] },
-      'JORGE FIGUEROA LAGOS': { default: '21:00-05:00', type: 'noche', include: [1, 2, 4, 5, 0] },
-      'JAIRO ALONSO NEIRA CORTEZ': { default: '22:00-06:00', type: 'noche', include: [1, 3, 4, 6, 0] },
-      'FRANCISCO ALBERTO MUÑOZ MOREN': { default: '21:00-05:00', type: 'noche', include: [2, 3, 4, 5, 6] }
+      'JORGE ZAPPETTINI': { default: '09:00-17:00', type: 'manana', exclude: [6, 0] }, // 5 dias x 8h = 40h
+      'CESAR REYES BRIONES': { default: '04:00-12:00', type: 'manana', exclude: [1, 2] }, // 5 dias x 8h = 40h
+      'VICTOR PINCHEIRA RIFFO': { custom: { 4: '11:00-19:00', 5: '22:00-06:00', 6: '22:00-06:00', 0: '12:00-20:00' } }, // 4 dias = 32h
+      // Maximizando Día (12-19, 7h x 6 días = 42h)
+      'LINSEN JOE UBILLA PEÑA': { default: '12:00-19:00', type: 'tarde', exclude: [0] },
+      'HUGO SUAZO REYES': { default: '12:00-19:00', type: 'tarde', exclude: [1] },
+      'OSCAR REYES AGUILERA': { default: '12:00-19:00', type: 'tarde', exclude: [2] },
+      'MARCO ANTONIO MENDOZA BURGOS': { default: '12:00-19:00', type: 'tarde', exclude: [3] },
+      'CARLOS VILLANUEVA SANCHEZ': { default: '12:00-19:00', type: 'tarde', exclude: [4] },
+      'NICOLAS AVILA JORQUERA': { default: '12:00-19:00', type: 'tarde', exclude: [5] },
+      // Maximizando Noche (21-04 o 23-06, 7h x 6 días = 42h)
+      'JORGE FIGUEROA LAGOS': { default: '21:00-04:00', type: 'noche', exclude: [6] },
+      'JAIRO ALONSO NEIRA CORTEZ': { default: '21:00-04:00', type: 'noche', exclude: [0] },
+      'FRANCISCO ALBERTO MUÑOZ MOREN': { default: '23:00-06:00', type: 'noche', exclude: [1] }
     };
 
     for (let day = 1; day <= daysInMonth; day++) {
