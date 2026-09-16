@@ -146,8 +146,12 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const [shiftNotas, setShiftNotas] = useState('');
   const [shiftHorasExtras, setShiftHorasExtras] = useState<number>(0);
   // State for Generate Shifts
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [generateMonth, setGenerateMonth] = useState(new Date().toISOString().slice(0, 7));
+    const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generateStartDate, setGenerateStartDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  const endD = new Date();
+  endD.setMonth(endD.getMonth() + 1);
+  const [generateEndDate, setGenerateEndDate] = useState(endD.toISOString().split('T')[0]);
 
   // Edit Shift State
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
@@ -312,71 +316,83 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   };
 
   
-  const handleGenerateMonthlyShifts = async (e: React.FormEvent) => {
+    const handleGenerateMonthlyShifts = async (e: React.FormEvent) => {
     e.preventDefault();
-    const [year, month] = generateMonth.split('-').map(Number);
-    const daysInMonth = new Date(year, month, 0).getDate();
+    const start = new Date(generateStartDate + 'T12:00:00');
+    const end = new Date(generateEndDate + 'T12:00:00');
     
+    if (start > end) {
+      toast.warning('La fecha de inicio no puede ser posterior a la de fin.', 'Error de Fechas');
+      return;
+    }
+
     let success = 0;
     
-    // Matriz base diseñada para Neira Transportes
-    // Matriz de Alta Cobertura (6 días x 7h = 42h Max)
-    const template = {
-      'JORGE ZAPPETTINI': { default: '09:00-17:00', type: 'manana', exclude: [6, 0] }, // 5 dias x 8h = 40h
-      'CESAR REYES BRIONES': { default: '04:00-12:00', type: 'manana', exclude: [1, 2] }, // 5 dias x 8h = 40h
-      'VICTOR PINCHEIRA RIFFO': { custom: { 4: '11:00-19:00', 5: '22:00-06:00', 6: '22:00-06:00', 0: '12:00-20:00' } }, // 4 dias = 32h
-      // Maximizando Día (12-19, 7h x 6 días = 42h)
-      'LINSEN JOE UBILLA PEÑA': { default: '12:00-19:00', type: 'tarde', exclude: [0] },
-      'HUGO SUAZO REYES': { default: '12:00-19:00', type: 'tarde', exclude: [1] },
-      'OSCAR REYES AGUILERA': { default: '12:00-19:00', type: 'tarde', exclude: [2] },
-      'MARCO ANTONIO MENDOZA BURGOS': { default: '12:00-19:00', type: 'tarde', exclude: [3] },
-      'CARLOS VILLANUEVA SANCHEZ': { default: '12:00-19:00', type: 'tarde', exclude: [4] },
-      'NICOLAS AVILA JORQUERA': { default: '12:00-19:00', type: 'tarde', exclude: [5] },
-      // Maximizando Noche (21-04 o 23-06, 7h x 6 días = 42h)
-      'JORGE FIGUEROA LAGOS': { default: '21:00-04:00', type: 'noche', exclude: [6] },
-      'JAIRO ALONSO NEIRA CORTEZ': { default: '21:00-04:00', type: 'noche', exclude: [0] },
-      'FRANCISCO ALBERTO MUÑOZ MOREN': { default: '23:00-06:00', type: 'noche', exclude: [1] }
-    };
+    // Sort and filter drivers
+    const sortedConductores = [...conductoresTenant].sort((a, b) => (a.nombreCompleto || '').localeCompare(b.nombreCompleto || ''));
+    const flexibleDrivers = sortedConductores.filter(c => {
+      const name = (c.nombreCompleto || '').toLowerCase();
+      if (name.includes('abraham')) return false;
+      if (name.includes('jorge zappettini')) return false;
+      if (name.includes('cesar reyes briones')) return false;
+      if (name.includes('victor pincheira riffo')) return false;
+      return true;
+    });
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month - 1, day);
-      const dow = date.getDay(); // 0 = Sun, 1 = Mon...
+    let current = new Date(start);
+    while (current <= end) {
+      const year = current.getFullYear();
+      const month = current.getMonth() + 1;
+      const day = current.getDate();
+      const dow = current.getDay(); // 0 = Sun
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      
-      for (const cond of conductoresTenant) {
-        if (cond.nombreCompleto === 'Abraham Chofer') continue; // Excluded
+      const weekOfYear = Math.floor((current.getTime() - new Date(year, 0, 1).getTime()) / 86400000 / 7);
+
+      for (const cond of sortedConductores) {
+        const name = (cond.nombreCompleto || '').toLowerCase();
+        if (name.includes('abraham')) continue;
         
         let shouldWork = false;
         let timeStr = '';
         let tType = 'manana';
         
-        const rule: any = (template as any)[cond.nombreCompleto || ''];
-        if (rule) {
-          if (rule.custom) {
-            if (rule.custom[dow]) {
-              shouldWork = true;
-              timeStr = rule.custom[dow];
-              tType = timeStr.startsWith('21') ? 'noche' : (timeStr.startsWith('11') || timeStr.startsWith('12') ? 'tarde' : 'manana');
-            }
-          } else {
-            if (rule.include) {
-              if (rule.include.includes(dow)) {
-                shouldWork = true;
-                timeStr = rule.default;
-                tType = rule.type;
-              }
-            } else if (rule.exclude) {
-              if (!rule.exclude.includes(dow)) {
-                shouldWork = true;
-                timeStr = rule.default;
-                tType = rule.type;
-              }
+        if (name.includes('jorge zappettini')) {
+          if (dow !== 0 && dow !== 6) {
+            shouldWork = true;
+            timeStr = '09:00-17:00';
+            tType = 'manana';
+          }
+        } else if (name.includes('cesar reyes briones')) {
+          if (dow !== 1 && dow !== 2) {
+            shouldWork = true;
+            timeStr = '04:00-12:00';
+            tType = 'manana';
+          }
+        } else if (name.includes('victor pincheira riffo')) {
+          if (dow === 4) { shouldWork = true; timeStr = '11:00-19:00'; tType = 'tarde'; } // Jueves
+          else if (dow === 5 || dow === 6) { shouldWork = true; timeStr = '22:00-06:00'; tType = 'noche'; } // Vie, Sab
+          else if (dow === 0) { shouldWork = true; timeStr = '12:00-20:00'; tType = 'tarde'; } // Dom
+        } else {
+          // Flexible Drivers Rotation (5 days, 8h = 40h/week)
+          const idx = flexibleDrivers.findIndex(f => f.id === cond.id);
+          const offDay1 = (idx + weekOfYear) % 7;
+          const offDay2 = (idx + weekOfYear + 3) % 7;
+          
+          if (dow !== offDay1 && dow !== offDay2) {
+            shouldWork = true;
+            const isNight = ((idx + weekOfYear) % 2) === 0;
+            if (isNight) {
+              const isLateNight = idx % 2 === 0;
+              timeStr = isLateNight ? '22:00-06:00' : '21:00-05:00';
+              tType = 'noche';
+            } else {
+              timeStr = '12:00-20:00';
+              tType = 'tarde';
             }
           }
         }
         
         if (shouldWork) {
-          // Check if not already exists
           const exists = turnosConductores.find(t => t.conductor_id === cond.id && t.fecha === dateStr);
           if (!exists) {
             const [ini, fin] = timeStr.split('-');
@@ -388,16 +404,19 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
               hora_fin: fin,
               tipo_jornada: tType as any,
               estado: 'planificado',
-              notas: 'Generado Automáticamente'
+              notas: 'Generado Auto (Rotativo)',
+              horas_extras: 0
             });
             success++;
           }
         }
       }
+      
+      current.setDate(current.getDate() + 1);
     }
     
     setShowGenerateModal(false);
-    toast.success(`Se generaron ${success} turnos para el mes seleccionado.`, 'Generación Completa');
+    toast.success(`Se generaron ${success} turnos para el rango seleccionado.`, 'Generación Completa');
   };
 
   const vehiculosTenant = vehiculos;
@@ -406,7 +425,17 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const filteredConductores = conductoresTenant.filter(c => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return (
+    const filteredTurnos = turnosConductores.filter(t => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
+    const condName = (cond?.nombre_completo || cond?.nombreCompleto || '').toLowerCase();
+    const condRut = (cond?.rut || '').toLowerCase();
+    const vehPlaca = ((t as any).vehiculo?.patente || (t as any).vehiculo?.placa || '').toLowerCase();
+    return condName.includes(q) || condRut.includes(q) || vehPlaca.includes(q);
+  });
+
+  return (
       (c.nombreCompleto && c.nombreCompleto.toLowerCase().includes(q)) ||
       (c.rut && c.rut.toLowerCase().includes(q)) ||
       (c.numeroLicencia && c.numeroLicencia.toLowerCase().includes(q)) ||
@@ -417,7 +446,17 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const filteredVehiculos = vehiculosTenant.filter(v => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return (
+    const filteredTurnos = turnosConductores.filter(t => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
+    const condName = (cond?.nombre_completo || cond?.nombreCompleto || '').toLowerCase();
+    const condRut = (cond?.rut || '').toLowerCase();
+    const vehPlaca = ((t as any).vehiculo?.patente || (t as any).vehiculo?.placa || '').toLowerCase();
+    return condName.includes(q) || condRut.includes(q) || vehPlaca.includes(q);
+  });
+
+  return (
       (v.placa && v.placa.toLowerCase().includes(q)) ||
       (v.patente && v.patente.toLowerCase().includes(q)) ||
       (v.marca && v.marca.toLowerCase().includes(q)) ||
@@ -461,6 +500,16 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     actualizarVehiculo(v.id, { estadoOperativo: next });
     toast.info(`Unidad ${v.placa} cambió a estado: ${next.toUpperCase()}`, 'Estado Técnico');
   };
+
+  const filteredTurnos = turnosConductores.filter(t => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
+    const condName = (cond?.nombre_completo || cond?.nombreCompleto || '').toLowerCase();
+    const condRut = (cond?.rut || '').toLowerCase();
+    const vehPlaca = ((t as any).vehiculo?.patente || (t as any).vehiculo?.placa || '').toLowerCase();
+    return condName.includes(q) || condRut.includes(q) || vehPlaca.includes(q);
+  });
 
   return (
     <div className="space-y-5">
@@ -720,7 +769,17 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 ) : (
                   filteredVehiculos.map(vh => {
                     const isOperativo = vh.estadoOperativo === 'operativo';
-                    return (
+                    const filteredTurnos = turnosConductores.filter(t => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
+    const condName = (cond?.nombre_completo || cond?.nombreCompleto || '').toLowerCase();
+    const condRut = (cond?.rut || '').toLowerCase();
+    const vehPlaca = ((t as any).vehiculo?.patente || (t as any).vehiculo?.placa || '').toLowerCase();
+    return condName.includes(q) || condRut.includes(q) || vehPlaca.includes(q);
+  });
+
+  return (
                       <tr key={vh.id} className="hover:bg-slate-50/80 dark:hover:bg-[#1C2533]/80 transition-colors">
                         <td className="py-4 px-4 font-mono font-bold text-slate-900 dark:text-white text-sm">
                           {vh.placa}
@@ -821,7 +880,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 className="px-3.5 py-1.5 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-1.5"
               >
                 <Calendar className="w-3.5 h-3.5 mr-1" />
-                <span>Generar Mes</span>
+                <span>Generar Rango</span>
               </button>
               <button
                 type="button"
@@ -859,7 +918,17 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                   const tarde = turnosDia.filter(t => t.hora_inicio < '20:00' && t.hora_fin > '12:00').length;
                   const noche = turnosDia.filter(t => t.hora_inicio >= '20:00' || (t.hora_inicio < '06:00' && t.hora_fin > '00:00')).length;
 
-                  return (
+                  const filteredTurnos = turnosConductores.filter(t => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
+    const condName = (cond?.nombre_completo || cond?.nombreCompleto || '').toLowerCase();
+    const condRut = (cond?.rut || '').toLowerCase();
+    const vehPlaca = ((t as any).vehiculo?.patente || (t as any).vehiculo?.placa || '').toLowerCase();
+    return condName.includes(q) || condRut.includes(q) || vehPlaca.includes(q);
+  });
+
+  return (
                     <div key={dateStr} className="bg-white dark:bg-[#1C2533] border border-slate-200 dark:border-[#2A374A] rounded-lg p-3 shadow-xs hover:shadow-md transition-shadow">
                       <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-100 dark:border-slate-800 pb-1">
                         {d.toLocaleDateString('es-CL', { weekday: 'short', day: '2-digit', month: 'short' })}
@@ -885,7 +954,17 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                         <div className="max-h-24 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                           {turnosDia.map(t => {
                             const cn = (t as any).conductor?.nombre_completo || 'Conductor';
-                            return (
+                            const filteredTurnos = turnosConductores.filter(t => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
+    const condName = (cond?.nombre_completo || cond?.nombreCompleto || '').toLowerCase();
+    const condRut = (cond?.rut || '').toLowerCase();
+    const vehPlaca = ((t as any).vehiculo?.patente || (t as any).vehiculo?.placa || '').toLowerCase();
+    return condName.includes(q) || condRut.includes(q) || vehPlaca.includes(q);
+  });
+
+  return (
                               <div key={t.id} className="text-[10px] bg-slate-50 dark:bg-[#161D27] p-1.5 rounded text-slate-600 dark:text-slate-300 truncate">
                                 <strong>{cn.split(' ')[0]}</strong>: {t.hora_inicio?.slice(0,5)}-{t.hora_fin?.slice(0,5)}
                               </div>
@@ -915,7 +994,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-[#212A38] text-slate-700 dark:text-gray-300">
-                {turnosConductores.length === 0 ? (
+                {filteredTurnos.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
                       <div className="max-w-sm mx-auto space-y-2">
@@ -926,7 +1005,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                     </td>
                   </tr>
                 ) : (
-                  turnosConductores.map(t => {
+                  filteredTurnos.map(t => {
                     const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
                     let fechaChile = t.fecha;
                     if (t.fecha && t.fecha.includes('-')) {
@@ -936,7 +1015,17 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                       }
                     }
 
-                    return (
+                    const filteredTurnos = turnosConductores.filter(t => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const cond = conductores.find(c => c.id === t.conductor_id) || (t as any).conductor;
+    const condName = (cond?.nombre_completo || cond?.nombreCompleto || '').toLowerCase();
+    const condRut = (cond?.rut || '').toLowerCase();
+    const vehPlaca = ((t as any).vehiculo?.patente || (t as any).vehiculo?.placa || '').toLowerCase();
+    return condName.includes(q) || condRut.includes(q) || vehPlaca.includes(q);
+  });
+
+  return (
                       <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-[#1C2533]/80 transition-colors">
                         <td className="py-4 px-4 font-bold text-slate-900 dark:text-white">
                           {cond?.nombre_completo || cond?.nombreCompleto || 'Conductor'}
@@ -1190,7 +1279,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#212A38] pb-3">
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#0F172A]" />
-                <span>Generar Turnos Mensuales</span>
+                <span>Generar Turnos por Rango</span>
               </h3>
               <button onClick={() => setShowGenerateModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
@@ -1198,9 +1287,15 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
               <p className="text-xs text-slate-600 dark:text-slate-400">
                 Esta acción creará automáticamente la pauta base para todos los conductores (respetando horarios fijos y nocturnos). Los turnos ya existentes no serán sobrescritos.
               </p>
-              <div>
-                <label className="text-xs font-semibold block mb-1">Mes y Año:</label>
-                <input type="month" value={generateMonth} onChange={e => setGenerateMonth(e.target.value)} required className="enterprise-input w-full text-sm font-bold" />
+                            <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold block mb-1">Fecha Inicio:</label>
+                  <input type="date" value={generateStartDate} onChange={e => setGenerateStartDate(e.target.value)} required className="enterprise-input w-full text-sm font-bold" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold block mb-1">Fecha Fin:</label>
+                  <input type="date" value={generateEndDate} onChange={e => setGenerateEndDate(e.target.value)} required className="enterprise-input w-full text-sm font-bold" />
+                </div>
               </div>
               <div className="flex justify-end space-x-2 pt-3">
                 <button type="button" onClick={() => setShowGenerateModal(false)} className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 border border-slate-300">Cancelar</button>
