@@ -824,6 +824,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (updates.tipo_jornada !== undefined) dbUpdates.tipo_jornada = updates.tipo_jornada;
       if (updates.estado !== undefined) dbUpdates.estado = updates.estado;
       if (updates.notas !== undefined) dbUpdates.notas = updates.notas;
+      if (updates.horas_extras !== undefined) dbUpdates.horas_extras = updates.horas_extras;
 
       const { data, error } = await supabase
         .from('turnos_conductores')

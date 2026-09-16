@@ -144,6 +144,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const [shiftHoraFin, setShiftHoraFin] = useState('14:00');
   const [shiftTipo, setShiftTipo] = useState<'manana' | 'tarde' | 'noche' | 'partida' | 'descanso'>('manana');
   const [shiftNotas, setShiftNotas] = useState('');
+  const [shiftHorasExtras, setShiftHorasExtras] = useState<number>(0);
   // State for Generate Shifts
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generateMonth, setGenerateMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -160,6 +161,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     setShiftHoraFin(t.hora_fin || '14:00');
     setShiftTipo(t.tipo_jornada || 'manana');
     setShiftNotas(t.notas || '');
+    setShiftHorasExtras(t.horas_extras || 0);
     setShowShiftModal(true);
   };
 
@@ -285,7 +287,8 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         hora_inicio: shiftHoraInicio,
         hora_fin: shiftHoraFin,
         tipo_jornada: shiftTipo,
-        notas: shiftNotas || null
+        notas: shiftNotas || null,
+        horas_extras: shiftHorasExtras
       });
     } else {
       await crearTurnoConductor({
@@ -296,13 +299,15 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         hora_fin: shiftHoraFin,
         tipo_jornada: shiftTipo,
         estado: 'planificado',
-        notas: shiftNotas || null
+        notas: shiftNotas || null,
+        horas_extras: shiftHorasExtras
       });
     }
     
     setShowShiftModal(false);
     setEditingShiftId(null);
     setShiftNotas('');
+    setShiftHorasExtras(0);
     setShiftVehiculoId('');
   };
 
@@ -315,19 +320,20 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     let success = 0;
     
     // Matriz base diseñada para Neira Transportes
+    // Matriz Estricta 40h (Turnos de máximo 8h)
     const template = {
-      'JORGE ZAPPETTINI': { default: '09:00-17:00', type: 'partida', exclude: [6, 0] },
+      'JORGE ZAPPETTINI': { default: '09:00-17:00', type: 'manana', exclude: [6, 0] },
       'CESAR REYES BRIONES': { default: '04:00-12:00', type: 'manana', exclude: [1, 2] },
-      'VICTOR PINCHEIRA RIFFO': { custom: { 4: '11:00-19:00', 5: '21:00-06:00', 6: '21:00-06:00', 0: '12:00-20:00' } },
+      'VICTOR PINCHEIRA RIFFO': { custom: { 4: '11:00-19:00', 5: '22:00-06:00', 6: '22:00-06:00', 0: '12:00-20:00' } },
       'LINSEN JOE UBILLA PEÑA': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 3, 6, 0] },
       'HUGO SUAZO REYES': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 3, 5, 6] },
       'OSCAR REYES AGUILERA': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 5, 6, 0] },
       'MARCO ANTONIO MENDOZA BURGOS': { default: '11:00-19:00', type: 'tarde', include: [3, 4, 5, 6, 0] },
-      'CARLOS VILLANUEVA SANCHEZ': { default: '21:00-06:00', type: 'noche', include: [1, 2, 3, 4, 0] },
-      'NICOLAS AVILA JORQUERA': { default: '21:00-06:00', type: 'noche', include: [1, 2, 3, 5, 6] },
-      'JORGE FIGUEROA LAGOS': { default: '21:00-06:00', type: 'noche', include: [1, 2, 4, 5, 0] },
-      'JAIRO ALONSO NEIRA CORTEZ': { default: '21:00-06:00', type: 'noche', include: [1, 3, 4, 6, 0] },
-      'FRANCISCO ALBERTO MUÑOZ MOREN': { default: '21:00-06:00', type: 'noche', include: [2, 3, 4, 5, 6] }
+      'CARLOS VILLANUEVA SANCHEZ': { default: '21:00-05:00', type: 'noche', include: [1, 2, 3, 4, 0] },
+      'NICOLAS AVILA JORQUERA': { default: '22:00-06:00', type: 'noche', include: [1, 2, 3, 5, 6] },
+      'JORGE FIGUEROA LAGOS': { default: '21:00-05:00', type: 'noche', include: [1, 2, 4, 5, 0] },
+      'JAIRO ALONSO NEIRA CORTEZ': { default: '22:00-06:00', type: 'noche', include: [1, 3, 4, 6, 0] },
+      'FRANCISCO ALBERTO MUÑOZ MOREN': { default: '21:00-05:00', type: 'noche', include: [2, 3, 4, 5, 6] }
     };
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -822,6 +828,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                   setShiftConductorId('');
                   setShiftVehiculoId('');
                   setShiftNotas('');
+                  setShiftHorasExtras(0);
                   setShowShiftModal(true);
                 }}
                 className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-1.5"
@@ -900,6 +907,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                   <th className="py-3.5 px-4">HORARIO JORNADA</th>
                   <th className="py-3.5 px-4">TIPO DE TURNO</th>
                   <th className="py-3.5 px-4">ESTADO</th>
+                  <th className="py-3.5 px-4">H. EXTRAS</th>
                   <th className="py-3.5 px-4">OBSERVACIONES</th>
                   <th className="py-3.5 px-4 text-right">ACCIÓN</th>
                 </tr>
@@ -954,6 +962,15 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             {t.estado.toUpperCase()}
                           </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          {t.horas_extras > 0 ? (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 rounded text-xs font-bold">
+                              +{t.horas_extras} hrs
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs">-</span>
+                          )}
                         </td>
                         <td className="py-4 px-4 text-slate-500 dark:text-slate-400 text-xs">
                           {t.notas || 'Sin observaciones'}
@@ -1309,15 +1326,28 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Observaciones / Ruta Asignada:</label>
-                <input
-                  type="text"
-                  value={shiftNotas}
-                  onChange={(e) => setShiftNotas(e.target.value)}
-                  placeholder="Ej. Cobertura Planta Coronel / Huachipato"
-                  className="enterprise-input w-full text-xs"
-                />
+                            <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Observaciones / Ruta Asignada:</label>
+                  <input
+                    type="text"
+                    value={shiftNotas}
+                    onChange={(e) => setShiftNotas(e.target.value)}
+                    placeholder="Ej. Cobertura Planta"
+                    className="enterprise-input w-full text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Horas Extras Aprobadas:</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={shiftHorasExtras}
+                    onChange={(e) => setShiftHorasExtras(Number(e.target.value))}
+                    className="enterprise-input w-full text-xs font-bold text-amber-600 dark:text-amber-500"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-[#212A38]">

@@ -86,6 +86,7 @@ export interface TurnoConductor {
   hora_fin: string;
   tipo_jornada: 'manana' | 'tarde' | 'noche' | 'partida' | 'descanso';
   estado: 'planificado' | 'en_turno' | 'completado' | 'ausente' | 'licencia';
+  horas_extras?: number;
   notas?: string | null;
   conductor?: Conductor;
   vehiculo?: Vehiculo;
