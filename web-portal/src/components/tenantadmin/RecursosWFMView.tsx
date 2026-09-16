@@ -376,7 +376,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
           // Flexible Drivers Rotation (5 days, 8h = 40h/week)
           const idx = flexibleDrivers.findIndex(f => f.id === cond.id);
           const offDay1 = (idx + weekOfYear) % 7;
-          const offDay2 = (idx + weekOfYear + 3) % 7;
+          const offDay2 = (offDay1 + 1) % 7; // Días libres decorridos (consecutivos)
           
           if (dow !== offDay1 && dow !== offDay2) {
             shouldWork = true;
