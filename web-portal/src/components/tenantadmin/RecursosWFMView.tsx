@@ -11,7 +11,7 @@ interface RecursosWFMViewProps {
 }
 
 export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) => {
-  const { vehiculos, conductores, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor, turnosConductores, crearTurnoConductor, eliminarTurnoConductor } = useApp();
+  const { vehiculos, conductores, agregarVehiculo, actualizarVehiculo, eliminarVehiculo, toggleConductorEstado, agregarConductor, actualizarConductor, eliminarConductor, turnosConductores, crearTurnoConductor, actualizarTurnoConductor, eliminarTurnoConductor } = useApp();
   const toast = useToast();
   const [subTab, setSubTab] = useState<'conductores' | 'flota' | 'turnos'>(initialTab || 'conductores');
   const [viewModeTurnos, setViewModeTurnos] = useState<'lista' | 'matriz'>('lista');
@@ -144,6 +144,25 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
   const [shiftHoraFin, setShiftHoraFin] = useState('14:00');
   const [shiftTipo, setShiftTipo] = useState<'manana' | 'tarde' | 'noche' | 'partida' | 'descanso'>('manana');
   const [shiftNotas, setShiftNotas] = useState('');
+  // State for Generate Shifts
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generateMonth, setGenerateMonth] = useState(new Date().toISOString().slice(0, 7));
+
+  // Edit Shift State
+  const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
+
+  const handleOpenEditShift = (t: any) => {
+    setEditingShiftId(t.id);
+    setShiftConductorId(t.conductor_id || '');
+    setShiftVehiculoId(t.vehiculo_id || '');
+    setShiftFecha(t.fecha || '');
+    setShiftHoraInicio(t.hora_inicio || '06:00');
+    setShiftHoraFin(t.hora_fin || '14:00');
+    setShiftTipo(t.tipo_jornada || 'manana');
+    setShiftNotas(t.notas || '');
+    setShowShiftModal(true);
+  };
+
 
   // Form states para Vehículo (Patente, Marca, Modelo, Color, Kilometraje, Pasajeros)
   const [placa, setPlaca] = useState('');
@@ -242,7 +261,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     setEditingConductor(null);
   };
 
-  const handleSaveShift = async (e: React.FormEvent) => {
+    const handleSaveShift = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!shiftConductorId) {
       toast.warning('Debe seleccionar un conductor para el turno.', 'Conductor Requerido');
@@ -251,26 +270,126 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
     
     if (shiftVehiculoId) {
       // Validate collision
-      const collision = turnosConductores.find(t => t.vehiculo_id === shiftVehiculoId && t.fecha === shiftFecha && t.conductor_id !== shiftConductorId);
+      const collision = turnosConductores.find(t => t.vehiculo_id === shiftVehiculoId && t.fecha === shiftFecha && t.conductor_id !== shiftConductorId && t.id !== editingShiftId);
       if (collision) {
         toast.warning('Este vehículo ya está asignado a otro conductor en esta fecha. Seleccione otro móvil.', 'Colisión de Vehículo');
         return;
       }
     }
 
-    await crearTurnoConductor({
-      conductor_id: shiftConductorId,
-      vehiculo_id: shiftVehiculoId || undefined,
-      fecha: shiftFecha,
-      hora_inicio: shiftHoraInicio,
-      hora_fin: shiftHoraFin,
-      tipo_jornada: shiftTipo,
-      estado: 'planificado',
-      notas: shiftNotas || null
-    });
+    if (editingShiftId) {
+      await actualizarTurnoConductor(editingShiftId, {
+        conductor_id: shiftConductorId,
+        vehiculo_id: shiftVehiculoId || undefined,
+        fecha: shiftFecha,
+        hora_inicio: shiftHoraInicio,
+        hora_fin: shiftHoraFin,
+        tipo_jornada: shiftTipo,
+        notas: shiftNotas || null
+      });
+    } else {
+      await crearTurnoConductor({
+        conductor_id: shiftConductorId,
+        vehiculo_id: shiftVehiculoId || undefined,
+        fecha: shiftFecha,
+        hora_inicio: shiftHoraInicio,
+        hora_fin: shiftHoraFin,
+        tipo_jornada: shiftTipo,
+        estado: 'planificado',
+        notas: shiftNotas || null
+      });
+    }
+    
     setShowShiftModal(false);
+    setEditingShiftId(null);
     setShiftNotas('');
     setShiftVehiculoId('');
+  };
+
+  
+  const handleGenerateMonthlyShifts = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const [year, month] = generateMonth.split('-').map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    
+    let success = 0;
+    
+    // Matriz base diseñada para Neira Transportes
+    const template = {
+      'JORGE ZAPPETTINI': { default: '09:00-17:00', type: 'partida', exclude: [6, 0] },
+      'CESAR REYES BRIONES': { default: '04:00-12:00', type: 'manana', exclude: [1, 2] },
+      'VICTOR PINCHEIRA RIFFO': { custom: { 4: '11:00-19:00', 5: '21:00-06:00', 6: '21:00-06:00', 0: '12:00-20:00' } },
+      'LINSEN JOE UBILLA PEÑA': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 3, 6, 0] },
+      'HUGO SUAZO REYES': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 3, 5, 6] },
+      'OSCAR REYES AGUILERA': { default: '11:00-19:00', type: 'tarde', include: [1, 2, 5, 6, 0] },
+      'MARCO ANTONIO MENDOZA BURGOS': { default: '11:00-19:00', type: 'tarde', include: [3, 4, 5, 6, 0] },
+      'CARLOS VILLANUEVA SANCHEZ': { default: '21:00-06:00', type: 'noche', include: [1, 2, 3, 4, 0] },
+      'NICOLAS AVILA JORQUERA': { default: '21:00-06:00', type: 'noche', include: [1, 2, 3, 5, 6] },
+      'JORGE FIGUEROA LAGOS': { default: '21:00-06:00', type: 'noche', include: [1, 2, 4, 5, 0] },
+      'JAIRO ALONSO NEIRA CORTEZ': { default: '21:00-06:00', type: 'noche', include: [1, 3, 4, 6, 0] },
+      'FRANCISCO ALBERTO MUÑOZ MOREN': { default: '21:00-06:00', type: 'noche', include: [2, 3, 4, 5, 6] }
+    };
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dow = date.getDay(); // 0 = Sun, 1 = Mon...
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      
+      for (const cond of conductoresTenant) {
+        if (cond.nombreCompleto === 'Abraham Chofer') continue; // Excluded
+        
+        let shouldWork = false;
+        let timeStr = '';
+        let tType = 'manana';
+        
+        const rule: any = (template as any)[cond.nombreCompleto || ''];
+        if (rule) {
+          if (rule.custom) {
+            if (rule.custom[dow]) {
+              shouldWork = true;
+              timeStr = rule.custom[dow];
+              tType = timeStr.startsWith('21') ? 'noche' : (timeStr.startsWith('11') || timeStr.startsWith('12') ? 'tarde' : 'manana');
+            }
+          } else {
+            if (rule.include) {
+              if (rule.include.includes(dow)) {
+                shouldWork = true;
+                timeStr = rule.default;
+                tType = rule.type;
+              }
+            } else if (rule.exclude) {
+              if (!rule.exclude.includes(dow)) {
+                shouldWork = true;
+                timeStr = rule.default;
+                tType = rule.type;
+              }
+            }
+          }
+        }
+        
+        if (shouldWork) {
+          // Check if not already exists
+          const exists = turnosConductores.find(t => t.conductor_id === cond.id && t.fecha === dateStr);
+          if (!exists) {
+            const [ini, fin] = timeStr.split('-');
+            await crearTurnoConductor({
+              conductor_id: cond.id,
+              vehiculo_id: (cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId || undefined,
+              fecha: dateStr,
+              hora_inicio: ini,
+              hora_fin: fin,
+              tipo_jornada: tType as any,
+              estado: 'planificado',
+              notas: 'Generado Automáticamente'
+            });
+            success++;
+          }
+        }
+      }
+    }
+    
+    setShowGenerateModal(false);
+    toast.success(`Se generaron ${success} turnos para el mes seleccionado.`, 'Generación Completa');
   };
 
   const vehiculosTenant = vehiculos;
@@ -688,9 +807,23 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 <span>Cargar Excel</span>
               </button>
+                            <button
+                type="button"
+                onClick={() => setShowGenerateModal(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-1.5"
+              >
+                <Calendar className="w-3.5 h-3.5 mr-1" />
+                <span>Generar Mes</span>
+              </button>
               <button
                 type="button"
-                onClick={() => setShowShiftModal(true)}
+                onClick={() => {
+                  setEditingShiftId(null);
+                  setShiftConductorId('');
+                  setShiftVehiculoId('');
+                  setShiftNotas('');
+                  setShowShiftModal(true);
+                }}
                 className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center space-x-1.5"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" />
@@ -698,13 +831,63 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
               </button>
             </div>
           </div>
+          
           {viewModeTurnos === 'matriz' ? (
-            <div className="p-4 bg-slate-50 dark:bg-[#161D27] min-h-[300px]">
-              <div className="text-center py-10 space-y-3">
-                <Calendar className="w-12 h-12 text-blue-500 mx-auto opacity-50" />
-                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Vista Matriz Semanal (Próximamente)</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">La vista de calendario interactiva se está desplegando. Por ahora, puedes gestionar los turnos usando la vista de lista o la carga masiva por Excel.</p>
-                <button onClick={() => setViewModeTurnos('lista')} className="text-blue-600 font-bold text-xs hover:underline mt-4">Volver a Lista</button>
+            <div className="p-4 bg-slate-50 dark:bg-[#161D27] min-h-[500px]">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Cobertura Diaria de Choferes (Siguientes 7 Días)</h4>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                {Array.from({length: 7}).map((_, i) => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + i);
+                  const dateStr = d.toISOString().split('T')[0];
+                  
+                  const turnosDia = turnosConductores.filter(t => t.fecha === dateStr);
+                  
+                  // Calcular cobertura manual sencilla
+                  const manana = turnosDia.filter(t => t.hora_inicio < '12:00' && t.hora_fin > '06:00').length;
+                  const tarde = turnosDia.filter(t => t.hora_inicio < '20:00' && t.hora_fin > '12:00').length;
+                  const noche = turnosDia.filter(t => t.hora_inicio >= '20:00' || (t.hora_inicio < '06:00' && t.hora_fin > '00:00')).length;
+
+                  return (
+                    <div key={dateStr} className="bg-white dark:bg-[#1C2533] border border-slate-200 dark:border-[#2A374A] rounded-lg p-3 shadow-xs hover:shadow-md transition-shadow">
+                      <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-100 dark:border-slate-800 pb-1">
+                        {d.toLocaleDateString('es-CL', { weekday: 'short', day: '2-digit', month: 'short' })}
+                      </div>
+                      
+                      <div className="space-y-2 mt-3">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-amber-600 font-semibold flex items-center gap-1"><Clock className="w-3 h-3"/> Día (12-17)</span>
+                          <span className="font-bold bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded">{tarde} choferes</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-indigo-600 font-semibold flex items-center gap-1"><Clock className="w-3 h-3"/> Noche (21-02)</span>
+                          <span className="font-bold bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded">{noche} choferes</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-emerald-600 font-semibold flex items-center gap-1"><Clock className="w-3 h-3"/> Madrug (03-06)</span>
+                          <span className="font-bold bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded">{noche + manana} choferes</span>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <div className="text-[10px] font-semibold text-slate-400 mb-1">Turnos Asignados:</div>
+                        <div className="max-h-24 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                          {turnosDia.map(t => {
+                            const cn = (t as any).conductor?.nombre_completo || 'Conductor';
+                            return (
+                              <div key={t.id} className="text-[10px] bg-slate-50 dark:bg-[#161D27] p-1.5 rounded text-slate-600 dark:text-slate-300 truncate">
+                                <strong>{cn.split(' ')[0]}</strong>: {t.hora_inicio?.slice(0,5)}-{t.hora_fin?.slice(0,5)}
+                              </div>
+                            )
+                          })}
+                          {turnosDia.length === 0 && <div className="text-[10px] italic text-slate-400">Sin turnos</div>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -776,6 +959,14 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                           {t.notas || 'Sin observaciones'}
                         </td>
                         <td className="py-4 px-4 text-right">
+                                                    <button
+                            type="button"
+                            onClick={() => handleOpenEditShift(t)}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                            title="Editar turno"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => eliminarTurnoConductor(t.id)}
@@ -972,6 +1163,35 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         </div>
       )}
 
+      
+      {/* MODAL GENERAR TURNOS */}
+      {showGenerateModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="enterprise-card p-6 max-w-sm w-full space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#212A38] pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#0F172A]" />
+                <span>Generar Turnos Mensuales</span>
+              </h3>
+              <button onClick={() => setShowGenerateModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleGenerateMonthlyShifts} className="space-y-4">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Esta acción creará automáticamente la pauta base para todos los conductores (respetando horarios fijos y nocturnos). Los turnos ya existentes no serán sobrescritos.
+              </p>
+              <div>
+                <label className="text-xs font-semibold block mb-1">Mes y Año:</label>
+                <input type="month" value={generateMonth} onChange={e => setGenerateMonth(e.target.value)} required className="enterprise-input w-full text-sm font-bold" />
+              </div>
+              <div className="flex justify-end space-x-2 pt-3">
+                <button type="button" onClick={() => setShowGenerateModal(false)} className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 border border-slate-300">Cancelar</button>
+                <button type="submit" className="px-6 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs shadow-md">Generar Turnos</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL PROGRAMAR TURNO DE CONDUCTOR */}
       {showShiftModal && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
@@ -980,7 +1200,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-blue-500" />
-                  <span>Programar Turno de Conductor</span>
+                  <span>{editingShiftId ? 'Editar Turno de Conductor' : 'Programar Turno de Conductor'}</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   Establece la jornada para control horario y validación en despacho.

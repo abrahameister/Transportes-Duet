@@ -10,6 +10,7 @@ interface AppContextType {
   viajes: ViajeOperativa[];
   turnosConductores: TurnoConductor[];
   crearTurnoConductor: (turno: Partial<TurnoConductor>) => Promise<void>;
+  actualizarTurnoConductor: (id: string, updates: Partial<TurnoConductor>) => Promise<void>;
   eliminarTurnoConductor: (id: string) => Promise<void>;
   currentRoleView: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor';
   setCurrentRoleView: (role: 'admin' | 'cliente_b2b' | 'pwa_pasajero' | 'app_conductor') => void;
@@ -812,6 +813,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } : c));
   };
 
+  const actualizarTurnoConductor = async (id: string, updates: Partial<TurnoConductor>) => {
+    try {
+      const dbUpdates: any = {};
+      if (updates.conductor_id !== undefined) dbUpdates.conductor_id = updates.conductor_id;
+      if (updates.vehiculo_id !== undefined) dbUpdates.vehiculo_id = updates.vehiculo_id || null;
+      if (updates.fecha !== undefined) dbUpdates.fecha = updates.fecha;
+      if (updates.hora_inicio !== undefined) dbUpdates.hora_inicio = updates.hora_inicio;
+      if (updates.hora_fin !== undefined) dbUpdates.hora_fin = updates.hora_fin;
+      if (updates.tipo_jornada !== undefined) dbUpdates.tipo_jornada = updates.tipo_jornada;
+      if (updates.estado !== undefined) dbUpdates.estado = updates.estado;
+      if (updates.notas !== undefined) dbUpdates.notas = updates.notas;
+
+      const { data, error } = await supabase
+        .from('turnos_conductores')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select('*, conductor:conductores(id, nombre_completo, rut, email), vehiculo:vehiculos(id, patente, marca, modelo)')
+        .single();
+
+      if (error) {
+        console.error('Error actualizando turno conductor:', error);
+        toast.error('Error al actualizar turno: ' + error.message, 'Turno Conductor');
+        return;
+      }
+
+      if (data) {
+        const enrichedTurno = {
+          ...data,
+          vehiculo: data.vehiculo ? { ...data.vehiculo, placa: (data.vehiculo as any).patente } : undefined
+        };
+        setTurnosConductores(prev => prev.map(t => t.id === id ? (enrichedTurno as any) : t));
+        toast.success('Turno de conductor actualizado con éxito.', 'Turno Actualizado');
+      }
+    } catch (err: any) {
+      console.error('Error general actualizando turno conductor:', err);
+      toast.error('Error al actualizar turno: ' + (err?.message || err), 'Error');
+    }
+  };
+
   const crearTurnoConductor = async (turno: Partial<TurnoConductor>) => {
     try {
       const { data, error } = await supabase
@@ -926,6 +966,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eliminarConductor,
         turnosConductores,
         crearTurnoConductor,
+        actualizarTurnoConductor,
         eliminarTurnoConductor,
         agregarCliente,
         actualizarCliente,
