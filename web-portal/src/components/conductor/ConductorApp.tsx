@@ -39,6 +39,17 @@ export const ConductorApp: React.FC = () => {
     ? `${vehiculoAsignado.marca || ''} ${vehiculoAsignado.modelo || ''}`.trim() || 'Vehículo Asignado'
     : 'Sin Vehículo Asignado';
 
+  const formatFechaDiaMesAno = (isoOrTime?: string | null) => {
+    if (!isoOrTime) return '';
+    if (isoOrTime.includes('-')) {
+      const parts = isoOrTime.split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+    return isoOrTime;
+  };
+
   const formatHora24 = (isoOrTime?: string | null) => {
     if (!isoOrTime) return '--:--';
     if (isoOrTime.includes('T') || (isoOrTime.includes('-') && isoOrTime.includes(':'))) {
@@ -214,6 +225,8 @@ const [checkFluidos, setCheckFluidos] = useState(true);
   };
 
   const handleReportarIncidenteConductor = async (tipoLabel: string) => {
+    if (!window.confirm(`¿Estás seguro que deseas reportar esta incidencia a la Central?\n\n"${tipoLabel}"`)) return;
+
     enviarAvisoOperativo({
       pasajeroNombre: `${conductor.nombreCompleto} (Móvil ${patenteVehiculo})`,
       mensaje: `🚨 ALERTA CONDUCTOR: ${tipoLabel}. Solicito gestión o asistencia desde Central.`,
@@ -689,7 +702,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                       <div key={turno.id} className="p-3.5 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] rounded-xl flex items-center justify-between">
                         <div>
                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                            {turno.fecha} • {formatHora24(turno.hora_inicio)} — {formatHora24(turno.hora_fin)}
+                            {formatFechaDiaMesAno(turno.fecha)} • {formatHora24(turno.hora_inicio)} — {formatHora24(turno.hora_fin)}
                           </span>
                           <h5 className="font-extrabold text-sm text-slate-900 dark:text-white mt-0.5 capitalize">
                             Jornada: {turno.tipo_jornada}
@@ -815,7 +828,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
                       <span className="text-xs font-mono text-slate-500 dark:text-slate-400">Neira Transportes</span>
                     </div>
                     <button
-                      onClick={() => mostrarNotificacion('Número de central no configurado por administrador.')}
+                      onClick={() => window.open('tel:+56984612419', '_self')}
                       className="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center space-x-1.5 shadow-xs"
                     >
                       <Phone className="w-4 h-4" />

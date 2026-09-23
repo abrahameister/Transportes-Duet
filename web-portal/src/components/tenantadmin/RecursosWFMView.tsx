@@ -294,8 +294,13 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         notas: shiftNotas || null,
         horas_extras: shiftHorasExtras
       });
-    } else {
-      await crearTurnoConductor({
+          } else {
+        const duplicate = turnosConductores.find(t => t.conductor_id === shiftConductorId && t.fecha === shiftFecha);
+        if (duplicate) {
+          toast.warning('Este conductor ya tiene un turno programado para esta fecha.', 'Turno Duplicado');
+          return;
+        }
+        await crearTurnoConductor({
         conductor_id: shiftConductorId,
         vehiculo_id: shiftVehiculoId || undefined,
         fecha: shiftFecha,
