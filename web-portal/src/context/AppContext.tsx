@@ -75,9 +75,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [avisosOperativos, setAvisosOperativos] = useState<AvisoOperativo[]>([]);
 
   const enviarAvisoOperativo = (data: Partial<AvisoOperativo>) => {
-    const id = `aviso-${Date.now()}`;
+    const tempId = `aviso-${Date.now()}`;
     const nuevo: AvisoOperativo = {
-      id,
+      id: tempId,
       pasajeroNombre: data.pasajeroNombre || 'Colaborador Corporativo',
       mensaje: data.mensaje || 'Aviso en ruta al conductor',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -89,11 +89,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     supabase.from('avisos').insert([{
       viaje_id: nuevo.viajeId || null,
+      remitente_perfil_id: authUser?.user_metadata?.perfil_id || null,
       mensaje: nuevo.mensaje,
       leido: nuevo.leido
-    }]).then(({ error }) => {
-      if (error) console.warn('📡 [WFM Fallback] Aviso registrado en caché local. (Pendiente sync nube)', error.message);
-      else console.log('⚡ [Realtime Sync] Aviso transmitido al servidor de Supabase.');
+    }]).select('id').single().then(({ data: insData, error }) => {
+      if (error) {
+        console.warn('📡 [Avisos Fallback] Aviso registrado en caché local:', error.message);
+      } else if (insData?.id) {
+        setAvisosOperativos(prev => prev.map(a => a.id === tempId ? { ...a, id: insData.id } : a));
+      }
     });
   };
 
@@ -179,30 +183,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           activo: v.estado === 'operativo' || v.estado === 'activo'
         })));
       }
+
+      // Posiciones GPS reales recientes
+      const { data: dbPositions } = await supabase
+        .from('tracking_positions')
+        .select('conductor_id, latitud, longitud, registrado_en')
+        .order('registrado_en', { ascending: false })
+        .limit(200);
+
+      const latestPosMap = new Map<string, { lat: number; lng: number }>();
+      if (dbPositions) {
+        for (const pos of dbPositions) {
+          if (pos.conductor_id && !latestPosMap.has(pos.conductor_id)) {
+            latestPosMap.set(pos.conductor_id, {
+              lat: Number(pos.latitud),
+              lng: Number(pos.longitud)
+            });
+          }
+        }
+      }
+
       if (dbConductores) {
-        setConductores(dbConductores.map(c => ({
-          id: c.id,
-          perfilId: c.perfil_id,
-          perfil_id: c.perfil_id,
-          nombreCompleto: c.nombre_completo || 'Conductor',
-          email: c.email || '',
-          telefono: c.telefono || '',
-          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
-          rut: c.rut || '',
-          tipoLicencia: (c.tipo_licencia || 'A2') as any,
-          vencimientoLicencia: c.vencimiento_licencia || undefined,
-          numeroLicencia: c.tipo_licencia || '',
-          puntualidad: '5.0 / 5.0',
-          serviciosMes: 0,
-          vehiculoAsignadoId: c.vehiculo_habitual_id || undefined,
-          vehiculoHabitualId: c.vehiculo_habitual_id || undefined,
-          estadoWFM: (c.estado === 'activo' ? 'disponible' : 'inactivo') as any,
-          ultimaLatitud: -36.8269,
-          ultimaLongitud: -73.0498,
-          horasConducidasHoy: 0,
-          enDescanso: false,
-          motivoBloqueo: undefined
-        })));
+        setConductores(dbConductores.map(c => {
+          const realGps = latestPosMap.get(c.id);
+          return {
+            id: c.id,
+            perfilId: c.perfil_id,
+            perfil_id: c.perfil_id,
+            nombreCompleto: c.nombre_completo || 'Conductor',
+            email: c.email || '',
+            telefono: c.telefono || '',
+            avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&auto=format&fit=crop',
+            rut: c.rut || '',
+            tipoLicencia: (c.tipo_licencia || 'A2') as any,
+            vencimientoLicencia: c.vencimiento_licencia || undefined,
+            numeroLicencia: c.tipo_licencia || '',
+            puntualidad: '5.0 / 5.0',
+            serviciosMes: 0,
+            vehiculoAsignadoId: c.vehiculo_habitual_id || undefined,
+            vehiculoHabitualId: c.vehiculo_habitual_id || undefined,
+            estadoWFM: (c.estado === 'activo' ? 'disponible' : 'inactivo') as any,
+            ultimaLatitud: realGps ? realGps.lat : (c.estado === 'activo' ? -36.8269 : undefined),
+            ultimaLongitud: realGps ? realGps.lng : (c.estado === 'activo' ? -73.0498 : undefined),
+            horasConducidasHoy: 0,
+            enDescanso: false,
+            motivoBloqueo: undefined
+          };
+        }));
       }
 
       const { data: dbTurnosCond } = await supabase
@@ -226,10 +253,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           contactoTelefono: cl.contacto_telefono,
           invitacionEnviada: cl.invitacion_enviada,
           tarifario: {
-            tarifaPorKm: Number(cl.tarifa_por_km || 1300),
-            tarifaMinima: Number(cl.tarifa_minima || 7000),
-            tiempoEsperaPorHora: Number(cl.tiempo_espera_por_hora || 8500),
-            rutasFijas: []
+            tarifaPorKm: Number(cl.tarifa_por_km || 1500),
+            tarifaMinima: Number(cl.tarifa_minima || 8000),
+            tiempoEsperaPorHora: Number(cl.tiempo_espera_por_hora || 10000),
+            rutasFijas: Array.isArray(cl.rutas_fijas) ? cl.rutas_fijas : []
           }
         })));
       }
@@ -494,89 +521,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const observacionesObj = {
-        pasajeroNombre: data.pasajeroNombre || 'Pasajero Nuevo',
+        pasajeroNombre: data.pasajeroNombre || 'Colaborador',
         pasajeroTelefono: data.pasajeroTelefono || '',
         montoEstimado: data.montoEstimado || 18500,
         clienteNombre: data.clienteNombre || 'Cuenta B2B'
       };
 
-      const dbViaje = {
+      const payload = {
         cliente_corporativo_id: clienteCorpId,
         fecha_programada: fechaIso,
-        tipo_viaje: 'especial',
-        estado: 'solicitado',
         origen_direccion: data.origenDireccion || 'Aeropuerto Carriel Sur, Talcahuano',
         origen_lat: data.origenLat || -36.7824,
         origen_lng: data.origenLng || -73.0631,
         destino_direccion: data.destinoDireccion || 'Plaza Independencia 400, Concepción',
         destino_lat: data.destinoLat || -36.8269,
         destino_lng: data.destinoLng || -73.0498,
+        pasajero_nombre: data.pasajeroNombre || 'Colaborador',
+        pasajero_telefono: data.pasajeroTelefono || '+56900000000',
         observaciones: JSON.stringify(observacionesObj)
       };
 
-      const { data: insertedViaje, error: insertError } = await supabase
-        .from('viajes')
-        .insert([dbViaje])
-        .select()
-        .single();
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('create_special_trip', {
+        p_data: payload
+      });
 
-      if (insertError) {
-        console.error('Error insertando viaje:', insertError);
-        toast.error('Error al guardar viaje en base de datos: ' + insertError.message, 'Fallo de Registro');
-        throw new Error(insertError.message);
+      if (rpcErr) {
+        console.error('Error insertando viaje atómico:', rpcErr);
+        toast.error('Error al guardar viaje en base de datos: ' + rpcErr.message, 'Fallo de Registro');
+        throw new Error(rpcErr.message);
       }
 
-      // 3. Crear pasajero y viaje_pasajero si tenemos datos
-      if (data.pasajeroNombre && insertedViaje?.id) {
-        const fakeRut = 'RUT-P-' + Date.now().toString().slice(-6);
-        const { data: insPasajero, error: pasError } = await supabase
-          .from('pasajeros')
-          .insert([{
-            cliente_corporativo_id: clienteCorpId,
-            nombre_completo: data.pasajeroNombre,
-            rut: fakeRut,
-            telefono: data.pasajeroTelefono || '+56900000000',
-            estado: 'activo'
-          }])
-          .select()
-          .single();
-
-        if (pasError) {
-          console.error('Error insertando pasajero:', pasError);
-          // Opcional: rollback del viaje insertado o simplemente notificar
-          throw new Error('Viaje creado, pero falló registro de pasajero: ' + pasError.message);
-        }
-
-        if (insPasajero?.id) {
-          const { error: vpError } = await supabase.from('viaje_pasajeros').insert([{
-            viaje_id: insertedViaje.id,
-            pasajero_id: insPasajero.id,
-            estado: 'pendiente',
-            orden_parada: 1
-          }]);
-          
-          if (vpError) {
-            console.error('Error insertando viaje_pasajeros:', vpError);
-            throw new Error('Pasajero creado, pero falló asignación al viaje: ' + vpError.message);
-          }
-        }
-      }
+      const nuevoViajeId = rpcRes?.viaje_id;
 
       const nuevoViajeState: ViajeOperativa = {
-        id: insertedViaje.id,
+        id: nuevoViajeId,
         clienteCorporativoId: clienteCorpId,
         clienteNombre: data.clienteNombre || clientes.find(c => c.id === clienteCorpId)?.nombreCorporativo || 'Cuenta B2B',
-        pasajeroNombre: data.pasajeroNombre || 'Pasajero Nuevo',
+        pasajeroNombre: data.pasajeroNombre || 'Colaborador',
         pasajeroTelefono: data.pasajeroTelefono || '',
-        origenDireccion: dbViaje.origen_direccion,
-        origenLat: dbViaje.origen_lat,
-        origenLng: dbViaje.origen_lng,
-        destinoDireccion: dbViaje.destino_direccion,
-        destinoLat: dbViaje.destino_lat,
-        destinoLng: dbViaje.destino_lng,
+        origenDireccion: payload.origen_direccion,
+        origenLat: payload.origen_lat,
+        origenLng: payload.origen_lng,
+        destinoDireccion: payload.destino_direccion,
+        destinoLat: payload.destino_lat,
+        destinoLng: payload.destino_lng,
         fechaProgramada: new Date(fechaIso).toLocaleString('es-CL'),
         estado: 'solicitado',
-        timestampDespacho: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestampDespacho: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        montoEstimado: data.montoEstimado || 18500
       };
 
       setViajes(prev => [nuevoViajeState, ...prev]);
@@ -732,13 +724,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             console.warn("Aviso Auth conductor:", edgeError.message || edgeError);
           } else if (inviteRes?.perfilId) {
             perfilId = inviteRes.perfilId;
+            
+            // La edge function ya crea el registro en conductores de forma segura
+            const { data: condFound } = await supabase
+              .from('conductores')
+              .select('id')
+              .eq('perfil_id', perfilId)
+              .maybeSingle();
+
+            if (condFound) {
+              finalId = condFound.id;
+              if ((cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId) {
+                await supabase.from('conductores').update({
+                  vehiculo_habitual_id: (cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId
+                }).eq('id', finalId);
+              }
+              setConductores(prev => [{
+                ...cond,
+                id: finalId,
+                vencimientoLicencia: finalVencimiento,
+                vehiculoHabitualId: (cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId,
+                vehiculoAsignadoId: (cond as any).vehiculoHabitualId || (cond as any).vehiculoAsignadoId,
+                perfilId,
+                perfil_id: perfilId
+              }, ...prev]);
+              return;
+            }
           }
         } catch (e) {
           console.warn("Edge function no disponible para Auth de conductor:", e);
         }
       }
 
-      // 2. Insertar directamente en la tabla canónica 'conductores'
+      // 2. Si no fue creado via Edge function, insertar en 'conductores'
       const dbObj: any = { 
         rut: cond.rut || ('RUT-' + Date.now().toString().slice(-6)),
         nombre_completo: cond.nombreCompleto,
@@ -933,6 +951,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (uiUpdates.contactoTelefono !== undefined) dbUpdates.contacto_telefono = uiUpdates.contactoTelefono;
     if (uiUpdates.invitacion_enviada !== undefined) dbUpdates.invitacion_enviada = uiUpdates.invitacion_enviada;
     if (uiUpdates.invitacionEnviada !== undefined) dbUpdates.invitacion_enviada = uiUpdates.invitacionEnviada;
+
+    if (uiUpdates.tarifario) {
+      if (uiUpdates.tarifario.tarifaPorKm !== undefined) dbUpdates.tarifa_por_km = Number(uiUpdates.tarifario.tarifaPorKm);
+      if (uiUpdates.tarifario.tarifaMinima !== undefined) dbUpdates.tarifa_minima = Number(uiUpdates.tarifario.tarifaMinima);
+      if (uiUpdates.tarifario.tiempoEsperaPorHora !== undefined) dbUpdates.tiempo_espera_por_hora = Number(uiUpdates.tarifario.tiempoEsperaPorHora);
+      if (uiUpdates.tarifario.rutasFijas !== undefined) dbUpdates.rutas_fijas = uiUpdates.tarifario.rutasFijas;
+    }
     
     const { error } = await supabase.from('clientes_corporativos').update(dbUpdates).eq('id', id);
     if (error) { console.error('Error updating client:', error); return; }

@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useApp } from '../../context/AppContext';
 import type { PasajeroRutaCheck } from '../../types';
 import { useDriverGPS } from '../../hooks/useDriverGPS';
-import { queueAction, syncQueue } from '../../lib/offlineQueue';
+import { queueAction, syncQueue, saveTripsCache, getTripsCache } from '../../lib/offlineQueue';
 import { 
   Navigation, CheckCircle, XCircle, Clock, ShieldCheck, 
   Phone, AlertTriangle, Car, 
@@ -92,14 +92,42 @@ export const ConductorApp: React.FC = () => {
       if (!error && data) {
         setMyTrips(data);
         setActiveTrip(data.length > 0 ? data[0] : null);
+        saveTripsCache(data).catch(() => {});
+      } else {
+        const cached = await getTripsCache();
+        if (cached && cached.length > 0) {
+          setMyTrips(cached);
+          setActiveTrip(cached[0]);
+        }
       }
     } catch (e) {
-      console.error(e);
+      console.warn('Fetch trips error, loading offline cache:', e);
+      const cached = await getTripsCache();
+      if (cached && cached.length > 0) {
+        setMyTrips(cached);
+        setActiveTrip(cached[0]);
+      }
     }
   };
 
   useEffect(() => {
     fetchTrips();
+
+    // Comprobar si ya existe una inspección registrada hoy para este conductor
+    if (conductor?.id) {
+      const todayIso = new Date().toISOString().split('T')[0];
+      supabase
+        .from('inspecciones')
+        .select('id')
+        .eq('conductor_id', conductor.id)
+        .gte('created_at', `${todayIso}T00:00:00Z`)
+        .limit(1)
+        .maybeSingle()
+        .then(({ data: insp }) => {
+          if (insp) setInspeccionTransmitida(true);
+        });
+    }
+
     const handleOnline = () => syncQueue();
     window.addEventListener('online', handleOnline);
     syncQueue();
@@ -144,8 +172,23 @@ export const ConductorApp: React.FC = () => {
 
   const handleCambiarEstadoPasajero = async (id: string, nuevoEstado: 'abordo' | 'ausente') => {
     setSyncStatus('PENDIENTE');
+    const backendEstado = nuevoEstado === 'abordo' ? 'abordado' : 'no_show';
+
+    // Actualización optimista de interfaz
+    if (activeTrip?.viaje_pasajeros) {
+      const updatedVp = activeTrip.viaje_pasajeros.map((vp: any) => 
+        vp.id === id ? { ...vp, estado: backendEstado, hora_abordaje: backendEstado === 'abordado' ? new Date().toISOString() : vp.hora_abordaje } : vp
+      );
+      setActiveTrip({ ...activeTrip, viaje_pasajeros: updatedVp });
+    }
+
+    if (!navigator.onLine) {
+      await queueAction({ type: 'board_passenger', payload: { p_viaje_pasajero_id: id, p_estado: backendEstado } });
+      mostrarNotificacion(`[Modo Offline] Pasajero marcado como ${nuevoEstado === 'abordo' ? 'A BORDO' : 'AUSENTE'}. Se sincronizará al conectar.`);
+      return;
+    }
+
     try {
-      const backendEstado = nuevoEstado === 'abordo' ? 'abordado' : 'no_show';
       const { error } = await supabase.rpc('board_passenger', { p_viaje_pasajero_id: id, p_estado: backendEstado });
       if (error) throw error;
       
@@ -153,14 +196,32 @@ export const ConductorApp: React.FC = () => {
       await fetchTrips();
       setSyncStatus('SINCRONIZADO');
     } catch (e: any) {
-      console.error(e);
-      setSyncStatus('ERROR');
-      mostrarNotificacion(e?.message || 'Error al registrar pasajero');
+      console.error('Error board_passenger:', e);
+      if (!navigator.onLine || e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError')) {
+        await queueAction({ type: 'board_passenger', payload: { p_viaje_pasajero_id: id, p_estado: backendEstado } });
+        mostrarNotificacion('Sin conexión estable. Acción guardada en cola local para sincronización.');
+      } else {
+        setSyncStatus('ERROR');
+        mostrarNotificacion(e?.message || 'Error al registrar pasajero');
+      }
     }
   };
 
   const handleRevertirEstadoPasajero = async (id: string, nombre: string) => {
     setSyncStatus('PENDIENTE');
+    if (activeTrip?.viaje_pasajeros) {
+      const updatedVp = activeTrip.viaje_pasajeros.map((vp: any) => 
+        vp.id === id ? { ...vp, estado: 'pendiente', hora_abordaje: null } : vp
+      );
+      setActiveTrip({ ...activeTrip, viaje_pasajeros: updatedVp });
+    }
+
+    if (!navigator.onLine) {
+      await queueAction({ type: 'board_passenger', payload: { p_viaje_pasajero_id: id, p_estado: 'pendiente' } });
+      mostrarNotificacion(`[Modo Offline] Estado de ${nombre} reestablecido. Se sincronizará al conectar.`);
+      return;
+    }
+
     try {
       const { error } = await supabase.rpc('board_passenger', { p_viaje_pasajero_id: id, p_estado: 'pendiente' });
       if (error) throw error;
@@ -169,29 +230,51 @@ export const ConductorApp: React.FC = () => {
       setSyncStatus('SINCRONIZADO');
     } catch (e: any) {
       console.error('Error al revertir abordaje:', e);
-      setSyncStatus('ERROR');
-      mostrarNotificacion(e?.message || 'Error al revertir estado');
+      if (!navigator.onLine || e?.message?.includes('Failed to fetch')) {
+        await queueAction({ type: 'board_passenger', payload: { p_viaje_pasajero_id: id, p_estado: 'pendiente' } });
+        mostrarNotificacion('Sin conexión. Acción guardada en cola local.');
+      } else {
+        setSyncStatus('ERROR');
+        mostrarNotificacion(e?.message || 'Error al revertir estado');
+      }
     }
   };
 
   const handleFinalizarRuta = async () => {
-    if (totalPendientes > 0) return;
+    if (totalPendientes > 0) {
+      mostrarNotificacion(`Debes marcar a los ${totalPendientes} pasajero(s) pendientes antes de finalizar.`);
+      return;
+    }
     setSyncStatus('PENDIENTE');
+
+    if (!navigator.onLine) {
+      await queueAction({ type: 'trip_finish', payload: { p_viaje_id: activeTripId } });
+      setRutaCompletada(true);
+      mostrarNotificacion('[Modo Offline] 🏁 Recorrido finalizado localmente. Se sincronizará con Central.');
+      return;
+    }
+
     try {
       const { error } = await supabase.rpc('trip_finish', { p_viaje_id: activeTripId });
       if (error) throw error;
       setRutaCompletada(true);
-      mostrarNotificacion('🏁 ¡Recorrido finalizado!');
+      mostrarNotificacion('🏁 ¡Recorrido finalizado exitosamente!');
       await fetchTrips();
       setSyncStatus('SINCRONIZADO');
     } catch (e: any) {
       console.error('Error al finalizar ruta:', e);
-      setSyncStatus('ERROR');
-      mostrarNotificacion(e?.message || 'Error al finalizar ruta');
+      if (!navigator.onLine || e?.message?.includes('Failed to fetch')) {
+        await queueAction({ type: 'trip_finish', payload: { p_viaje_id: activeTripId } });
+        setRutaCompletada(true);
+        mostrarNotificacion('Sin conexión. Cierre encolado localmente.');
+      } else {
+        setSyncStatus('ERROR');
+        mostrarNotificacion(e?.message || 'Error al finalizar ruta');
+      }
     }
   };
   
-const [checkFluidos, setCheckFluidos] = useState(true);
+  const [checkFluidos, setCheckFluidos] = useState(true);
   const [checkNeumaticos, setCheckNeumaticos] = useState(true);
   const [checkLicencia, setCheckLicencia] = useState(true);
   const [checkExtintor, setCheckExtintor] = useState(false);
@@ -213,15 +296,46 @@ const [checkFluidos, setCheckFluidos] = useState(true);
     setTimeout(() => setVozActiva(null), 6000);
   };
 
-
-
-  const handleTransmitirInspeccion = () => {
+  const handleTransmitirInspeccion = async () => {
     if (!checkExtintor || !checkFluidos || !checkNeumaticos || !checkLicencia) {
       mostrarNotificacion('⚠️ Debes verificar los 4 puntos de seguridad obligatorios de la normativa vial.');
       return;
     }
-    setInspeccionTransmitida(true);
-    mostrarNotificacion('✅ Inspección Técnica transmitida y sincronizada con el Centro Operativo.');
+
+    if (!conductor?.id) {
+      mostrarNotificacion('Perfil de conductor no disponible para registrar inspección.');
+      return;
+    }
+
+    const vehId = vehiculoAsignado?.id || vehiculoTurno?.id || vehiculoViaje?.id;
+    if (!vehId) {
+      mostrarNotificacion('⚠️ No tienes un vehículo asignado para registrar la inspección.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('inspecciones').insert([{
+        conductor_id: conductor.id,
+        vehiculo_id: vehId,
+        viaje_id: activeTripId || null,
+        kilometraje: Number(vehiculoAsignado?.kilometraje || 0),
+        estado_general: 'ok',
+        observaciones: JSON.stringify({
+          fluidos: checkFluidos,
+          neumaticos: checkNeumaticos,
+          licencia: checkLicencia,
+          extintor: checkExtintor,
+          fecha: new Date().toISOString()
+        })
+      }]);
+
+      if (error) throw error;
+      setInspeccionTransmitida(true);
+      mostrarNotificacion('✅ Inspección Técnica transmitida y registrada en el Centro Operativo.');
+    } catch (err: any) {
+      console.error('Error transmitiendo inspección:', err);
+      mostrarNotificacion('Error al guardar inspección: ' + (err?.message || err));
+    }
   };
 
   const handleReportarIncidenteConductor = async (tipoLabel: string) => {
@@ -244,7 +358,7 @@ const [checkFluidos, setCheckFluidos] = useState(true);
       else if (t.includes('emergencia') || t.includes('urgencia')) { tipoDb = 'emergencia'; severidadDb = 'critica'; }
       else if (t.includes('retraso')) { tipoDb = 'retraso'; severidadDb = 'baja'; }
 
-      await supabase.from('incidencias').insert({
+      const { error: incErr } = await supabase.from('incidencias').insert({
         viaje_id: activeTrip.id,
         reportado_por_perfil_id: authUser?.user_metadata?.perfil_id || null,
         tipo: tipoDb,
@@ -252,8 +366,14 @@ const [checkFluidos, setCheckFluidos] = useState(true);
         descripcion: tipoLabel,
         estado: 'abierta'
       });
+
+      if (incErr) {
+        console.error('Error insertando incidencia:', incErr);
+        mostrarNotificacion('Error al registrar incidencia: ' + incErr.message);
+        return;
+      }
     }
-    
+
     mostrarNotificacion(`🚨 Reporte de "${tipoLabel}" despachado en tiempo real a la Central de Neira Transportes.`);
   };
 

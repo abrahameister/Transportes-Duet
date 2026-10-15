@@ -64,3 +64,5 @@ debug.log*
 # Resguardos de carpetas vacias de desarrollo
 tmp/
 scratch/
+test-results/
+playwright-report/

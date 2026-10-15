@@ -1,6 +1,6 @@
 import Map, { Marker, NavigationControl } from 'react-map-gl/maplibre';
 import * as maplibregl from 'maplibre-gl';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../ui/Toast';
 import type { ViajeOperativa } from '../../types';
@@ -13,6 +13,31 @@ export const TorreControlView: React.FC = () => {
   const [activeSubView, setActiveSubView] = useState<'tablero' | 'radar'>('tablero');
   const [selectedViajeForDispatch, setSelectedViajeForDispatch] = useState<ViajeOperativa | null>(null);
   const [filterEstado, setFilterEstado] = useState<string>('todos');
+  const [realtimePositions, setRealtimePositions] = useState<Record<string, { lat: number; lng: number }>>({});
+
+  useEffect(() => {
+    if (activeSubView !== 'radar') return;
+
+    const channel = supabase
+      .channel('radar-gps-channel')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tracking_positions' }, (payload) => {
+        const newPos = payload.new as any;
+        if (newPos && newPos.conductor_id && newPos.latitud && newPos.longitud) {
+          setRealtimePositions(prev => ({
+            ...prev,
+            [newPos.conductor_id]: {
+              lat: Number(newPos.latitud),
+              lng: Number(newPos.longitud)
+            }
+          }));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeSubView]);
 
   const viajesTenant = viajes;
   const conductoresTenant = conductores;
@@ -368,8 +393,9 @@ export const TorreControlView: React.FC = () => {
                 {conductoresTenant.map((c) => {
                   const isOnline = c.estadoWFM !== 'offline' && !c.enDescanso;
                   const isExcepcion = c.estadoWFM === 'incidencia';
-                  const lat = c.ultimaLatitud;
-                  const lng = c.ultimaLongitud;
+                  const livePos = realtimePositions[c.id];
+                  const lat = livePos ? livePos.lat : c.ultimaLatitud;
+                  const lng = livePos ? livePos.lng : c.ultimaLongitud;
 
                   if (!lat || !lng) return null;
 
@@ -379,6 +405,7 @@ export const TorreControlView: React.FC = () => {
                         <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-2 py-1 rounded shadow-md border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-800 dark:text-gray-200 whitespace-nowrap mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           {c.nombreCompleto} <br/>
                           <span className="font-mono font-normal">{c.vehiculo?.patente || c.vehiculo?.placa || 'Sin Asignar'}</span>
+                          {livePos && <span className="block text-[9px] text-emerald-500 font-semibold">● En vivo</span>}
                         </div>
                         <div className={`w-6 h-6 rounded-full border-2 shadow-lg flex items-center justify-center ${
                           isExcepcion ? 'bg-red-500 border-white animate-pulse' : 

@@ -11,7 +11,6 @@ function serializeError(error: unknown): string {
   if (error instanceof Error) return error.message
   if (typeof error === 'object' && error !== null) {
     const e = error as Record<string, unknown>
-    // PostgrestError tiene message, details, hint, code
     if (typeof e.message === 'string') {
       const detail = e.details ? ` | details: ${e.details}` : ''
       const hint   = e.hint   ? ` | hint: ${e.hint}`       : ''
@@ -40,6 +39,54 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false }
     })
 
+    // ==============================================================================
+    // 1. AUTORIZACION ESTRICTA DEL INVOCADOR
+    // ==============================================================================
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'No autorizado: cabecera Authorization requerida.' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const jwtToken = authHeader.replace(/^Bearer\s+/i, '').trim()
+    const { data: callerAuth, error: callerAuthErr } = await supabase.auth.getUser(jwtToken)
+
+    if (callerAuthErr || !callerAuth?.user) {
+      return new Response(JSON.stringify({ error: 'Sesion invalida o expirada.' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Consultar perfil del solicitante
+    const { data: callerProfile, error: callerProfileErr } = await supabase
+      .from('perfiles')
+      .select('id, rol, estado, email')
+      .eq('auth_user_id', callerAuth.user.id)
+      .maybeSingle()
+
+    if (callerProfileErr || !callerProfile) {
+      return new Response(JSON.stringify({ error: 'Perfil del usuario solicitante no encontrado.' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (callerProfile.estado !== 'activo') {
+      return new Response(JSON.stringify({ error: 'El usuario solicitante no se encuentra activo.' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const callerRole = callerProfile.rol
+    if (!['ADMIN', 'OPERACIONES'].includes(callerRole)) {
+      return new Response(JSON.stringify({ error: 'Acceso denegado: solo personal de ADMIN u OPERACIONES puede invitar o crear cuentas.' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // ==============================================================================
+    // 2. VALIDACION DEL PAYLOAD Y ROLES
+    // ==============================================================================
     const body = await req.json()
     const { 
       email, 
@@ -65,12 +112,43 @@ serve(async (req) => {
     const finalRole = validRoles.includes(rawRole) ? rawRole : 'CLIENTE_B2B'
     const targetRedirect = redirectTo || 'https://duetgo.netlify.app/reset-password'
 
+    // Restriccion jerarquica: Solo ADMIN puede asignar rol ADMIN u OPERACIONES
+    if (['ADMIN', 'OPERACIONES'].includes(finalRole) && callerRole !== 'ADMIN') {
+      return new Response(JSON.stringify({ error: 'Solo un ADMIN puede asignar roles de ADMIN u OPERACIONES.' }), { 
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    // Evitar que el usuario modifique su propio rol
+    if (callerProfile.email?.toLowerCase() === cleanEmail && finalRole !== callerProfile.rol) {
+      return new Response(JSON.stringify({ error: 'No esta permitido modificar el propio rol de la cuenta activa.' }), { 
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    // Si es CLIENTE_B2B, verificar que la empresa existe
+    if (finalRole === 'CLIENTE_B2B' && cliente_corporativo_id) {
+      const { data: clientCheck } = await supabase
+        .from('clientes_corporativos')
+        .select('id, nombre_corporativo')
+        .eq('id', cliente_corporativo_id)
+        .maybeSingle()
+
+      if (!clientCheck) {
+        return new Response(JSON.stringify({ error: 'El cliente corporativo especificado no existe.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
     let userId: string | null = null
     let isExistingUser = false
     let actionLink: string | null = null
     let emailSent = false
 
-    // 1. Buscar si el usuario ya existe en auth.users
+    // ==============================================================================
+    // 3. BUSCAR O CREAR USUARIO EN auth.users CON METADATOS AUTORIZADOS
+    // ==============================================================================
     const { data: listData } = await supabase.auth.admin.listUsers({
       page: 1,
       perPage: 1000
@@ -83,8 +161,17 @@ serve(async (req) => {
     if (existingAuthUser) {
       userId = existingAuthUser.id
       isExistingUser = true
+
+      // Actualizar metadatos autorizados en auth.users
+      await supabase.auth.admin.updateUserById(userId, {
+        app_metadata: { rol: finalRole },
+        user_metadata: {
+          rol: finalRole,
+          nombre_completo: fullName || existingAuthUser.user_metadata?.nombre_completo || 'Usuario Corporativo'
+        }
+      })
     } else {
-      // 2. Si es usuario nuevo, invitarlo por email (envia correo de bienvenida via SMTP configurado)
+      // Si es usuario nuevo, invitarlo por email (envia correo de bienvenida via SMTP)
       try {
         const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(cleanEmail, {
           redirectTo: targetRedirect,
@@ -96,7 +183,11 @@ serve(async (req) => {
         if (!inviteErr && inviteData?.user) {
           userId = inviteData.user.id
           emailSent = true
-          console.log('inviteUserByEmail exitoso, userId:', userId)
+
+          // Asegurar app_metadata protegido
+          await supabase.auth.admin.updateUserById(userId, {
+            app_metadata: { rol: finalRole }
+          })
         } else if (inviteErr) {
           console.warn('inviteUserByEmail aviso:', serializeError(inviteErr))
         }
@@ -104,18 +195,19 @@ serve(async (req) => {
         console.warn('inviteUserByEmail excepcion:', serializeError(err))
       }
 
-      // Si fallo inviteUserByEmail, crear el usuario directamente
+      // Fallback si no fue posible invitar por correo (ej. SMTP restringido): crear usuario
       if (!userId) {
         const { data: createData, error: createError } = await supabase.auth.admin.createUser({
           email: cleanEmail,
           email_confirm: true,
+          app_metadata: { rol: finalRole },
           user_metadata: {
             rol: finalRole,
             nombre_completo: fullName || 'Usuario Corporativo'
           }
         })
+
         if (createError) {
-          // Si por concurrencia ya existia
           const { data: retryList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
           const found = retryList?.users?.find((u: any) => u.email?.toLowerCase() === cleanEmail)
           if (found) {
@@ -134,7 +226,9 @@ serve(async (req) => {
       throw new Error('No fue posible resolver o crear el usuario en Supabase Auth.')
     }
 
-    // 3. Generar enlace de acceso / restablecimiento
+    // ==============================================================================
+    // 4. GENERAR ENLACE DE ACCESO / RECUPERACION SEGURO
+    // ==============================================================================
     try {
       const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
         type: 'recovery',
@@ -150,8 +244,9 @@ serve(async (req) => {
       console.warn('No se pudo generar action_link (excepcion):', serializeError(linkEx))
     }
 
-    // 4. Crear o actualizar el perfil en la tabla 'perfiles'
-    // Se busca primero por auth_user_id, luego por email (evita problemas con .or() y UUIDs)
+    // ==============================================================================
+    // 5. CREAR O ACTUALIZAR PERFIL EN TABLA 'perfiles'
+    // ==============================================================================
     let existingProfile: { id: string; rol: string; estado: string } | null = null
 
     const byAuthId = await supabase
@@ -163,7 +258,6 @@ serve(async (req) => {
     if (byAuthId.data) {
       existingProfile = byAuthId.data
     } else {
-      // Fallback: buscar por email (el trigger puede haber creado el perfil antes de asignar auth_user_id)
       const byEmail = await supabase
         .from('perfiles')
         .select('id, rol, estado')
@@ -171,8 +265,6 @@ serve(async (req) => {
         .maybeSingle()
       existingProfile = byEmail.data
     }
-
-    console.log('existingProfile encontrado:', existingProfile ? existingProfile.id : 'null')
 
     let perfilId: string
 
@@ -193,9 +285,7 @@ serve(async (req) => {
       if (updateProfileErr) {
         throw new Error(`Error actualizando perfil [id=${perfilId}]: ${serializeError(updateProfileErr)}`)
       }
-      console.log('Perfil actualizado correctamente, id:', perfilId)
     } else {
-      // El trigger no creo el perfil (puede pasar si el usuario fue creado externamente)
       const { data: newProfile, error: profileError } = await supabase
         .from('perfiles')
         .insert([{
@@ -212,10 +302,11 @@ serve(async (req) => {
         throw new Error(`Error insertando perfil [email=${cleanEmail}]: ${serializeError(profileError)}`)
       }
       perfilId = newProfile.id
-      console.log('Perfil creado correctamente, id:', perfilId)
     }
 
-    // 5. Si es CLIENTE_B2B, asociar a la empresa en 'usuarios_cliente_b2b'
+    // ==============================================================================
+    // 6. ASOCIACIONES B2B Y CONDUCTOR SIN DUPLICIDADES
+    // ==============================================================================
     if (finalRole === 'CLIENTE_B2B' && cliente_corporativo_id) {
       const { data: existingB2b } = await supabase
         .from('usuarios_cliente_b2b')
@@ -225,36 +316,57 @@ serve(async (req) => {
         .maybeSingle()
         
       if (!existingB2b) {
-        const { error: b2bError } = await supabase
+        await supabase
           .from('usuarios_cliente_b2b')
           .insert([{
             perfil_id: perfilId,
             cliente_corporativo_id: cliente_corporativo_id
           }])
-        if (b2bError) {
-          console.warn('Aviso vinculando usuarios_cliente_b2b:', serializeError(b2bError))
-        } else {
-          console.log('Vinculacion B2B creada, cliente_corporativo_id:', cliente_corporativo_id)
-        }
-      } else {
-        console.log('Vinculacion B2B ya existia, id:', existingB2b.id)
       }
+
+      // Marcar invitacion_enviada en clientes_corporativos
+      await supabase
+        .from('clientes_corporativos')
+        .update({ invitacion_enviada: true, updated_at: new Date().toISOString() })
+        .eq('id', cliente_corporativo_id)
     }
 
-    // 6. Si es CONDUCTOR, asociar o crear en 'conductores'
     if (finalRole === 'CONDUCTOR') {
-      const { data: existingCond } = await supabase
+      const cleanRut = (rut || '').trim() || null
+
+      // Buscar si ya existe por perfil_id, por email o por rut
+      let existingCondQuery = supabase
         .from('conductores')
         .select('id')
         .eq('perfil_id', perfilId)
         .maybeSingle()
+
+      let { data: existingCond } = await existingCondQuery
+
+      if (!existingCond && cleanRut) {
+        const { data: byRut } = await supabase
+          .from('conductores')
+          .select('id')
+          .eq('rut', cleanRut)
+          .maybeSingle()
+        existingCond = byRut
+      }
+
+      if (!existingCond) {
+        const { data: byEmail } = await supabase
+          .from('conductores')
+          .select('id')
+          .eq('email', cleanEmail)
+          .maybeSingle()
+        existingCond = byEmail
+      }
 
       if (!existingCond) {
         const { error: condError } = await supabase
           .from('conductores')
           .insert([{
             perfil_id: perfilId,
-            rut: rut || ('RUT-' + userId.slice(0, 8)),
+            rut: cleanRut || ('RUT-' + userId.slice(0, 8)),
             nombre_completo: fullName || 'Conductor',
             telefono: telefono || '+56900000000',
             tipo_licencia: tipoLicencia || 'A2',
@@ -268,7 +380,16 @@ serve(async (req) => {
       } else {
         await supabase
           .from('conductores')
-          .update({ estado: 'activo', email: cleanEmail })
+          .update({
+            perfil_id: perfilId,
+            estado: 'activo',
+            email: cleanEmail,
+            nombre_completo: fullName || undefined,
+            telefono: telefono || undefined,
+            tipo_licencia: tipoLicencia || undefined,
+            vencimiento_licencia: vencimientoLicencia || undefined,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', existingCond.id)
       }
     }
@@ -289,7 +410,7 @@ serve(async (req) => {
     })
   } catch (error) {
     const errorMsg = serializeError(error)
-    console.error('Error detallado en invite-b2b:', errorMsg)
+    console.error('Error en invite-b2b:', errorMsg)
     return new Response(JSON.stringify({ 
       error: errorMsg
     }), {

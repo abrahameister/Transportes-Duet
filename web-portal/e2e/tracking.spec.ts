@@ -8,6 +8,6 @@ test.describe('Tracking Público', () => {
     await expect(page).not.toHaveURL(/.*\/login/);
 
     // Debe mostrar error de acceso o token inválido, sin exponer datos operacionales
-    await expect(page.locator('text=No autorizado')).toBeVisible();
+    await expect(page.locator('text=Seguimiento no disponible')).toBeVisible();
   });
 });
