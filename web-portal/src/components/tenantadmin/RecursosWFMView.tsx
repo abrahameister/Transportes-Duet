@@ -529,10 +529,10 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-              GESTIÓN DE FLOTA Y CONDUCTORES
+              CONDUCTORES Y VEHÍCULOS
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-              Directorio de Conductores y Vehículos
+              Gestión de Conductores y Vehículos
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Control de licencias profesionales A1/A2/A3, revisión técnica, capacidades de pasaje y disponibilidad.
@@ -576,7 +576,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5 mr-1" />
-                <span>Pauta de Turnos ({turnosConductores.length})</span>
+                <span>Turnos ({turnosConductores.length})</span>
               </button>
             </div>
 
@@ -1259,7 +1259,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
 
               <div className="p-3.5 rounded-lg bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-slate-700 dark:text-slate-300 text-xs flex items-center space-x-2">
                 <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
-                <span>Al guardar, el conductor quedará en estado <strong>DISPONIBLE</strong> en la Torre de Control WFM.</span>
+                <span>Al guardar, el conductor quedará en estado <strong>DISPONIBLE</strong> en el panel de control.</span>
               </div>
 
               <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-[#212A38]">
@@ -1268,7 +1268,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                 </button>
                 <button type="submit" className="px-6 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all flex items-center space-x-1.5">
                   <User className="w-3.5 h-3.5 mr-1" />
-                  <span>{editingConductor ? 'Guardar Cambios ✓' : 'Registrar Conductor en WFM ✓'}</span>
+                  <span>{editingConductor ? 'Guardar Cambios' : 'Registrar Conductor'}</span>
                 </button>
               </div>
             </form>
@@ -1465,7 +1465,7 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
                   className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all flex items-center space-x-1.5 cursor-pointer"
                 >
                   <Calendar className="w-3.5 h-3.5 mr-1" />
-                  <span>Guardar Turno ✓</span>
+                  <span>Guardar Turno</span>
                 </button>
               </div>
             </form>
@@ -1473,17 +1473,17 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
         </div>
       )}
 
-      {/* MODALES CORPORATIVOS DE CONFIRMACIÓN DE BAJA WFM */}
+      {/* MODALES DE CONFIRMACIÓN */}
       <ConfirmModal
         isOpen={!!vehiculoToDelete}
-        title={`¿Dar de baja la unidad de flota ${vehiculoToDelete?.placa}?`}
+        title={`¿Eliminar el vehículo ${vehiculoToDelete?.placa}?`}
         message={
           <span>
-            Estás a punto de eliminar de la central operativa el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>). Esta acción removerá el móvil de las asignaciones de turno vigentes en {'Neira Transportes'}.
+            Estás a punto de eliminar el vehículo <strong>{vehiculoToDelete?.marca} {vehiculoToDelete?.modelo}</strong> (Patente <strong>{vehiculoToDelete?.placa}</strong>).
           </span>
         }
-        confirmText="Confirmar Baja de Unidad"
-        cancelText="Conservar en Flota"
+        confirmText="Eliminar Vehículo"
+        cancelText="Cancelar"
         variant="danger"
         onConfirm={() => {
           if (vehiculoToDelete) {
@@ -1496,14 +1496,14 @@ export const RecursosWFMView: React.FC<RecursosWFMViewProps> = ({ initialTab }) 
 
       <ConfirmModal
         isOpen={!!conductorToDelete}
-        title={`¿Desvincular a ${conductorToDelete?.nombreCompleto} de la Nómina?`}
+        title={`¿Eliminar al conductor ${conductorToDelete?.nombreCompleto}?`}
         message={
           <span>
-            Estás a punto de dar de baja al conductor con RUT <strong>{conductorToDelete?.rut}</strong> y licencia clase <strong>{conductorToDelete?.tipoLicencia || 'A3'}</strong>. Quedará inhabilitado para recibir despachos o iniciar sesión en el Terminal Móvil de Conductor.
+            Estás a punto de eliminar al conductor con RUT <strong>{conductorToDelete?.rut}</strong>. No podrá acceder a la app ni recibir viajes.
           </span>
         }
-        confirmText="Desvincular de Nómina"
-        cancelText="Mantener en Nómina"
+        confirmText="Eliminar Conductor"
+        cancelText="Cancelar"
         variant="danger"
         onConfirm={() => {
           if (conductorToDelete) {

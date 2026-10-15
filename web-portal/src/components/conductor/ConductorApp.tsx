@@ -156,7 +156,7 @@ export const ConductorApp: React.FC = () => {
   const [showApkModal, setShowApkModal] = useState<boolean>(false);
 
   const handleDownloadAPK = () => {
-    mostrarNotificacion('La descarga de la APK nativa estará disponible próximamente desde el Centro de Distribución WFM.');
+    mostrarNotificacion('La descarga de la app estará disponible próximamente.');
   };
 
   // Map backend pasajeros to UI state
@@ -465,11 +465,11 @@ export const ConductorApp: React.FC = () => {
                       <button
                         onClick={() => {
                           marcarAvisoLeido(aviso.id);
-                          mostrarNotificacion(`✓ Aviso de ${aviso.pasajeroNombre} marcado como recibido.`);
+                          mostrarNotificacion(`Aviso de ${aviso.pasajeroNombre} marcado como recibido.`);
                         }}
                         className="px-2.5 py-1.5 rounded text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs"
                       >
-                        Enterado ✓
+                        Enterado
                       </button>
                     </div>
                   </div>
@@ -529,7 +529,7 @@ export const ConductorApp: React.FC = () => {
                 </div>
                 <div className="space-y-1.5">
                   <span className="px-3 py-1 rounded-full bg-emerald-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-xs">
-                    ✓ Recorrido Finalizado
+                    Completado
                   </span>
                   <h3 className="text-lg font-extrabold text-slate-900 dark:text-white pt-1">
                     Recorrido Finalizado
@@ -915,7 +915,7 @@ export const ConductorApp: React.FC = () => {
                       onClick={handleTransmitirInspeccion}
                       className="w-full py-2.5 rounded-xl text-xs font-black bg-blue-600 hover:bg-blue-500 text-white shadow-md transition-all mt-2"
                     >
-                      ✓ Transmitir Inspección a Central
+                      Enviar Inspección a Central
                     </button>
                   ) : (
                     <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-700 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center space-x-2">

@@ -578,7 +578,7 @@ export const ClientPortalB2B: React.FC = () => {
             <div className="enterprise-card p-6 bg-white dark:bg-[#161D27] border border-slate-200 dark:border-[#212A38] space-y-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center">
                 <ShieldCheck className="w-4 h-4 mr-2 text-emerald-500" />
-                <span>Resumen de Cuentas B2B</span>
+                <span>Resumen de la Cuenta</span>
               </h3>
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -594,7 +594,7 @@ export const ClientPortalB2B: React.FC = () => {
                   <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">+56 41 224 8899</span>
                 </div>
                 <div className="pt-2">
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase block">✓ Estado Contractual Al Día</span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase block">Servicio Activo</span>
                   <p className="text-[11px] text-slate-400 mt-1">Servicio habilitado con prioridad operativa para traslados de personal y ejecutivos.</p>
                 </div>
               </div>
@@ -904,7 +904,7 @@ export const ClientPortalB2B: React.FC = () => {
               </div>
               <div className="bg-slate-50 dark:bg-[#0D1117] p-3.5 rounded-lg border border-slate-200 dark:border-[#212A38] text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
                 <span>Total estimado de traslados a coordinar para hoy: <strong className="text-slate-800 dark:text-gray-200 font-mono">224 pasajeros programados</strong></span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Información cargada al Centro de Operaciones</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Información cargada al Centro de Operaciones</span>
               </div>
             </div>
           </div>
@@ -1380,7 +1380,7 @@ export const ClientPortalB2B: React.FC = () => {
             </form>
 
             <div className="pt-4 border-t border-slate-200 dark:border-[#212A38] space-y-3">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Historial de Tickets B2B</h4>
+              <h4 className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Historial de Solicitudes</h4>
               <div className="space-y-2">
                 {tickets.length === 0 ? (
                   <div className="p-4 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-200 dark:border-[#212A38]">

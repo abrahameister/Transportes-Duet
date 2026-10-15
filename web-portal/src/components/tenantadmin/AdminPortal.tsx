@@ -68,7 +68,7 @@ export const AdminPortal: React.FC = () => {
             className="px-3.5 py-1.5 rounded-md text-xs font-semibold bg-[#0F172A] hover:bg-slate-800 text-white transition-colors inline-flex items-center shadow-sm cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 mr-1.5" />
-            Servicio Manual
+            Nuevo Viaje
           </button>
         </div>
       </div>
@@ -78,18 +78,18 @@ export const AdminPortal: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              <span>Centro Operativo y Despacho</span>
+              <span>Panel de Control</span>
               <span>●</span>
               <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center">
                 <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-500" />
-                Sistema Conectado en Vivo
+                En Vivo
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight mt-1">
               {'Neira Transportes'}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Control centralizado de flota, telemetría en tiempo real, programación de rutas e incidencias en ruta.
+              Monitoreo de viajes, conductores, vehículos y rutas en tiempo real.
             </p>
           </div>
         </div>
@@ -154,7 +154,7 @@ export const AdminPortal: React.FC = () => {
             }`}
           >
             <Building2 className="w-3.5 h-3.5 mr-1" />
-            <span>Tarifario B2B</span>
+            <span>Clientes y Tarifas</span>
           </button>
           <button
             onClick={() => setActiveEje('programacion')}
@@ -166,7 +166,7 @@ export const AdminPortal: React.FC = () => {
             }`}
           >
             <Calendar className="w-3.5 h-3.5 mr-1 text-amber-500" />
-            <span>Programación de Turnos</span>
+            <span>Planificación</span>
           </button>
         </div>
       </div>
@@ -177,15 +177,15 @@ export const AdminPortal: React.FC = () => {
           <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase">VIAJES HOY</div>
           <div className="flex items-baseline space-x-2">
             <span className="text-xl font-bold text-slate-900 dark:text-white font-mono">{stats.viajes_hoy}</span>
-            <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">Total Programados</span>
+            <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">Programados</span>
           </div>
         </div>
 
         <div className="enterprise-card p-3.5 border-l-2 border-emerald-500">
-          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase">EN TRANSITO / RUTA</div>
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase">EN RUTA</div>
           <div className="flex items-baseline space-x-2">
             <span className="text-xl font-bold text-slate-900 dark:text-white font-mono">{stats.viajes_en_curso}</span>
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Servicios en curso</span>
+            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">En curso</span>
           </div>
         </div>
 
@@ -193,18 +193,18 @@ export const AdminPortal: React.FC = () => {
           <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase">VIAJES COMPLETADOS</div>
           <div className="flex items-baseline space-x-2">
             <span className="text-xl font-bold text-slate-700 dark:text-gray-300 font-mono">{stats.viajes_completados}</span>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Finalizados (Hoy)</span>
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Finalizados</span>
           </div>
         </div>
 
         <div className="enterprise-card p-3.5 border-l-2 border-red-500">
-          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase">EXCEPCIONES ACTIVAS</div>
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase">INCIDENCIAS</div>
           <div className="flex items-baseline space-x-2">
             <span className={`text-xl font-bold font-mono ${stats.alertas_activas > 0 ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-900 dark:text-white'}`}>
               {stats.alertas_activas}
             </span>
             <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
-              {stats.alertas_activas > 0 ? '¡Requieren Atención!' : 'Operación nominal'}
+              {stats.alertas_activas > 0 ? 'Requieren atención' : 'Sin novedades'}
             </span>
           </div>
         </div>

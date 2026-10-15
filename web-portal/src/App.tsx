@@ -70,7 +70,7 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white p-4 font-sans">
         <div className="w-10 h-10 border-4 border-[#E8832A] border-t-transparent rounded-full animate-spin mb-4 shadow-lg" />
-        <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Verificando Credenciales WFM...</p>
+        <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Cargando...</p>
       </div>
     );
   }

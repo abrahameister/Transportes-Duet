@@ -68,7 +68,7 @@ export const ClientesTarifacionView: React.FC = () => {
     };
 
     actualizarCliente(selectedClienteForTariffs.id, { tarifario: updatedTarifario });
-    setActionMsg(`Matriz tarifaria CLP de "${selectedClienteForTariffs.nombreCorporativo}" actualizada con éxito.`);
+    setActionMsg(`Tarifas de "${selectedClienteForTariffs.nombreCorporativo}" actualizadas.`);
     setSelectedClienteForTariffs(null);
     setTimeout(() => setActionMsg(null), 4000);
   };
@@ -202,12 +202,12 @@ export const ClientesTarifacionView: React.FC = () => {
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 dark:bg-[#0D1117] text-slate-500 dark:text-slate-400 uppercase font-semibold border-b border-slate-200 dark:border-[#212A38]">
             <tr>
-              <th className="py-3 px-4">Razón Social B2B</th>
-              <th className="py-3 px-4">RUT Corporativo</th>
-              <th className="py-3 px-4">Ejecutivo de Contacto</th>
-              <th className="py-3 px-4 font-mono">Tarifa Base / Km</th>
-              <th className="py-3 px-4 font-mono">Rutas Fijas Custom</th>
-              <th className="py-3 px-4 text-right">Configurar Tarifario</th>
+              <th className="py-3 px-4">Empresa / Cliente</th>
+              <th className="py-3 px-4">RUT</th>
+              <th className="py-3 px-4">Contacto</th>
+              <th className="py-3 px-4 font-mono">Tarifa / Km</th>
+              <th className="py-3 px-4 font-mono">Rutas Fijas</th>
+              <th className="py-3 px-4 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-[#212A38] text-slate-700 dark:text-gray-300">
@@ -240,7 +240,7 @@ export const ClientesTarifacionView: React.FC = () => {
                       handleInviteClient(cl);
                     }}
                     disabled={invitingId === cl.id}
-                    title={cl.invitacionEnviada ? "Invitación enviada. Reenviar correo" : "Enviar invitación de acceso B2B al cliente"}
+                    title={cl.invitacionEnviada ? "Invitación enviada. Reenviar correo" : "Enviar invitación al cliente"}
                     className={`px-2.5 py-1.5 rounded text-xs font-semibold transition-colors inline-flex items-center space-x-1 border ${
                       cl.invitacionEnviada 
                         ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' 
@@ -262,7 +262,7 @@ export const ClientesTarifacionView: React.FC = () => {
                     className="px-3 py-1.5 rounded bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 text-xs font-semibold shadow-sm transition-colors inline-flex items-center space-x-1"
                   >
                     <DollarSign className="w-3.5 h-3.5 mr-0.5" />
-                    <span>Configurar Tarifario</span>
+                    <span>Editar Tarifas</span>
                   </button>
                 </td>
               </tr>
@@ -278,7 +278,7 @@ export const ClientesTarifacionView: React.FC = () => {
             
             <div className="p-5 border-b border-slate-200 dark:border-[#212A38] bg-slate-50 dark:bg-[#0D1117] flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">MOTOR DE TARIFAS INDEPENDIENTE (CHILE)</span>
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">Tarifas del Cliente</span>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{selectedClienteForTariffs.nombreCorporativo}</h3>
               </div>
               <button onClick={() => setSelectedClienteForTariffs(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white"><X className="w-5 h-5" /></button>
@@ -287,11 +287,11 @@ export const ClientesTarifacionView: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="space-y-4">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-200 dark:border-[#212A38] pb-2">
-                  Parámetros Tarifarios Base ($ CLP)
+                  Tarifas Generales ($ CLP)
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Tarifa por Kilómetro ($ CLP/Km):</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Tarifa por Kilómetro:</label>
                     <input
                       type="number"
                       step="50"
@@ -299,10 +299,10 @@ export const ClientesTarifacionView: React.FC = () => {
                       onChange={(e) => setTarifaKm(Number(e.target.value))}
                       className="enterprise-input w-full font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm"
                     />
-                    <span className="text-[11px] text-slate-400 block mt-1">Se aplica en viajes dinámicos sin ruta predefinida.</span>
+                    <span className="text-[11px] text-slate-400 block mt-1">Para viajes con cobro por distancia.</span>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Tarifa Mínima de Salida ($ CLP):</label>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Tarifa Mínima por Viaje:</label>
                     <input
                       type="number"
                       step="500"
@@ -310,7 +310,7 @@ export const ClientesTarifacionView: React.FC = () => {
                       onChange={(e) => setTarifaMinima(Number(e.target.value))}
                       className="enterprise-input w-full font-mono font-bold text-slate-800 dark:text-white text-sm"
                     />
-                    <span className="text-[11px] text-slate-400 block mt-1">Piso mínimo facturable por servicio emitido.</span>
+                    <span className="text-[11px] text-slate-400 block mt-1">Monto mínimo por servicio.</span>
                   </div>
                 </div>
               </div>
@@ -318,7 +318,7 @@ export const ClientesTarifacionView: React.FC = () => {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#212A38] pb-2">
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Rutas Fijas Preestablecidas
+                    Rutas Fijas
                   </h4>
                   <button
                     type="button"
@@ -330,7 +330,7 @@ export const ClientesTarifacionView: React.FC = () => {
                   </button>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Precios inmutables negociados en contrato B2B. Puede editar el nombre y monto o añadir nuevas rutas personalizadas.
+                  Precios acordados por trayecto específico.
                 </p>
 
                 <div className="space-y-2.5">
@@ -346,7 +346,7 @@ export const ClientesTarifacionView: React.FC = () => {
                             setRutasFijas(newVals);
                           }}
                           className="enterprise-input w-full font-bold text-xs bg-white dark:bg-[#161D27]"
-                          placeholder="Nombre de la ruta corporativa..."
+                          placeholder="Nombre de la ruta..."
                         />
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate px-1">{rf.origen} ➔ {rf.destino}</div>
                       </div>
@@ -372,48 +372,48 @@ export const ClientesTarifacionView: React.FC = () => {
             </div>
 
             <div className="p-4 border-t border-slate-200 dark:border-[#212A38] bg-slate-50 dark:bg-[#0D1117] flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Los cambios se aplican automáticamente en el cobro en pesos chilenos.</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Las tarifas se aplicarán a los nuevos servicios.</span>
               <div className="space-x-2">
                 <button type="button" onClick={() => setSelectedClienteForTariffs(null)} className="px-4 py-2 rounded text-xs border border-slate-300 dark:border-[#303B4E] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#212A38]">Cancelar</button>
-                <button type="button" onClick={handleSaveTarifas} className="px-5 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm">Guardar Matriz Tarifaria ✓</button>
+                <button type="button" onClick={handleSaveTarifas} className="px-5 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm">Guardar Tarifas</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL NUEVO CLIENTE CHILE */}
+      {/* MODAL NUEVO CLIENTE */}
       {showClienteModal && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="enterprise-card p-6 max-w-md w-full space-y-4 animate-in zoom-in-95">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Alta de Cuenta Corporativa B2B (Chile)</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Nuevo Cliente</h3>
             <form onSubmit={handleSaveNuevoCliente} className="space-y-3.5">
               <div className="pt-2">
-                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Razón Social Contratante (*):</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Nombre de Empresa (*):</label>
                 <input type="text" value={nombreCorporativo} onChange={(e) => setNombreCorporativo(e.target.value)} placeholder="Ej. Forestal Arauco S.A." required className="enterprise-input w-full text-xs" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">RUT Contratante (*):</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">RUT (*):</label>
                 <input type="text" value={rut} onChange={(e) => setRut(e.target.value)} placeholder="76.012.345-0" required className="enterprise-input w-full text-xs font-mono uppercase" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Dirección Fiscal / Sede (*):</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Dirección (*):</label>
                 <input type="text" value={direccion} onChange={(e) => setDireccion(e.target.value)} placeholder="Parque Industrial Escuadrón, Coronel" required className="enterprise-input w-full text-xs" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Nombre Contacto (*):</label>
-                  <input type="text" value={contactoNombre} onChange={(e) => setContactoNombre(e.target.value)} placeholder="Ing. Gonzalo Sepúlveda" required className="enterprise-input w-full text-xs" />
+                  <input type="text" value={contactoNombre} onChange={(e) => setContactoNombre(e.target.value)} placeholder="Gonzalo Sepúlveda" required className="enterprise-input w-full text-xs" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Email Corporativo (*):</label>
-                  <input type="email" value={contactoEmail} onChange={(e) => setContactoEmail(e.target.value)} placeholder="gsepulveda@empresa.cl" required className="enterprise-input w-full text-xs" />
+                  <label className="text-xs font-semibold text-slate-700 dark:text-gray-300 block mb-1">Email de Contacto (*):</label>
+                  <input type="email" value={contactoEmail} onChange={(e) => setContactoEmail(e.target.value)} placeholder="contacto@empresa.cl" required className="enterprise-input w-full text-xs" />
                 </div>
               </div>
 
               <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-[#212A38]">
                 <button type="button" onClick={() => setShowClienteModal(false)} className="px-3 py-1.5 rounded text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white">Cancelar</button>
-                <button type="submit" className="px-5 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm">Crear Cuenta B2B</button>
+                <button type="submit" className="px-5 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm">Guardar Cliente</button>
               </div>
             </form>
           </div>

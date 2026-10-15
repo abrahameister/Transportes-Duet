@@ -174,7 +174,7 @@ export const IncidenciasAlertasView: React.FC = () => {
                     className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition-colors flex items-center space-x-2"
                   >
                     <Wrench className="w-3.5 h-3.5" />
-                    <span>Reasignar Unidad de Rescate ⚡</span>
+                    <span>Asignar Conductor de Reemplazo</span>
                   </button>
                 </div>
               </div>
@@ -203,16 +203,16 @@ export const IncidenciasAlertasView: React.FC = () => {
           <div className="enterprise-card p-6 max-w-lg w-full space-y-5 animate-in zoom-in-95">
             <div className="border-b border-slate-200 dark:border-[#212A38] pb-3 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider block">PROTOCOLO DE RESCATE OPERATIVO</span>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Despachar Conductor Sustituto</h3>
+                <span className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider block">REASIGNACIÓN DE EMERGENCIA</span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Asignar Conductor de Reemplazo</h3>
               </div>
             </div>
 
             <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Selecciona un conductor disponible de rescate para el viaje afectado. Al confirmar:
+              Selecciona un conductor disponible para continuar el viaje. Al confirmar:
               <ul className="list-disc pl-4 mt-2 space-y-1 text-slate-500 dark:text-slate-400">
-                <li>Se reasignará el viaje en la base de datos y se generará un nuevo token de rastreo.</li>
-                <li>Si la incidencia es falla mecánica o accidente, el móvil anterior pasará a estado <strong>taller</strong>.</li>
+                <li>Se reasignará el viaje en la base de datos y se generará un nuevo enlace de rastreo.</li>
+                <li>Si la incidencia es falla mecánica o accidente, el vehículo anterior pasará a estado <strong>taller</strong>.</li>
                 <li>La incidencia quedará marcada como <strong>en resolución</strong>.</li>
               </ul>
             </div>
@@ -231,7 +231,7 @@ export const IncidenciasAlertasView: React.FC = () => {
                     onClick={() => handleExecuteRescate(c.id)}
                     className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-xs"
                   >
-                    Asignar Rescate ➔
+                    Asignar Conductor
                   </button>
                 </div>
               ))}

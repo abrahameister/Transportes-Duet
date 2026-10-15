@@ -71,7 +71,7 @@ export const ProgramacionServiciosView: React.FC = () => {
       setConductoresDb(condData || []);
 
       if (!turnosData || turnosData.length === 0) {
-        toast.warning('No hay turnos B2B programados para planificar.', 'Sin Turnos');
+        toast.warning('No hay turnos programados para planificar.', 'Sin Turnos');
         setIsPlanning(false);
         return;
       }
@@ -94,7 +94,7 @@ export const ProgramacionServiciosView: React.FC = () => {
     try {
       const { data, error } = await supabase.rpc('create_planned_trips', { p_rutas: rutasPropuestas });
       if (error) throw error;
-      toast.success(`✓ ${data.rutas_creadas} rutas confirmadas y viajes creados exitosamente!`, 'Planificación Confirmada');
+      toast.success(`${data.rutas_creadas} rutas confirmadas y viajes creados exitosamente.`, 'Planificación Confirmada');
       setRutasPropuestas([]);
     } catch (e: any) {
       console.error(e);
@@ -144,7 +144,7 @@ export const ProgramacionServiciosView: React.FC = () => {
       if (error) throw error;
       
       const count = (res as any)?.turnos_creados ?? rawJson.length;
-      toast.success(`Planilla procesada con éxito! Se importaron ${count} turnos corporativos.`, 'Importación B2B');
+      toast.success(`Planilla procesada con éxito. Se importaron ${count} turnos.`, 'Importación de Turnos');
       if (fileTurnosInputRef.current) fileTurnosInputRef.current.value = '';
     } catch (err: any) {
       console.error(err);
@@ -169,7 +169,7 @@ export const ProgramacionServiciosView: React.FC = () => {
     const clienteSeleccionado = clientes.find(c => c.id === clienteId);
     await crearViaje({
       clienteCorporativoId: clienteId,
-      clienteNombre: clienteSeleccionado?.nombreCorporativo || 'Cuenta B2B',
+      clienteNombre: clienteSeleccionado?.nombreCorporativo || 'Cliente',
       pasajeroNombre,
       pasajeroTelefono,
       origenDireccion: origen || 'Aeropuerto Carriel Sur, Talcahuano, Región del Biobío',
@@ -206,9 +206,9 @@ export const ProgramacionServiciosView: React.FC = () => {
           <div>
             <div className="text-xs font-bold uppercase tracking-wider mb-0.5 flex items-center">
               <PlusCircle className="w-3.5 h-3.5 mr-1.5 text-blue-500 shrink-0" />
-              Servicio Manual
+              Nuevo Viaje
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">Viajes ocasionales o urgentes</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">Crear un viaje directamente</div>
           </div>
           <ArrowRight className="w-4 h-4 text-slate-400" />
         </button>
@@ -224,9 +224,9 @@ export const ProgramacionServiciosView: React.FC = () => {
           <div>
             <div className="text-xs font-bold uppercase tracking-wider mb-0.5 flex items-center">
               <Users className="w-3.5 h-3.5 mr-1.5 text-blue-500 shrink-0" />
-              Turnos de Clientes
+              Cargar Turnos
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">Demanda corporativa de ingreso/salida</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">Importar o planificar turnos masivos</div>
           </div>
           <ArrowRight className="w-4 h-4 text-slate-400" />
         </button>
@@ -236,14 +236,14 @@ export const ProgramacionServiciosView: React.FC = () => {
       {subMode === 'manual' && (
         <div className="enterprise-card p-6 space-y-5">
           <div className="border-b border-slate-200 dark:border-[#212A38] pb-3">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Nuevo Servicio Manual</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Registro directo para traslados inmediatos o fuera de pauta.</p>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Nuevo Viaje</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Ingresa los datos para programar un viaje directo.</p>
           </div>
 
           <form onSubmit={handleSubmitManual} className="space-y-4 max-w-3xl">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Cuenta Corporativa B2B:</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Empresa / Cliente:</label>
                 <select
                   value={clienteId}
                   onChange={(e) => setClienteId(e.target.value)}
@@ -258,7 +258,7 @@ export const ProgramacionServiciosView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Monto Tarifario Estimado ($ CLP):</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Tarifa Estimada ($ CLP):</label>
                 <input
                   type="number"
                   step="500"
@@ -272,19 +272,19 @@ export const ProgramacionServiciosView: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Nombre Completo del Pasajero:</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Nombre del Pasajero:</label>
                 <input
                   type="text"
                   value={pasajeroNombre}
                   onChange={(e) => setPasajeroNombre(e.target.value)}
-                  placeholder="Ej. Ing. Gonzalo Sepúlveda"
+                  placeholder="Ej. Juan Pérez"
                   required
                   className="enterprise-input w-full text-xs"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Teléfono de Contacto (SMS / WhatsApp Chile):</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">Teléfono de Contacto:</label>
                 <input
                   type="text"
                   value={pasajeroTelefono}
@@ -299,7 +299,7 @@ export const ProgramacionServiciosView: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="relative">
                 <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">
-                  Punto de Origen / Recogida (*):
+                  Origen / Punto de Recogida (*):
                 </label>
                 <div className="relative">
                   <input
@@ -337,7 +337,7 @@ export const ProgramacionServiciosView: React.FC = () => {
 
               <div className="relative">
                 <label className="text-xs font-medium text-slate-700 dark:text-gray-300 block mb-1">
-                  Lugar de Destino (*):
+                  Destino (*):
                 </label>
                 <div className="relative">
                   <input
@@ -379,7 +379,7 @@ export const ProgramacionServiciosView: React.FC = () => {
                 type="submit"
                 className="px-5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm"
               >
-                Registrar Viaje y Enviar a Torre de Control ➔
+                Crear y Programar Viaje
               </button>
             </div>
           </form>
@@ -392,7 +392,7 @@ export const ProgramacionServiciosView: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 border-b border-slate-200 dark:border-[#212A38] pb-4">
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Programación de Turnos</h3>
-              <p className="text-xs text-slate-500">Administra los turnos de los clientes corporativos o sube sus planillas directamente.</p>
+              <p className="text-xs text-slate-500">Carga planillas de turnos de tus clientes o genera rutas automáticas.</p>
             </div>
             
             <div className="flex items-center gap-2">
@@ -431,14 +431,14 @@ export const ProgramacionServiciosView: React.FC = () => {
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow disabled:opacity-50 flex items-center gap-1.5"
               >
                 <Sparkles className="w-4 h-4" />
-                {isPlanning ? 'Procesando...' : 'Generar Propuestas (Asistida)'}
+                {isPlanning ? 'Procesando...' : 'Planificar Rutas'}
               </button>
             </div>
           </div>
           
           {rutasPropuestas.length === 0 && !isPlanning && (
             <div className="enterprise-card p-8 text-center text-slate-500">
-              Presiona "Generar Propuestas" para agrupar los turnos pendientes en viajes.
+              Presiona "Planificar Rutas" para agrupar los turnos pendientes en viajes.
             </div>
           )}
 
@@ -500,7 +500,7 @@ export const ProgramacionServiciosView: React.FC = () => {
                 onClick={confirmarPlanificacion}
                 className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-md"
               >
-                Confirmar Planificación y Crear Viajes
+                Confirmar y Crear Viajes
               </button>
             </div>
           )}
